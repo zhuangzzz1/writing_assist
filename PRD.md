@@ -1,11 +1,11 @@
 # Product Requirements Document (PRD)
 # Multi-Agent Writing Assistant for 5th-7th Grade Students
 
-**Version**: 1.1  
-**Date**: 2026-11-01  
-**Course**: EDUC 6192 - LLM and Education (UPenn GSE)  
-**Assignment**: Applied Assignment 4 - Agent-based Educational Application  
-**Timeline**: 2 weeks (balanced schedule)
+**Version**: 1.3
+**Date**: 2026-11-02
+**Course**: EDUC 6192 - LLM and Education (UPenn GSE)
+**Assignment**: Applied Assignment 4 - Agent-based Educational Application
+**Delivery Approach**: Verified implementation milestones with separate real-evidence gates
 
 ---
 
@@ -32,27 +32,30 @@ A multi-agent system built with LangGraph that provides developmentally-appropri
 ## 2. Technical Stack
 
 ### 2.1 Core Technologies
-- **LLM**: DeepSeek V4.1 Flash 1017 (via DeepSeek API)
-- **Agent Framework**: LangGraph (for state management and routing)
-- **UI Framework**: Streamlit (web-based interface)
-- **Language**: Python 3.11+
-- **Storage**: Hybrid approach
-  - SQLite (local development - persistent)
-  - Streamlit session_state (Streamlit Cloud deployment - ephemeral)
+- **LLM**: DeepSeek V4.1 Flash 1017 (`deepseek-flash`) through the direct HTTP API
+- **Agent Framework**: LangGraph 1.2+ for state, routing, interrupts, and checkpoint resume
+- **UI Framework**: Streamlit
+- **Language**: Python 3.11+ (developed with Python 3.12)
+- **Storage**: SQLite for LangGraph checkpoints and persistent run history, filtered by random session identifiers
+- **Validation**: Pydantic for structured model-output validation
 
 ### 2.2 Key Libraries
 ```
-langgraph>=0.2.0
-langchain>=0.3.0
-streamlit>=1.30.0
-pandas>=2.0.0
-python-dotenv>=1.0.0
-requests>=2.31.0
+langgraph>=1.2.12,<2.0.0
+langgraph-checkpoint-sqlite>=2.0.0,<4.0.0
+streamlit>=1.30.0,<2.0.0
+pydantic>=2.10.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+requests>=2.31.0,<3.0.0
 ```
+
+LangChain Core is installed transitively by LangGraph; no separate LangChain agent wrapper is used. Pytest is included in `requirements-dev.txt`.
 
 ### 2.3 Deployment
 - **Primary**: Streamlit Cloud (free tier) - professor access via URL
-- **Secondary**: Local development environment with SQLite persistence
+- **Secondary**: Local development with the same SQLite storage design
+- **Cloud durability**: SQLite survives ordinary process activity only while the cloud filesystem survives; redeploys or instance replacement can erase it
+- **Cloud privacy limitation**: Random session identifiers filter views but are not authentication. Anyone with a session URL may access that session's data. The public demo is restricted to synthetic writing
 - **Code Repository**: GitHub (public or private as needed)
 
 ---
@@ -129,53 +132,24 @@ requests>=2.31.0
   - Create targeted practice exercises when gaps identified
   - Maintain encouraging, growth-mindset tone
 - **Key Decisions**:
-  - What type of support to provide (feedback vs. practice)
-  - How to scaffold feedback appropriately
-  - Which skill gaps need practice materials
+  - How to scaffold 2-3 feedback priorities appropriately
+  - Which coordinator-identified gap should anchor the single exercise when practice is requested
 - **Prompt Style**: Supportive, encouraging, developmentally-aware
-- **Output**: Student-facing feedback or practice exercise
+- **Output**: Structured strengths, 2-3 priorities, and one targeted exercise when warranted; feedback and practice accompany each other rather than being alternative routes
 
 ### 4.2 LangGraph Flow
 
+```text
+Input -> Assessment Coordinator -> conditional route
+    |- ask_clarification -> interrupt -> student answer -> Coordinator reassessment
+    |- support_agent -> feedback + targeted practice when warranted -> END
+    |- teacher_review -> separate student/teacher outputs -> END
+    `- direct_response -> affirmation without forced criticism -> END
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         START                                │
-│                     (User Input)                             │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Assessment Coordinator                          │
-│  • Analyze writing completeness & quality                    │
-│  • Identify issues and needs                                 │
-│  • Make routing decision                                     │
-└────────────┬────────────────────────────────────────────────┘
-             │
-             │ (Conditional Routing)
-             │
-      ┌──────┴──────┬──────────┬──────────┐
-      │             │          │          │
-      ▼             ▼          ▼          ▼
-┌──────────┐  ┌──────────┐  ┌────────┐  ┌────────────┐
-│  Ask     │  │ Support  │  │ Flag   │  │  Direct    │
-│  Clarif. │  │  Agent   │  │Teacher │  │  Response  │
-└──────────┘  └────┬─────┘  └────────┘  └────────────┘
-                   │
-         ┌─────────┴─────────┐
-         │                   │
-         ▼                   ▼
-    ┌─────────┐         ┌──────────┐
-    │Feedback │         │Practice  │
-    │Generation│         │Generation│
-    └─────────┘         └──────────┘
-         │                   │
-         └─────────┬─────────┘
-                   │
-                   ▼
-              ┌─────────┐
-              │   END   │
-              └─────────┘
-```
+
+Clarification uses LangGraph `interrupt()` and resumes the exact checkpoint through `Command(resume=...)` with a stable thread ID and SQLite checkpointer. If two answers leave intent unclear, the coordinator's next clarification request is converted to non-safety `teacher_review` with category `clarification_limit`; no third question is asked.
+
+Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates, not another LLM call. Normal support always includes feedback and adds one targeted exercise when `needs_practice` is true.
 
 **Routing Logic**:
 ```python
@@ -208,63 +182,57 @@ def route_from_assessment(state: WritingAssistantState) -> str:
     return "ask_clarification"
 ```
 
-`needs_feedback` and `needs_practice` are **not** read by the router. They are read only by the Support Agent node to choose between feedback and practice generation.
+`needs_feedback` and `needs_practice` are **not** read by the router. Normal Support Agent runs always return feedback; `needs_practice` determines whether they also return one exercise.
 
 ### 4.3 State Schema
 
+The authoritative implementation is `langgraph_core/state.py`. Its principal fields are:
+
 ```python
-from typing import TypedDict, Literal, NotRequired
-
 class WritingAssistantState(TypedDict):
-    # Input
     writing: str
-    grade_level: Literal["5th Grade", "6th Grade", "7th Grade"]
-    assignment_type: NotRequired[str]        # key may be absent entirely
-    student_concerns: NotRequired[str]       # key may be absent entirely
-
-    # Assessment Results (set by Assessment Coordinator)
-    writing_complete: bool
-    missing_context: bool
-    unclear_intent: bool
-    no_issues_found: bool                    # true when no actionable issues
-
-    # Issues Identified (set by Assessment Coordinator)
-    issues: list[dict]                        # [{type, severity, description}]
-    skill_gaps: list[str]                     # ["thesis", "transitions", "grammar"]
-
-    # Authoritative routing signal (drives the conditional edge)
-    routing_decision: Literal[
-        "ask_clarification",
-        "support_agent",
-        "teacher_review",
-        "direct_response",
-    ]
-
-    # Safety flag — router checks this unconditionally before routing_decision
-    flag_teacher: bool
-    teacher_flag_reason: NotRequired[str]    # key may be absent entirely
-
-    # Support Agent inputs (set by Assessment Coordinator)
-    needs_feedback: bool                      # read by Support Agent only, not the router
-    needs_practice: bool                      # read by Support Agent only, not the router
-
-    # Support Agent outputs (set by Support Agent when it runs)
-    feedback_type: NotRequired[Literal["scaffolded", "direct", "practice"]]
-    feedback_content: NotRequired[str]
-    practice_exercises: NotRequired[list[dict]]
-
-    # Metadata
-    coordinator_decision: str
-    coordinator_reasoning: str
-    agent_path: list[str]                     # ["Assessment Coordinator", "Support Agent"]
-    execution_logs: list[dict]
+    grade_level: GradeLevel
+    assignment_context: str
+    student_concerns: str
+    app_version: str
+    debug_enabled: bool
+    clarification_history: list[ClarificationTurn]
+    clarification_count: int
+    agent_path: list[str]
+    execution_logs: list[dict[str, Any]]
     timestamps: dict[str, float]
+
+    writing_complete: NotRequired[bool]
+    missing_context: NotRequired[bool]
+    unclear_intent: NotRequired[bool]
+    no_issues_found: NotRequired[bool]
+    strengths: NotRequired[list[str]]
+    issues: NotRequired[list[dict[str, Any]]]
+    skill_gaps: NotRequired[list[str]]
+    routing_decision: NotRequired[RoutingDecision]
+    flag_teacher: NotRequired[bool]
+    teacher_flag_reason: NotRequired[str]
+    teacher_flag_category: NotRequired[TeacherFlagCategory]
+    teacher_evidence: NotRequired[list[str]]
+    needs_feedback: NotRequired[bool]
+    needs_practice: NotRequired[bool]
+    coordinator_decision: NotRequired[str]
+    coordinator_reasoning: NotRequired[str]
+    clarification_question: NotRequired[str]
+    feedback_type: NotRequired[Literal["scaffolded", "direct"]]
+    feedback_content: NotRequired[str]
+    feedback_strengths: NotRequired[list[str]]
+    feedback_priorities: NotRequired[list[dict[str, Any]]]
+    practice_exercises: NotRequired[list[dict[str, Any]]]
+    student_output: NotRequired[str]
+    teacher_message: NotRequired[str]
 ```
 
 **Field ownership and type notes**:
-- `NotRequired[str]` means the key may be absent; use `state.get("assignment_type")` to read safely.
-- If the UI can submit an empty string for optional fields, initialise them as `""` and annotate as `str`, not `NotRequired`. The choice between the two must match the UI implementation.
-- Every node initialises every field it owns before a downstream node reads it. Never read an uninitialised key directly — use `state.get()` for optional fields.
+- Input and execution metadata are initialized together. Coordinator, clarification, Support Agent, teacher-review, and direct-response nodes return only fields they own.
+- Optional UI text is initialized to `""`; branch outputs use `NotRequired` and are read with `state.get()`.
+- Clarification history and execution logs use replacement lists rather than additive reducers so interrupt node replay cannot duplicate entries.
+- `coordinator_reasoning` is a concise rationale in the validated final JSON, not hidden chain-of-thought.
 
 ### 4.4 Why Multi-Agent is Justified
 
@@ -355,42 +323,18 @@ A single agent could handle this task with conditional instructions, and that re
 - One-click loading of test cases
 - Clear labeling of each test case type
 
-**F10: Version Comparison (V1/V2)**
-- Toggle or tab to switch between versions
-- Side-by-side comparison capability
-- Track differences in behavior
+**F10: Version Preservation and Comparison**
+- Preserve V1 with a Git tag before V2 changes begin
+- Deploy only the active version; no runtime V1/V2 selector
+- Compare identical-fixture outputs through saved runs, logs, and screenshots
 
-### 5.2 Should Have (User Learning Goals — Build if on track)
+**F11: Persistent Run History**
+- Store each execution with timestamp, input, route, outputs, and execution time
+- Store LangGraph checkpoints and history in SQLite locally and on Streamlit Cloud
+- Filter views by random session identifiers and allow pending runs to be loaded for resume
+- Provide manual **Delete my data** cleanup for the current session
 
-**F7: Observability Dashboard**
-- Show agent execution timeline (step-by-step)
-- Display routing path taken (visual or text)
-- Show state changes across agents
-- Display coordinator decision reasoning
-- Show execution timing for each agent
-- Expandable sections for detailed logs
-
-**F8: LangGraph Visualization**
-- Display graph structure (Mermaid or static PNG)
-- Show conditional edges and routing logic
-- Highlight executed path on graph (nice to have within this tier)
-
-**F9: Test Case Management**
-- Pre-loaded frozen test cases (normal, incomplete, boundary)
-- One-click loading of test cases
-- Clear labeling of each test case type
-
-**F10: Version Comparison (V1/V2)**
-- Toggle or tab to switch between versions
-- Side-by-side comparison capability
-
-### 5.3 Nice to Have (Only if time permits after V2 is verified)
-
-**F11: Run History**
-- Store each execution with timestamp
-- Track: input, routing path, outputs, execution time
-- Persist in SQLite (local) or session_state (cloud)
-- Display history in table format
+### 5.3 Nice to Have (Only after V2 is verified)
 
 **F12: Execution Logs Export**
 - Log each agent invocation with inputs/outputs
@@ -418,13 +362,12 @@ A single agent could handle this task with conditional instructions, and that re
 
 ### Feature Priority Summary
 
-| Tier | Features | When to build |
-|------|----------|--------------|
-| **Must Have** | F1–F6, F14 | Week 1, before any UI work |
-| **Should Have** | F7–F10 | Week 1 Day 5-6 if agents are stable |
-| **Nice to Have** | F11–F13, F15 | Week 2 only if ahead of schedule |
+| Tier | Features | Status |
+|------|----------|--------|
+| **Locked V1 scope** | F1–F11, F14 | Implemented and verified through automated tests and real V1 scenario evidence |
+| **Optional later scope** | F12–F13, F15 | Build only after V2 verification or by a new scope decision |
 
-**Cut rule**: If Day 6 is not reached with working agents and basic UI, drop all Nice to Have features. Screenshots replace live V1/V2 comparison for submission evidence.
+Development proceeds in verified milestones rather than relying on the earlier calendar-based cut rule. Screenshots and saved outputs replace live V1/V2 comparison for submission evidence.
 
 ---
 
@@ -440,19 +383,22 @@ The input area displays a warning: "Do not submit writing containing real names,
 
 ### Data Sent to DeepSeek API
 
-The following fields are sent to the DeepSeek API as part of the prompt:
+The following fields are sent to the DeepSeek API as part of coordinator/support prompts:
 - `writing` (the student's draft text)
 - `grade_level`
-- `assignment_type` (if provided)
+- `assignment_context` (assignment type, full prompt, or empty)
 - `student_concerns` (if provided)
+- `clarification_history` (coordinator reassessment, when present)
+- Coordinator-identified strengths, issues, skill gaps, and concise rationale (Support Agent handoff)
 
-Removing student identifiers does not de-identify the writing content itself — a student's draft may contain personally identifying details in its prose. This is a production concern beyond this demo. The UI warning above is the primary mitigation.
+Removing student identifiers does not de-identify the writing content itself. Use synthetic writing only.
 
 ### Data Retention
 
-- **Local development**: SQLite stores run history (inputs, outputs, routing). Clear the database periodically. Do not commit the `data/` directory to git (it is git-ignored).
-- **Streamlit Cloud**: Session state is ephemeral. Data does not persist between sessions.
-- **Submission materials**: Redact any screenshots or logs before including them in the submission PDF. Do not include API keys, real names, or identifying details.
+- **Local and Streamlit Cloud**: SQLite stores full run inputs, outputs, routing, execution details, and graph checkpoints. `data/` and database files are git-ignored.
+- **Session views**: A random `session_id` in the URL filters history and pending-run recovery. This is not authentication or secure isolation; anyone with the URL can access the same view.
+- **Retention**: Data remains until the user selects **Delete my data** or a cloud filesystem replacement erases it. No automatic retention period is applied.
+- **Submission materials**: Redact screenshots and logs before including them in the submission PDF. Do not include API keys, real names, or identifying details.
 
 ### Production Requirements (Out of Scope for Demo)
 
@@ -477,7 +423,7 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  📝 Writing Assistant - Multi-Agent System       [V1/V2]    │
+│  📝 Writing Assistant - Multi-Agent System            [V1]    │
 ├────────────┬──────────────────────────┬─────────────────────┤
 │            │                          │                     │
 │  SIDEBAR   │     MAIN CONTENT         │   OBSERVABILITY     │
@@ -510,18 +456,20 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 ### 6.2 Key UI Components
 
 **Sidebar (Controls & Settings)**
-- Version selector: Radio buttons (V1 / V2)
+- Fixed active-version label (V1 during this milestone); V1 is preserved by a Git tag, not a runtime selector
 - Grade level: Dropdown (5th / 6th / 7th Grade)
-- Test case loader: Buttons (Load Normal / Incomplete / Boundary)
-- Debug options: Checkboxes (Show State / Show Timing / Show Logs / Show Prompts)
-- Run history: Compact table with timestamps
+- Test case loader: Buttons (Load Normal / Incomplete / Boundary A / Boundary B)
+- Debug options: State, timing, logs, captured prompts/responses, and opt-in capture on new runs
+- Persistent run history: Compact table and saved-run loader for completed or pending runs
+- Manual current-session data deletion with confirmation
 
 **Main Content Area**
 - **Input Section**:
   - Large text area for writing input (15+ lines)
-  - Optional: Assignment type text input
+  - Optional: Flexible assignment type or prompt text input
   - Optional: Student concerns text input
   - Primary action button: "Analyze Writing"
+  - On clarification: Specific question and answer form that resumes the same checkpoint
 - **Output Section**:
   - Feedback to student (prominent, well-formatted)
   - Practice exercises (if generated, in expandable card)
@@ -611,13 +559,13 @@ In conclusion, school uniforms are good because they help students. They can mak
 **Expected Output**:
 - Encouraging feedback with specific examples
 - Clear revision suggestions
-- Optional practice exercise
+- One targeted practice exercise when the coordinator sets `needs_practice`
 
 **Success Criteria**:
 - ✅ Routing: Assessment → Support Agent
 - ✅ Feedback is age-appropriate and encouraging
 - ✅ 2-3 priority issues identified (not overwhelming)
-- ✅ Practice *offered* when a skill gap is identified (whether the student uses it is outside this one-shot scope)
+- ✅ Feedback and practice are returned together when a gap warrants practice; completing the exercise is outside the graph's scope
 
 ### 7.2 Test Case 2: Incomplete/Ambiguous Case
 
@@ -771,8 +719,8 @@ fix this problem.
 ### 7.4 Additional Edge Cases
 
 **EC1: Empty or Very Short Submission**
-- Input: Less than 50 words or empty
-- Expected: Clarification request, not analysis attempt
+- Empty input is rejected locally without an API call.
+- Every nonempty input reaches the coordinator; safety/human review takes precedence, then a submission too short for meaningful assessment receives a clarification request.
 
 **EC2: Off-Topic or Non-Writing Content**
 - Input: Math homework, URL, code snippet
@@ -784,7 +732,33 @@ fix this problem.
 
 **EC4: Near-Perfect Writing**
 - Input: Strong essay with minor improvements possible
-- Expected: Affirming feedback, optional advanced suggestions, no forced criticism
+- Expected: Affirming feedback, optional advanced suggestions, no forced criticism; direct response is reserved for no actionable issues
+
+### 7.5 Actual V1 Verification Results
+
+The official configuration was frozen as `deepseek-flash`, non-thinking mode, temperature 0. In the small mode-comparison smoke set, non-thinking produced valid normal support in 7.49 seconds and correct boundary review in 2.75 seconds. Thinking produced a schema-invalid normal assessment that used safe clarification fallback in 6.60 seconds without reaching support, and boundary review in 3.93 seconds. These are observations from this smoke set, not general claims about model quality.
+
+| Case | Actual V1 result |
+| --- | --- |
+| Normal frozen fixture | `support_agent`; 3 priorities and 1 thesis exercise; 2 API calls and 6.36 seconds of node time in the real browser run |
+| Incomplete frozen fixture | Specific initial question; after two answers and exact checkpoint resumes, `support_agent` with 3 priorities and 1 exercise; 4 API calls and 9.58 seconds of node time |
+| Boundary A | `teacher_review`, category `concerning_content`; no Support Agent or writing critique; separate student/teacher outputs; 1 API call and 2.24 seconds |
+| Boundary B | `teacher_review`, category `frustration`; specific revision-fatigue evidence and human follow-up; 1 API call and 2.78 seconds |
+| Empty, short, and non-writing | Empty rejected locally with no API call; short and math inputs received specific clarification questions |
+| Short concerning input | `teacher_review`, confirming safety precedence over the short-submission rule |
+| Strong narrative | `support_agent` with 3 specific optional improvement areas and no practice, rather than forced direct response |
+| Clarification limit | Two unclear answers led to `teacher_review` with category `clarification_limit`; no third question |
+
+Real run state is in git-ignored `data/v1_official.db`. Original screenshots are in `data/evidence/v1_normal_ui.png`, `v1_incomplete_resumed_ui.png`, `v1_boundary_a_ui.png`, and `v1_boundary_b_ui.png`. Mode-comparison runs are in `data/mode_nonthinking_fixed.db` and `data/mode_thinking_fixed.db`.
+
+Current Parts 1–3 drafts and nine cropped evidence figures are in `submission/`. Figure 2 is a supplementary capture of the frozen incomplete fixture and configuration, not one of the ten official runs; its wording differs from the official run, and its isolated temporary capture database was removed after capture, so that record is not retained. The other figures document official saved runs or the current V1 instruction source, with composite crops disclosed in the draft appendix.
+
+**Observations for human V1 review (not predetermined V2 commitments)**:
+1. One coordinator reassessment during the incomplete run failed validation and used the generic safe clarification fallback. The next resume succeeded, but structured-output reliability needs review. The raw response was not captured, so the specific validation defect is unknown.
+2. The normal-case practice's worked example directly supplied a thesis for the student's own essay, even though the exercise asked the student to produce that sentence. Review whether examples should use a different topic to preserve student practice.
+3. The strong narrative still received three improvement priorities. They were specific and encouraging, but human review should decide whether this volume is appropriate for near-perfect writing.
+
+No V2 revisions have been made. These observations are candidates for the required human V1 review, not scripted evidence or preselected fixes.
 
 ---
 
@@ -794,20 +768,7 @@ fix this problem.
 
 Build V1 as a genuine best effort with reasonable design choices. Do not deliberately introduce deficiencies. Test it against the three frozen test cases, observe what actually goes wrong, and document those real problems for V2.
 
-**What genuine V1 problems might look like** (hypothetical examples — not predetermined):
-- The LLM may not return consistently structured routing decisions
-- Feedback tone may vary more than expected across grade levels
-- Clarification questions may be less targeted than intended
-- Edge cases in routing logic may surface unexpected paths
-
-These are illustrative, not scripted. Replace them with your actual observed problems after testing.
-
-**Evidence to save from V1**:
-- LangGraph architecture diagram
-- Agent prompts / instructions
-- State schema used
-- Screenshots of all three test case runs showing agent routing
-- Key decision points from execution logs
+Actual V1 outcomes and candidate problems are recorded in Section 7.5; they are the authoritative review baseline rather than hypothetical examples. The retained evidence includes the implemented graph, V1 prompts and state schema, real run history, execution details, and screenshots of the required scenarios. No V2 changes have been selected or made.
 
 ### 8.2 Version 2 Improvements
 
@@ -877,148 +838,56 @@ writing_assist/
 │
 ├── storage/
 │   ├── __init__.py
-│   ├── interface.py                 # Storage interface
-│   ├── sqlite_storage.py            # SQLite implementation
-│   └── session_storage.py           # Session state implementation
+│   ├── interface.py                 # Run-history interface
+│   └── sqlite_storage.py            # SQLite history; graph checkpoints use LangGraph SqliteSaver
 │
-├── data/                            # Git-ignored
-│   ├── run_history.db              # Local SQLite (not deployed)
-│   └── outputs/                    # Saved outputs
+├── data/                            # Git-ignored runtime database
+├── test_cases/                      # Four frozen fixtures; no generator
+│   ├── normal_case.txt
+│   ├── incomplete_case.txt
+│   ├── boundary_case_a.txt
+│   └── boundary_case_b.txt
 │
-├── test_cases/
-│   ├── __init__.py
-│   ├── normal_case.txt          # Frozen fixture: 6th-grade persuasive essay (~400 words)
-│   ├── incomplete_case.txt      # Frozen fixture: outline only
-│   ├── boundary_case_a.txt      # Frozen fixture: concerning content (official case 3)
-│   ├── boundary_case_b.txt      # Frozen fixture: student frustration (additional)
-│   └── generator.py             # Script to generate and freeze fixtures (run once)
-│
-└── tests/                          # Optional unit tests
+└── tests/                           # Pytest suite with mocked model calls and temporary databases
     ├── test_agents.py
-    └── test_routing.py
+    ├── test_api_client.py
+    ├── test_app.py
+    ├── test_fixtures.py
+    ├── test_graph.py
+    ├── test_routing.py
+    ├── test_storage.py
+    └── test_visualization.py
 ```
 
 ### 9.2 Key Configuration
 
-**.env Template**:
+The authoritative template is `.env.example`:
 ```env
-# DeepSeek API
 DEEPSEEK_API_KEY=your_api_key_here
-DEEPSEEK_API_BASE=https://api.deepseek.com/v1
-
-# Application Settings
+DEEPSEEK_API_BASE=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-flash
+DEEPSEEK_THINKING=false
 APP_VERSION=v1
 LOG_LEVEL=INFO
 ENABLE_DEBUG_MODE=true
-
-# Storage (auto-detected if not set)
-FORCE_SQLITE=false  # Set true to force SQLite even on cloud
+DATABASE_PATH=data/writing_assistant.db
 ```
 
 ### 9.3 API Integration
 
-**DeepSeek API Client**:
-```python
-import requests
-from typing import Dict, Any
+`agents/utils.py` implements `DeepSeekClient` with `requests.Session`, a 30-second timeout, categorized errors, JSON Output, and explicit thinking configuration. The base URL is `https://api.deepseek.com` and the default model is `deepseek-flash`.
 
-class DeepSeekClient:
-    def __init__(self, api_key: str, base_url: str):
-        self.api_key = api_key
-        self.base_url = base_url
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-    
-    def chat_completion(
-        self, 
-        messages: list[Dict[str, str]], 
-        temperature: float = 0.7,
-        max_tokens: int = 2000
-    ) -> str:
-        """Call DeepSeek chat completion API"""
-        try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json={
-                    "model": "deepseek-flash",  # DeepSeek-V4.1-Flash-1017 per official docs
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens
-                },
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
-        
-        except requests.exceptions.Timeout:
-            raise APIError("Request timed out")
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                raise RateLimitError("Rate limit exceeded")
-            elif e.response.status_code == 401:
-                raise AuthError("Invalid API key")
-            else:
-                raise APIError(f"API error: {e}")
-        except Exception as e:
-            raise APIError(f"Unexpected error: {e}")
-```
+- Non-thinking requests send `thinking: {"type": "disabled"}` and `temperature` (0 by default).
+- Thinking requests send `thinking: {"type": "enabled"}` and `reasoning_effort: "high"`, and omit temperature because DeepSeek ignores it in thinking mode.
+- Both agent calls request `response_format: {"type": "json_object"}` and validate the returned final content with Pydantic.
+- `reasoning_content` is not read or persisted. Coordinator rationale comes from the final JSON.
+- Prototyping defaults to non-thinking. A small real smoke comparison must select and freeze the official mode before V1 evidence; the same mode is then used for V2 and deployment.
 
 ### 9.4 Error Handling Strategy
 
-**Standard Error Handling (V1)**:
+`agents/utils.py` defines `WritingAssistantError`, `ConfigurationError`, `APIError`, `RateLimitError`, `AuthError`, `InputValidationError`, and `ResponseValidationError`. `ui/layout.py` converts them into student-safe Streamlit messages; unexpected exception details appear only when `ENABLE_DEBUG_MODE=true`.
 
-```python
-# Custom exceptions
-class WritingAssistantError(Exception):
-    """Base exception"""
-    pass
-
-class APIError(WritingAssistantError):
-    """API-related errors"""
-    pass
-
-class RateLimitError(APIError):
-    """Rate limit exceeded"""
-    pass
-
-class AuthError(APIError):
-    """Authentication failed"""
-    pass
-
-class InputValidationError(WritingAssistantError):
-    """Invalid user input"""
-    pass
-
-# Error handling in Streamlit
-try:
-    result = run_agents(writing, grade_level, version)
-    st.success("Analysis complete!")
-    display_results(result)
-
-except InputValidationError as e:
-    st.error(f"Invalid input: {e}")
-    st.info("Please check your input and try again.")
-
-except RateLimitError:
-    st.warning("Rate limit reached. Please wait a moment and try again.")
-
-except AuthError:
-    st.error("API authentication failed. Please check your API key configuration.")
-
-except APIError as e:
-    st.error(f"API error: {e}")
-    st.info("This might be a temporary issue. Please try again.")
-
-except Exception as e:
-    st.error("An unexpected error occurred.")
-    if os.getenv("ENABLE_DEBUG_MODE") == "true":
-        st.exception(e)
-    else:
-        st.info("Please try again or contact support if the issue persists.")
-```
+`WritingAssistantService` records failed runs and elapsed invocation time in SQLite. Empty input is rejected before creating a run. Every nonempty input reaches the coordinator so safety assessment precedes length-based clarification. Coordinator validation failures use safe clarification fallback; a raw teacher flag is preserved even when other fields are malformed. Support schema failures stop the run without presenting partial feedback. Automatic retries and fallback generation are not in V1.
 
 ### 9.5 Performance Considerations
 
@@ -1042,70 +911,38 @@ except Exception as e:
 
 ---
 
-## 10. Development Timeline (2 Weeks)
+## 10. Development Milestones and Evidence Gates
 
-### Week 1: Foundation & Version 1
+**Milestone 1: Foundation and application code**
+- [x] Initialize project structure and Python 3.12 environment
+- [x] Configure direct DeepSeek client, categorized errors, JSON mode, and explicit thinking configuration
+- [x] Implement state, both agents, all four routes, exact clarification resume, and SQLite checkpoints/history
+- [x] Build the three-column dashboard, observability, graph visualization, fixture loader, and manual data deletion
+- [x] Verify a real minimal DeepSeek call
 
-**Day 1-2: Setup & Core Infrastructure**
-- [ ] Initialize project structure
-- [ ] Set up development environment (Python, dependencies)
-- [ ] Configure DeepSeek API client
-- [ ] Implement storage abstraction layer (SQLite + session_state)
-- [ ] Create basic Streamlit app shell
+**Milestone 2: Automated V1 verification**
+- [x] Verify all four frozen fixtures parse without changing extracted writing
+- [x] Test routing, malformed output, API errors, every terminal branch, checkpoint restart/resume, persistence, deletion, and Streamlit flows with mocked models
+- [x] Keep fixture text unchanged
+- [x] Verify the dashboard, saved-run restoration, and graph visualization in a local browser using synthetic smoke data
 
-**Day 3-4: LangGraph & Agents**
-- [ ] Define state schema
-- [ ] Implement Assessment Coordinator agent
-- [ ] Implement Support Agent (feedback + practice)
-- [ ] Create LangGraph with conditional routing
-- [ ] Write agent prompts (V1 — genuine best effort)
+**Milestone 3: Real V1 evidence**
+- [x] Compare thinking/non-thinking modes on a small real smoke set and freeze non-thinking temperature 0 as the official configuration
+- [x] Run all frozen fixtures and documented edge cases with that configuration
+- [x] Document actual V1 behavior and capture real dashboard screenshots/logs in Section 7.5
+- [x] Record three candidate problems for human V1 review without committing to V2 fixes
+- [ ] Preserve reviewed V1 with a Git tag (requires a commit/tag decision after review)
 
-**Day 5-6: UI & Integration**
-- [ ] Build Streamlit layout (3-column dashboard)
-- [ ] Integrate LangGraph with UI
-- [ ] Implement observability components
-- [ ] Add LangGraph visualization
-- [ ] Create test case loader
+**Milestone 4: Evidence-driven V2**
+- [ ] Revise only based on observed V1 problems and keep V1/V2 prompts separate
+- [ ] Submit a draft to JeepyTA before finalizing V2 and review suggestions with judgment
+- [ ] Rerun identical fixtures with the frozen model configuration
+- [ ] Document actual before-and-after evidence and any remaining problems
 
-**Day 7: Testing & Documentation**
-- [ ] Verify all four frozen fixture files load correctly (normal, incomplete, boundary A, boundary B)
-- [ ] Keep the fixture text unchanged between V1 and V2 official test runs
-- [ ] Test all routing paths using temperature 0 for official runs
-- [ ] Document V1 agent behavior (actual observations, not predictions)
-- [ ] Capture screenshots / evidence
-- [ ] Identify 2-3 real problems observed during testing
-
-### Week 2: Iteration & Version 2
-
-**Day 8-9: Version 2 Development**
-- [ ] Apply progressive disclosure to feedback (if feedback volume was an observed V1 problem)
-- [ ] Improve clarification specificity in Assessment Coordinator prompt (if generic clarification was observed)
-- [ ] Restructure teacher-review node output into student-facing and teacher-facing parts (if flagging lacked transparency)
-- [ ] Update agent prompts for V2 based on observed V1 problems
-- [ ] Add version toggle to UI
-
-**Day 10: Testing & Comparison**
-- [ ] Rerun the identical frozen test cases on V2 (same inputs, same fixtures)
-- [ ] Document before-and-after improvements with actual outputs
-- [ ] Capture side-by-side screenshots
-- [ ] Verify V2 behaves more appropriately than V1 on the observed problems
-
-**Day 11: Deployment & Polish**
-- [ ] Submit V2 draft to JeepyTA for formative feedback (required by Part 4)
-- [ ] Review JeepyTA suggestions with judgment — accept, modify, or reject based on your own assessment
-- [ ] Deploy to Streamlit Cloud
-- [ ] Test deployed version
-- [ ] Polish UI and fix any deployment issues
-
-**Day 12-14: Documentation & Submission**
-- [ ] Write Part 1: Educational Need & Architecture
-- [ ] Write Part 5: Architecture & Development Process
-- [ ] Write Part 6: Reflection (200-300 words)
-- [ ] Compile all evidence (screenshots, logs, graphs)
-- [ ] Create final submission document as PDF
-- [ ] Submit PDF draft to JeepyTA (filename: FirstName_LastName_Assignment_4)
-- [ ] Submit JeepyTA assignment link on Canvas
-- [ ] Include application access (Streamlit Cloud URL) in submission
+**Milestone 5: Deployment and submission**
+- [ ] Deploy the active V2 app to Streamlit Cloud and test it
+- [ ] Complete all eight submission items, including the 200-300 word reflection, application access, and AI Use Acknowledgment
+- [ ] Compile redacted evidence into the required document and submit the JeepyTA link on Canvas
 
 ---
 
@@ -1147,11 +984,12 @@ except Exception as e:
 ### 11.2 Definition of Done
 
 **Technical Completion**:
-- [ ] Both agents work reliably
-- [ ] All 4 routing paths function (clarification, support, teacher review, direct response)
-- [ ] V1 and V2 both deployable
-- [ ] Observability dashboard shows all agent details
-- [ ] Frozen test cases load and run successfully
+- [ ] Both agents work reliably in real scenario runs
+- [x] All 4 routing paths function in automated mocked-model graph tests
+- [ ] Verified V1 is preserved by a Git tag and V2 is deployable as the active app
+- [x] Observability dashboard and graph visualization are implemented and covered by headless app/DOT tests
+- [x] Frozen test cases load successfully in automated fixture and Streamlit tests
+- [ ] Frozen test cases complete real model runs successfully
 - [ ] Deployed to Streamlit Cloud with public URL
 
 **Documentation Completion** (all 8 submission items per syllabus):
@@ -1207,13 +1045,14 @@ except Exception as e:
   - Have local version as backup
   - Document any cloud-specific issues
 
-**Risk 4: Storage Hybrid Approach Complexity**
-- **Impact**: Low - Nice-to-have feature
-- **Probability**: Low
+**Risk 4: Shared SQLite Privacy and Durability**
+- **Impact**: High - Session URLs are not authentication; cloud filesystem replacement erases history and checkpoints
+- **Probability**: Medium
 - **Mitigation**:
-  - Start with session_state only
-  - Add SQLite later if time permits
-  - Storage abstraction allows easy swapping
+  - Restrict the demo to synthetic writing and display the external-service/session-URL warnings
+  - Filter views by random session IDs and provide confirmed manual deletion
+  - Document that per-session views are not secure isolation and that cloud persistence is ephemeral
+  - Keep local backups of non-sensitive evidence and use a local deployment fallback
 
 ### 12.2 Timeline Risks
 
@@ -1328,18 +1167,21 @@ except Exception as e:
 - v1.0 (2026-11-01): Initial PRD based on grill-me session
 - v1.1 (2026-11-01): Applied corrections from external review, validation, and corrected fix list
 - v1.2 (2026-11-01): Applied fixes from FIX_APPLICATION_REVIEW.md
+- v1.3 (2026-11-02): Reconciled the PRD with locked V1 decisions, the implemented application, and actual V1 verification results
 
-**Approval**:
+**Approval and Current Status**:
 - [x] Technical feasibility reviewed
 - [x] Rubric alignment reviewed (criteria are targets, not yet satisfied)
-- [ ] Timeline validated (pending implementation start)
-- [ ] Development started
+- [x] V1 implementation and automated mocked-model suite completed
+- [x] Real API, frozen-fixture, edge-case, and browser evidence completed
+- [x] Candidate V1 problems recorded for human review
+- [ ] Human V1 review, Git tag, deployment, and V2 completed
 
 **Next Steps**:
-1. Review PRD with project stakeholder (you!)
-2. Get approval to proceed
-3. Initialize project structure (Day 1)
-4. Begin development per timeline
+1. Review the actual V1 outcomes and candidate problems in Section 7.5
+2. Decide which observed problems should drive V2 changes
+3. Commit and tag the reviewed V1 baseline before making V2 behavior changes
+4. Complete evidence-driven V2, deployment, JeepyTA review, and submission documentation
 
 ---
 

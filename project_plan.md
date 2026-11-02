@@ -52,12 +52,14 @@
 ```
 Input → Assessment Coordinator → (conditional routing) →
                                 ├─→ Ask Clarification (missing info)
+                                │   └─→ interrupt → student answer → Coordinator reassessment
                                 ├─→ Support Agent (normal case)
-                                │   ├─→ Generate Feedback
-                                │   └─→ Generate Practice (when skill gap identified)
+                                │   └─→ Feedback + one targeted exercise when warranted
                                 ├─→ Teacher Review (boundary case)
                                 └─→ Direct Response (no actionable issues)
 ```
+
+Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint and stable thread ID. If two clarification answers still leave intent unclear, the system routes to non-safety teacher review with the clarification history. Teacher review uses coordinator evidence and reviewed templates, not additional audience-specific agents.
 
 ---
 
@@ -74,7 +76,7 @@ Input → Assessment Coordinator → (conditional routing) →
 
 3. **Main task**: Analyze student writing drafts and provide developmentally-appropriate feedback with scaffolding
 
-4. **User input**: Writing draft, assignment prompt (optional), grade level, specific concerns (optional)
+4. **User input**: Writing draft, one flexible assignment type or prompt field (optional), grade level, specific concerns (optional), and clarification answers when requested
 
 5. **Architecture choice**: **2-agent system with LangGraph state graph**
 
@@ -90,7 +92,7 @@ Input → Assessment Coordinator → (conditional routing) →
 
 10. **Completion conditions**: Feedback provided + student has clear next steps, OR system determines teacher review needed
 
-11. **Stop/human assistance conditions**: Concerning content, student clearly frustrated, same issue appears after 2 rounds of feedback
+11. **Stop/human assistance conditions**: Concerning content, clear revision frustration, or intent remains ambiguous after two clarification answers; the last case uses non-safety teacher review with the clarification history
 
 12. **Success criteria**: Student receives clear, kind, actionable feedback appropriate to grade level; system avoids fixed workflow by routing based on writing needs
 
@@ -224,22 +226,23 @@ Input → Assessment Coordinator → (conditional routing) →
 - The Assessment-Support split produces different prompting requirements (structured JSON output vs. warm student-facing prose) that are easier to optimise in separate agents. A single agent would need to switch modes, making prompt engineering harder and behaviour less consistent. Three or more agents would add coordination overhead without clear educational benefit. After testing, document whether the 2-agent design handled all three cases appropriately and whether a simpler design would have sufficed.
 
 **Paragraph 3: Limitations and human oversight**
-- Limitations: Cannot detect all concerning content; may miss cultural context in student writing; practice materials are templated rather than fully adaptive. Human review needed when: (1) concerning content flagged, (2) student expresses frustration after multiple rounds, (3) writing shows signs of cheating/AI generation, (4) student is non-native English speaker needing ELL support. Teachers should review all feedback before it reaches students in a production setting.
+- Limitations: Cannot detect all concerning content; may miss cultural context; practice is limited to one coordinator-identified gap per support run; shared-demo session filtering is not authentication. Human review is needed for concerning content, revision frustration, unresolved clarification after two answers, and situations outside the system's educational role. Teachers should review feedback before real student use in any production setting.
 
 ---
 
 ## Implementation Timeline & Strategy
 
 ### **Phase 1: Build Version 1 (Foundation)**
-- Set up LangGraph with 2 agents
-- Implement basic conditional routing with safety-first precedence
-- Test normal case with frozen fixture
-- *Build genuine best effort — observe and document real problems*
+- Set up LangGraph with 2 agents, all four routes, exact clarification resume, SQLite history, and the full dashboard
+- Implement conditional routing with safety-first precedence and automated mocked tests after each stage
+- Use the completed smoke comparison's official V1 choice: non-thinking mode at temperature 0; keep it fixed for V2 comparisons
+- Test real frozen fixture flows; build a genuine best effort and observe actual problems
 
 ### **Phase 2: Test & Document Problems**
-- Run all 3 frozen test cases (temperature 0 for official runs)
+- Run all frozen test cases with the frozen official model configuration (temperature 0 only in non-thinking mode)
 - Document actual routing decisions and coordination
 - Identify 2-3 real problems from observed behaviour
+- Preserve verified V1 with a Git tag before changing V2 behavior
 
 ### **Phase 3: Build Version 2 (Refinement)**
 - Fix observed problems from V1 testing

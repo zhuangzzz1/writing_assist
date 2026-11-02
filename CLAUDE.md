@@ -1,179 +1,72 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents working in this repository.
 
 ## Project Overview
 
-This is a multi-agent writing assistant for 5th-7th grade students, built as an academic project for EDUC 6192 (LLM and Education) at UPenn GSE. The system uses LangGraph to coordinate two agents that analyze student writing and provide developmentally-appropriate feedback and practice exercises.
+This is a two-agent writing assistant for 5th-7th grade students, built as an academic project for EDUC 6192 (LLM and Education) at UPenn GSE. LangGraph coordinates an Assessment Coordinator and an Instructional Support Agent. The rubric prioritizes educational fit, meaningful agent-controlled decisions, appropriate boundaries, observable behavior, and genuine V1-to-V2 improvement.
 
-**Key Context**: This is an academic assignment focused on demonstrating agent coordination and decision-making, NOT building production software. The rubric prioritizes clear agent behavior, meaningful routing decisions, and observable improvements from V1 to V2.
+Use only synthetic writing. This is an educational demo, not production software for minors.
 
-## Critical Design Decisions
+## Locked V1 Decisions
 
-### Multi-Agent Architecture (Must Preserve)
-
-**Two agents with distinct roles**:
-1. **Assessment Coordinator**: Analytical decision-maker that routes based on writing analysis
-2. **Instructional Support Agent**: Empathetic feedback provider and practice generator
-
-**Why multi-agent is justified**: Assessment and intervention require different "mindsets" (analytical vs. supportive). This mirrors authentic teaching practice and demonstrates conditional coordination (not a fixed workflow).
-
-**Routing must be conditional**: Not every input follows the same path. The system must demonstrate "meaningful agent-controlled decisions" to meet rubric requirements. Avoid sequential pipelines where agents always run in the same order.
-
-### V1 vs V2 Strategy
-
-**V1 is a genuine best effort** — not deliberately deficient. Build V1 with reasonable design choices, test it against the frozen test cases, observe what actually goes wrong, and document those real problems for V2. Do not predetermine V1 failures or script evidence before testing.
-
-**V2 fixes problems actually observed in V1 testing.** Target improvement areas (apply only if the problem was observed): feedback volume via progressive disclosure, clarification specificity, teacher-flagging transparency. The assignment grades on observed iteration, not predetermined failure.
+- Build V1 as a genuine best effort. Do not script failures or predetermine V2 changes.
+- Normal support returns strengths, 2-3 revision priorities, and one targeted exercise when the coordinator identifies a gap that warrants practice. Practice does not replace feedback.
+- The optional assignment input is one flexible **assignment type or prompt** field (`assignment_context`). Missing assignment context is not automatically a clarification trigger.
+- Only empty input is rejected locally. Every nonempty submission goes to the coordinator so safety assessment precedes short/non-writing clarification rules.
+- Clarification uses exact LangGraph `interrupt()`/`Command(resume=...)` with a stable thread ID and SQLite checkpoints. A reply loops back to the coordinator for reassessment.
+- After two clarification answers remain ambiguous, escalate to non-safety teacher review with the clarification history.
+- Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates. Do not add audience-specific agents without evidence and a separate architecture decision.
+- Keep the two decision-making agents. Teacher review, clarification, and direct response are deterministic nodes.
+- Use `deepseek-flash` through `requests`. Official V1 used non-thinking mode at temperature 0 after a real smoke comparison; keep that configuration fixed for V2 and deployment comparisons. Thinking mode ignores temperature.
+- Preserve V1 with a Git tag before V2 work. Deploy only the active version; use saved runs and screenshots for comparison rather than a runtime V1/V2 selector.
+- Build the full three-column dashboard in V1, including routing, timeline, state changes, graph visualization, debug controls, fixture loading, and persistent history.
+- Store checkpoints and run history in SQLite locally and on Streamlit Cloud. Filter by random session IDs in URLs, but do not describe this as secure isolation or authentication.
+- Retain data until the user chooses **Delete my data** or the cloud filesystem is replaced. No automatic retention period is applied.
 
 ## Architecture
 
-### LangGraph State Flow
-
-```
-Input → Assessment Coordinator → (conditional routing) →
-    ├─→ Ask Clarification (missing/ambiguous input)
-    ├─→ Support Agent → Feedback or Practice
-    ├─→ Flag Teacher (boundary conditions)
-    └─→ Direct Response (minimal issues)
+```text
+Input -> Assessment Coordinator -> conditional route
+    |- ask_clarification -> interrupt -> answer -> Assessment Coordinator
+    |- support_agent -> feedback + optional targeted practice -> END
+    |- teacher_review -> separate student/teacher outputs -> END
+    `- direct_response -> affirm without forced criticism -> END
 ```
 
-**State schema** (`langgraph_core/state.py`): Contains writing input, assessment results, a single `routing_decision` enum, agent outputs, and execution metadata. Requires Python 3.11+ (uses `typing.NotRequired`). Every field has exactly one node that first produces it; never read an uninitialized key. `needs_feedback` and `needs_practice` drive Support Agent behavior only — routing is driven solely by `routing_decision`.
+`routing_decision` is authoritative: `ask_clarification`, `support_agent`, `teacher_review`, or `direct_response`. The router checks `flag_teacher` first, then the enum. Missing or malformed output falls back to `ask_clarification`, never `support_agent`. `needs_feedback` and `needs_practice` are Support Agent inputs only.
 
-**Routing logic** (`langgraph_core/routing.py`): Reads `state.get("flag_teacher")` first (safety override), then routes on the `routing_decision` enum. Uses `state.get()` for all field access to avoid `KeyError`. Malformed or missing `routing_decision` falls back to `ask_clarification`. `needs_feedback` and `needs_practice` are never read by the router — only by the Support Agent node.
+`langgraph_core/state.py` uses Python 3.11+ `TypedDict`/`NotRequired`. Initialize inputs and execution metadata in the initial state. Each node returns only fields it owns; downstream reads use `state.get()` for values that may be absent. Clarification history replaces lists rather than using additive reducers so node replay cannot duplicate entries.
 
-### Agent Prompts
+## Code Organization
 
-Located in `agents/prompts.py`. Keep V1 and V2 prompts separate.
+- `app.py`: Streamlit entry point and cached runtime setup
+- `agents/`: DeepSeek client, coordinator/support logic, and separate versioned prompts
+- `langgraph_core/`: state, node functions, routing, graph construction, and invocation helpers
+- `ui/`: input/output components, dashboard layout, observability, and graph visualization
+- `storage/`: run-history interface and SQLite implementation
+- `test_cases/`: four frozen synthetic fixtures; do not edit them for official runs
+- `tests/`: pytest unit/integration tests using mocked model calls and temporary databases
 
-**Assessment Coordinator**: Analytical tone, structured decision output (JSON or dict), includes routing reasoning.
+## Commands
 
-**Support Agent**: Encouraging tone, grade-appropriate language (5th-7th grade), starts with strengths before improvements.
-
-### Storage Abstraction
-
-**Hybrid approach** (`storage/`):
-- **Local development**: SQLite (`sqlite_storage.py`) persists run history across sessions — Nice to Have, build only if on track after Week 1
-- **Streamlit Cloud**: Session state (`session_storage.py`) ephemeral but sufficient for demos and submission
-- Auto-detection: Check for `/.streamlit` or use `FORCE_SQLITE` env var
-- Both implement same interface (`storage/interface.py`)
-- **Default**: Start with session_state only; add SQLite if time permits
-
-## Development Commands
-
-### Setup
 ```bash
-pip install -r requirements.txt
-cp .env.example .env  # Add DEEPSEEK_API_KEY
-```
-
-### Run Application
-```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env  # Add DEEPSEEK_API_KEY locally
+pytest
 streamlit run app.py
 ```
 
-### Generate Test Cases
-```bash
-python test_cases/generator.py  # Uses LLM to create realistic student writing
-```
+There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 complete.
 
-### Deploy to Streamlit Cloud
-Push to GitHub, connect repo at share.streamlit.io, set DEEPSEEK_API_KEY in secrets.
+## Safety, Privacy, and Evidence
 
-## Test Cases (Critical for Assignment)
+The UI warning is: "Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service."
 
-Three required scenarios are represented by four frozen fixture files in `test_cases/`:
+Writing, grade level, assignment context, student concerns, and clarification answers may be sent to DeepSeek and stored in SQLite. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never promise otherwise, and do not improvise crisis keywords, hotline numbers, or localized crisis protocols.
 
-1. **Normal Case** (`normal_case.txt`): Complete 6th-grade persuasive essay
-2. **Incomplete Case** (`incomplete_case.txt`): Outline only
-3. **Boundary Case A** (`boundary_case_a.txt`): Concerning content — official third case
-4. **Boundary Case B** (`boundary_case_b.txt`): Student frustration — additional test
+Use byte-identical fixtures for V1/V2. Temperature 0 reduces variability only in non-thinking mode and never guarantees identical output. Record actual routes, concise final-output rationales, outputs, timing, and errors. Do not store or present hidden chain-of-thought as coordinator reasoning.
 
-Use the identical fixture text for V1 and V2, and use temperature 0 for all official test runs. Do not regenerate fixtures between versions.
-
-## UI Requirements
-
-**Priority**: Observability and agent behavior quality over UI polish.
-
-**Must have**:
-- 3-column layout: Controls (sidebar) | Input/Output (main) | Observability (right panel)
-- Agent execution timeline showing step-by-step flow
-- Routing path visualization (which agents ran, which path taken)
-- State changes visible (what changed at each step)
-- LangGraph structure visualization (graph with highlighted execution path)
-- V1/V2 version toggle
-- Test case loader (one-click to load normal/incomplete/boundary)
-
-**Debug panels** (expandable): Full prompts, LLM responses, execution logs, timing info.
-
-## API Integration
-
-**DeepSeek V4.1 Flash 1017** via direct API (model identifier: `deepseek-flash` per official docs — verify on Day 1):
-- Client in `agents/utils.py` using `requests>=2.31.0`
-- Standard error handling: timeout, rate limit (429), auth (401)
-- Set reasonable timeouts (30s default)
-- Expected latency: 3-7 seconds end-to-end
-
-**Cost**: DeepSeek is very cost-effective; daily testing negligible.
-
-## Error Handling
-
-**V1**: Standard error handling with specific error types and user-friendly messages.
-
-**V2**: Can add retry logic, fallbacks, structured logging (optional improvement).
-
-Catch: `APIError`, `RateLimitError`, `AuthError`, `InputValidationError`. Display helpful messages in Streamlit (`st.error`, `st.warning`).
-
-## Assignment Submission Requirements
-
-Must produce evidence for all 8 submission items (see syllabus lines 137-150):
-
-1. Educational Need and Agent Architecture
-2. Agent-Based Application Version 1 and Evidence
-3. Review of Agent-Based Application Version 1
-4. Agent-Based Application Version 2, Before-and-After Evidence, and Verification
-5. Agent Architecture and Development Process
-6. Brief Reflection (200-300 words)
-7. Agent-Based Application Access (Streamlit Cloud URL / files / notebook)
-8. AI Use Acknowledgment (tool, purpose, contribution)
-
-**Submission workflow** (from syllabus lines 165-170):
-1. Compile all sections into one PDF: `FirstName_LastName_Assignment_4.pdf`
-2. Submit PDF to JeepyTA (required before finalizing V2 — Part 4)
-3. Submit the JeepyTA assignment link on Canvas
-4. Include Streamlit Cloud URL for live app access
-
-Capture screenshots, routing decision logs, and timing info during testing. Redact any identifying info before including in the PDF.
-
-## Key Constraints
-
-**Rubric Focus**: 
-- 20% Architecture justification (why multi-agent is simplest adequate)
-- 20% Functional with meaningful decisions (avoid fixed workflow trap)
-- 20% Appropriate behavior and coordination (3 test cases)
-- 20% Iterative improvement (V1→V2 with evidence)
-- 20% Development evidence and reflection
-
-**Timeline**: 2 weeks balanced schedule (see PRD Section 10).
-
-**Age appropriateness**: All feedback must be suitable for 10-13 year olds (encouraging, not harsh).
-
-**Practice generation**: Broad coverage of writing skills (thesis, organization, transitions, evidence, grammar) based on identified gaps.
-
-## What NOT to Do
-
-- Don't make this a fixed workflow (same path every time)
-- Don't add agents without clear justification (rubric penalizes over-engineering)
-- Don't predetermine V1 failures or present scripted evidence as real test results
-- Don't add production features (auth, multi-user, complex state persistence) unless required
-- Don't spend excessive time on UI polish at expense of agent behavior quality
-- Don't route to `support_agent` as a safety fallback — unclear/malformed state routes to `ask_clarification`
-- Don't improvise crisis hotline numbers or keyword-based crisis detection — flag for teacher only and label the handoff as simulated
-
-## Reference Documents
-
-- **PRD.md**: Complete product requirements (read first)
-- **project_plan.md**: Assignment strategy and rubric mapping
-- **EDUC_6192_Fall_2026_Syllabus.md**: Assignment requirements and grading criteria
-
-When in doubt about design decisions, consult PRD Section 4 (Architecture) and Section 8 (V1 vs V2 Strategy).
+The assignment requires all eight submission items in `EDUC_6192_Fall_2026_Syllabus.md`, real V1 review, evidence-based V2 changes, JeepyTA feedback reviewed with judgment, application access, and an AI Use Acknowledgment. Keep `PRD.md`, `project_plan.md`, `AGENTS.md`, and this file consistent with actual behavior.
