@@ -5,7 +5,13 @@ import pytest
 from agents.utils import InputValidationError, ResponseValidationError
 from langgraph_core.graph import create_writing_assistant_service
 from langgraph_core.state import make_initial_state
-from tests.helpers import FakeClient, coordinator_payload, support_payload
+from tests.helpers import (
+    FakeClient,
+    coordinator_payload,
+    coordinator_payload_v2,
+    support_payload,
+    support_payload_v2,
+)
 
 
 def state_for(route="support_agent", debug=False):
@@ -180,3 +186,82 @@ def test_delete_session_removes_history_and_checkpoint(tmp_path):
 
     assert service.list_runs(session_id) == []
     assert service.checkpointer.get_tuple(config) is None
+
+
+def test_v2_graph_records_repair_calls_and_choice_based_support(tmp_path):
+    client = FakeClient(
+        [
+            "malformed",
+            coordinator_payload_v2(),
+            support_payload_v2(include_practice=False),
+            support_payload_v2(),
+        ]
+    )
+    service = create_writing_assistant_service(
+        client, str(tmp_path / "app.db"), version="v2"
+    )
+    session_id, thread_id = session_and_thread()
+    state = state_for(debug=True)
+    state["app_version"] = "v2"
+    state["affect_check_in"] = "unsure"
+
+    result = service.start_run(session_id, thread_id, state)
+
+    assert result.pending is False
+    assert result.state["revision_need"] == "standard"
+    assert result.state["coordinator_repair_count"] == 1
+    assert len(result.state["practice_exercises"]) == 2
+    assessment_log = result.state["execution_logs"][0]
+    assert assessment_log["api_calls"] == 2
+    assert len(assessment_log["raw_responses"]) == 2
+    support_log = result.state["execution_logs"][1]
+    assert support_log["api_calls"] == 2
+    assert len(support_log["raw_responses"]) == 2
+    assert service.get_run(thread_id).status == "completed"
+
+
+def test_initial_state_rejects_invalid_grade_level():
+    with pytest.raises(ValueError, match="grade level"):
+        make_initial_state("Synthetic writing", "4th Grade")
+
+
+def test_initial_state_rejects_invalid_affect_check_in():
+    with pytest.raises(ValueError, match="affect"):
+        make_initial_state("Synthetic writing", "6th Grade", affect_check_in="angry")
+
+
+def test_v2_frustrated_boundary_b_reaches_teacher_review(tmp_path):
+    from ui.components import load_fixture
+
+    fixture = load_fixture("Boundary B: revision frustration")
+    client = FakeClient(
+        [
+            coordinator_payload_v2(
+                "teacher_review",
+                teacher_flag_category="frustration",
+                teacher_flag_reason="The writer reports repeated revision frustration.",
+                teacher_evidence=["I have revised this so many times."],
+            )
+        ]
+    )
+    service = create_writing_assistant_service(
+        client, str(tmp_path / "app.db"), version="v2"
+    )
+    session_id, thread_id = session_and_thread()
+    state = make_initial_state(
+        fixture.writing,
+        fixture.grade_level,
+        assignment_context=fixture.assignment_context,
+        student_concerns=fixture.student_concerns,
+        app_version="v2",
+        affect_check_in="frustrated",
+    )
+
+    result = service.start_run(session_id, thread_id, state)
+
+    assert result.state["affect_check_in"] == "frustrated"
+    assert result.state["routing_decision"] == "teacher_review"
+    assert result.state["teacher_flag_category"] == "frustration"
+    assert result.state["agent_path"] == ["Assessment Coordinator", "Teacher Review"]
+    assert "put a lot of effort" in result.state["student_output"]
+    assert '"affect_check_in": "frustrated"' in client.calls[0][0][1]["content"]

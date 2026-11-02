@@ -21,7 +21,7 @@ def get_runtime(database_path: str, version: str):
 
 def main() -> None:
     database_path = os.getenv("DATABASE_PATH", "data/writing_assistant.db")
-    version = os.getenv("APP_VERSION", "v1")
+    version = os.getenv("APP_VERSION", "v2")
     try:
         client, service = get_runtime(database_path, version)
     except ConfigurationError as exc:

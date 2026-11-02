@@ -16,6 +16,8 @@ TeacherFlagCategory = Literal[
     "frustration",
     "clarification_limit",
 ]
+AffectCheckIn = Literal["", "ready", "unsure", "frustrated"]
+RevisionNeed = Literal["not_applicable", "light_touch", "standard"]
 
 
 class ClarificationTurn(TypedDict):
@@ -28,6 +30,7 @@ class WritingAssistantState(TypedDict):
     grade_level: GradeLevel
     assignment_context: str
     student_concerns: str
+    affect_check_in: AffectCheckIn
     app_version: str
     debug_enabled: bool
     clarification_history: list[ClarificationTurn]
@@ -40,6 +43,7 @@ class WritingAssistantState(TypedDict):
     missing_context: NotRequired[bool]
     unclear_intent: NotRequired[bool]
     no_issues_found: NotRequired[bool]
+    revision_need: NotRequired[RevisionNeed]
     strengths: NotRequired[list[str]]
     issues: NotRequired[list[dict[str, Any]]]
     skill_gaps: NotRequired[list[str]]
@@ -52,6 +56,7 @@ class WritingAssistantState(TypedDict):
     needs_practice: NotRequired[bool]
     coordinator_decision: NotRequired[str]
     coordinator_reasoning: NotRequired[str]
+    coordinator_repair_count: NotRequired[int]
     clarification_question: NotRequired[str]
 
     feedback_type: NotRequired[Literal["scaffolded", "direct"]]
@@ -70,14 +75,18 @@ def make_initial_state(
     student_concerns: str = "",
     app_version: str = "v1",
     debug_enabled: bool = False,
+    affect_check_in: AffectCheckIn = "",
 ) -> WritingAssistantState:
     if grade_level not in ("5th Grade", "6th Grade", "7th Grade"):
         raise ValueError("Unsupported grade level.")
+    if affect_check_in not in ("", "ready", "unsure", "frustrated"):
+        raise ValueError("Unsupported affect check-in.")
     return {
         "writing": validate_writing_input(writing),
         "grade_level": grade_level,
         "assignment_context": assignment_context.strip(),
         "student_concerns": student_concerns.strip(),
+        "affect_check_in": affect_check_in,
         "app_version": app_version,
         "debug_enabled": debug_enabled,
         "clarification_history": [],

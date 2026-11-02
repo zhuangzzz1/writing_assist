@@ -23,6 +23,10 @@ from ui.components import (
 from ui.observability import render_observability
 
 
+def _debug_enabled() -> bool:
+    return os.getenv("ENABLE_DEBUG_MODE", "false").strip().lower() == "true"
+
+
 def _session_id() -> str:
     value = st.query_params.get("session_id")
     if isinstance(value, str):
@@ -30,7 +34,10 @@ def _session_id() -> str:
             uuid.UUID(value)
             return value
         except ValueError:
-            pass
+            st.warning(
+                "The session ID in the URL was not recognized. A new session has been "
+                "started and prior history is not visible."
+            )
     value = uuid.uuid4().hex
     st.query_params["session_id"] = value
     return value
@@ -48,6 +55,7 @@ def _new_blank_analysis() -> None:
     st.session_state.grade_level = "6th Grade"
     st.session_state.assignment_context_input = ""
     st.session_state.student_concerns_input = ""
+    st.session_state.affect_check_in = ""
     st.session_state.loaded_fixture = None
 
 
@@ -75,8 +83,9 @@ def _show_error(error: Exception) -> None:
     elif isinstance(error, InputValidationError):
         st.warning(str(error))
     elif isinstance(error, ResponseValidationError):
-        st.error(f"The AI returned an incomplete response: {error}")
-        st.info("Try the analysis again. No writing feedback was generated.")
+        st.error("The feedback could not be completed. Please try the analysis again.")
+        if _debug_enabled():
+            st.caption(f"Debug: {error}")
     elif isinstance(error, APIError):
         st.error(str(error))
         st.info("This may be temporary. Try again in a moment.")
@@ -84,7 +93,7 @@ def _show_error(error: Exception) -> None:
         st.error(str(error))
     else:
         st.error("An unexpected error stopped the analysis.")
-        if os.getenv("ENABLE_DEBUG_MODE", "false").lower() == "true":
+        if _debug_enabled():
             st.exception(error)
 
 
@@ -95,6 +104,7 @@ def _start_analysis(service: WritingAssistantService, session_id: str) -> None:
             grade_level=st.session_state.get("grade_level", "6th Grade"),
             assignment_context=st.session_state.get("assignment_context_input", ""),
             student_concerns=st.session_state.get("student_concerns_input", ""),
+            affect_check_in=st.session_state.get("affect_check_in", ""),
             app_version=service.version,
             debug_enabled=st.session_state.get("capture_debug", False),
         )
@@ -150,6 +160,19 @@ def _render_input(service: WritingAssistantService, session_id: str) -> None:
             height=90,
             placeholder="What would you like help with?",
         )
+        if service.version == "v2":
+            st.selectbox(
+                "How do you feel about this draft? (optional)",
+                options=["", "ready", "unsure", "frustrated"],
+                format_func={
+                    "": "Skip this question",
+                    "ready": "I'm ready to revise",
+                    "unsure": "I feel a little unsure",
+                    "frustrated": "I feel frustrated or stuck",
+                }.get,
+                key="affect_check_in",
+                help="Your choice helps the coordinator and Support Agent respond appropriately. It is not an emotion diagnosis.",
+            )
         submitted = st.form_submit_button(
             "Analyze Writing", key="analyze_writing", type="primary"
         )
@@ -188,15 +211,21 @@ def _render_main(service: WritingAssistantService, session_id: str) -> None:
     _render_input(service, session_id)
     viewed_record = st.session_state.get("viewed_record")
     if viewed_record and viewed_record.status == "failed":
-        st.error(f"Saved run failed: {viewed_record.error or 'Unknown error'}")
+        st.error("This saved analysis could not be completed. Please try the analysis again.")
+        if _debug_enabled() and viewed_record.error:
+            st.caption(f"Debug: {viewed_record.error}")
         return
 
     state = invocation.state if invocation else viewed_record.state if viewed_record else None
     if state and not invocation_pending(invocation):
         st.divider()
+        result_id = "current"
         if viewed_record:
+            result_id = viewed_record.thread_id
             st.caption(f"Viewing saved run {viewed_record.thread_id[:8]}")
-        render_student_result(state)
+        elif invocation:
+            result_id = invocation.thread_id
+        render_student_result(state, result_id)
 
 
 def invocation_pending(invocation: InvocationResult | None) -> bool:
@@ -209,7 +238,8 @@ def _render_sidebar(
     session_id: str,
 ) -> dict:
     st.sidebar.header("Controls")
-    st.sidebar.markdown("**Agent-Based Application Version 1**")
+    version_number = 2 if service.version == "v2" else 1
+    st.sidebar.markdown(f"**Agent-Based Application Version {version_number}**")
     st.sidebar.caption(
         f"Model: {client.model} | Thinking: {'on' if client.thinking else 'off'}"
     )
@@ -242,13 +272,17 @@ def _render_sidebar(
         "show_state": st.sidebar.checkbox("Show final state", value=True, key="show_state"),
         "show_timing": st.sidebar.checkbox("Show timing", value=True, key="show_timing"),
         "show_logs": st.sidebar.checkbox("Show logs", value=False, key="show_logs"),
-        "show_prompts": st.sidebar.checkbox(
-            "Show captured prompts/responses", value=False, key="show_prompts"
-        ),
+        "show_prompts": False,
     }
-    st.sidebar.checkbox(
-        "Capture prompts/responses on new runs", value=False, key="capture_debug"
-    )
+    if _debug_enabled():
+        options["show_prompts"] = st.sidebar.checkbox(
+            "Show captured prompts/responses", value=False, key="show_prompts"
+        )
+        st.sidebar.checkbox(
+            "Capture prompts/responses on new runs", value=False, key="capture_debug"
+        )
+    else:
+        st.session_state.capture_debug = False
 
     st.sidebar.divider()
     st.sidebar.subheader("Run history")

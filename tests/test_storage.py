@@ -36,3 +36,9 @@ def test_error_and_manual_deletion_are_persistent(tmp_path):
     reopened = SQLiteStorage(database)
     assert reopened.delete_session("session-a") == [thread_id]
     assert reopened.get_run(thread_id) is None
+
+
+def test_delete_session_with_no_runs_returns_empty_list(tmp_path):
+    storage = SQLiteStorage(str(tmp_path / "history.db"))
+
+    assert storage.delete_session("missing-session") == []

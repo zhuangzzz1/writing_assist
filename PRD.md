@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # Multi-Agent Writing Assistant for 5th-7th Grade Students
 
-**Version**: 1.3
+**Version**: 1.4
 **Date**: 2026-11-02
 **Course**: EDUC 6192 - LLM and Education (UPenn GSE)
 **Assignment**: Applied Assignment 4 - Agent-based Educational Application
@@ -149,7 +149,7 @@ Input -> Assessment Coordinator -> conditional route
 
 Clarification uses LangGraph `interrupt()` and resumes the exact checkpoint through `Command(resume=...)` with a stable thread ID and SQLite checkpointer. If two answers leave intent unclear, the coordinator's next clarification request is converted to non-safety `teacher_review` with category `clarification_limit`; no third question is asked.
 
-Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates, not another LLM call. Normal support always includes feedback and adds one targeted exercise when `needs_practice` is true.
+Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates, not another LLM call. Normal support always includes feedback. V1 adds one targeted exercise when `needs_practice` is true. V2 returns one light-touch priority without practice or two to three standard choices, with one pregenerated optional exercise per standard choice when requested; learner selection is a post-graph UI concern and does not add a model call.
 
 **Routing Logic**:
 ```python
@@ -233,6 +233,7 @@ class WritingAssistantState(TypedDict):
 - Optional UI text is initialized to `""`; branch outputs use `NotRequired` and are read with `state.get()`.
 - Clarification history and execution logs use replacement lists rather than additive reducers so interrupt node replay cannot duplicate entries.
 - `coordinator_reasoning` is a concise rationale in the validated final JSON, not hidden chain-of-thought.
+- V2 adds `affect_check_in`, `revision_need`, and `coordinator_repair_count`. V2 priorities include a target `skill`, and each pregenerated exercise stores `priority_index` for UI selection. Execution logs include `api_calls`; repair responses are captured only when debug capture is enabled.
 
 ### 4.4 Why Multi-Agent is Justified
 
@@ -388,8 +389,9 @@ The following fields are sent to the DeepSeek API as part of coordinator/support
 - `grade_level`
 - `assignment_context` (assignment type, full prompt, or empty)
 - `student_concerns` (if provided)
-- `clarification_history` (coordinator reassessment, when present)
-- Coordinator-identified strengths, issues, skill gaps, and concise rationale (Support Agent handoff)
+- `affect_check_in` (V2 optional self-report: empty/skipped, ready, unsure, or frustrated)
+- `clarification_history` (coordinator reassessment and V2 Support handoff, when present)
+- Coordinator-identified strengths, issues, skill gaps, concise rationale, and V2 revision need (Support Agent handoff)
 
 Removing student identifiers does not de-identify the writing content itself. Use synthetic writing only.
 
@@ -459,7 +461,7 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 - Fixed active-version label (V1 during this milestone); V1 is preserved by a Git tag, not a runtime selector
 - Grade level: Dropdown (5th / 6th / 7th Grade)
 - Test case loader: Buttons (Load Normal / Incomplete / Boundary A / Boundary B)
-- Debug options: State, timing, logs, captured prompts/responses, and opt-in capture on new runs
+- Debug options: State, timing, and logs; captured prompt/response controls and opt-in capture on new runs require server-side debug mode
 - Persistent run history: Compact table and saved-run loader for completed or pending runs
 - Manual current-session data deletion with confirmation
 
@@ -758,7 +760,41 @@ Current Parts 1–3 drafts and nine cropped evidence figures are in `submission/
 2. The normal-case practice's worked example directly supplied a thesis for the student's own essay, even though the exercise asked the student to produce that sentence. Review whether examples should use a different topic to preserve student practice.
 3. The strong narrative still received three improvement priorities. They were specific and encouraging, but human review should decide whether this volume is appropriate for near-perfect writing.
 
-No V2 revisions have been made. These observations are candidates for the required human V1 review, not scripted evidence or preselected fixes.
+These were the observations available at the time of the V1 human review, not scripted evidence or preselected fixes. The resulting V2 revisions and final outcomes are documented in Section 7.6.
+
+### 7.6 Final V2 Verification Results
+
+V2 was implemented after the Part 3 human review and preservation of V1 at commit `4eaa0ad` under annotated tag `v1`. The final comparison set used the same frozen fixtures and V1 supplementary inputs with `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode. Prompt/raw-response capture was enabled. These are small synthetic scenario observations, not general model-quality or learner-outcome claims.
+
+| Case | Actual final V2 result |
+| --- | --- |
+| Normal frozen fixture | `support_agent`, `standard`; 2 learner focus choices and 2 pregenerated optional practices; 3 API calls including 1 coordinator repair; 8.68 seconds of node time |
+| Incomplete frozen fixture | 1 specific clarification, then `support_agent`, `standard`, after the first saved V1 answer; 2 choices and 2 practices; 4 API calls including 1 reassessment repair; 10.54 seconds |
+| Boundary A | `teacher_review` / `concerning_content`; separate student/teacher outputs and no Support Agent or writing critique; 1 API call; 2.07 seconds |
+| Boundary B | `teacher_review` / `frustration`; effort acknowledgment and human follow-up without critique; 1 API call; 2.72 seconds |
+| Same strong garden narrative as V1 | `support_agent`, `light_touch`; 1 optional priority and no practice; 2 API calls; 4.30 seconds |
+| Same clarification-limit input and answers | Two unclear answers followed by `teacher_review` / `clarification_limit`; no third question; 4 API calls including 1 coordinator repair; 6.28 seconds |
+| Supplementary `unsure` check-in | Support with a brief acknowledgment and 1 light-touch thesis focus; no practice; 2 API calls; 3.68 seconds |
+| Supplementary `frustrated` check-in | Support with a brief acknowledgment and 1 light-touch narrative focus; no practice; 2 API calls; 4.15 seconds |
+
+The final run session is `d63ccfadc8294aa5b528309461ca2c52`. Run states, checkpoints, prompts, and raw responses are in git-ignored `data/v2_official.db`. The consistent final output summary is `data/evidence/v2_final_release_summary.json`. Earlier candidate summaries remain development evidence and are not the final comparison baseline.
+
+**Direct V1→V2 observations**:
+
+1. **Clarification**: V1 used two student answers, four API calls, and a generic validation-fallback question before support. V2 used one answer and reached appropriate scaffolded support without a generic redundant question. V2 also used four calls because one reassessment required repair, so the improvement is fewer learner turns and better continuity—not lower latency or call count.
+2. **Practice and agency**: V1's normal-case worked example supplied a thesis for the student's own uniforms exercise. Final V2 offered thesis and evidence-framing choices; its optional thesis practice used a different cooking example, and the survey example was explicitly hypothetical. Learner selection changes only the UI presentation and makes no additional model call.
+3. **Strong-draft volume**: V1 returned three priorities for the garden narrative. Final V2 returned one optional reflective priority without practice. Direct response remains reserved for drafts with no actionable issues.
+4. **Affect and motivation-oriented design**: The optional self-report produced a brief acknowledgment and lighter support in the two supplementary checks. This supports autonomy and manageable action at the design/output level. It does not demonstrate improved learner motivation, affect, engagement, or learning outcomes.
+5. **Boundaries and stopping**: Both frozen boundary cases retained their correct separate teacher-review paths. The separate unresolved-clarification case stopped after two unclear answers rather than inferring a support goal.
+
+**Development observations and remaining limitations**:
+
+- A real development coordinator response omitted `clarification_question`; the bounded repair corrected it. Another development run failed when Support omitted a required choice-specific exercise, which motivated the addition of one bounded Support repair. V1 behavior and prompts remain preserved separately.
+- Intermediate V2 candidates exposed redundant clarification, premature support, excessive affect-related feedback, and invented or answer-revealing examples. Prompt revisions were retested; only the final consistent set is reported in the table.
+- The final incomplete-case evidence exercise asks the learner to explain a hypothetical survey but also supplies an explanation in its worked example. Non-answer scaffolding therefore remains **not fully reliable**, even though the normal-case examples improved. This limitation must appear in Part 4 rather than being hidden.
+- Temperature 0 does not guarantee identical outputs. The real scenarios establish behavior in this sample only. No real learners were studied.
+- Browser verification restored actual saved V2 runs, displayed the frustrated learner's single focus, and exercised normal-case focus and optional practice selection without another model call. Captures are `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
+- JeepyTA review, Part 4–6 documents, deployment, deployed scenario verification, and rubric completion remain unverified.
 
 ---
 
@@ -768,22 +804,18 @@ No V2 revisions have been made. These observations are candidates for the requir
 
 Build V1 as a genuine best effort with reasonable design choices. Do not deliberately introduce deficiencies. Test it against the three frozen test cases, observe what actually goes wrong, and document those real problems for V2.
 
-Actual V1 outcomes and candidate problems are recorded in Section 7.5; they are the authoritative review baseline rather than hypothetical examples. The retained evidence includes the implemented graph, V1 prompts and state schema, real run history, execution details, and screenshots of the required scenarios. No V2 changes have been selected or made.
+Actual V1 outcomes and candidate problems are recorded in Section 7.5; they are the authoritative review baseline rather than hypothetical examples. The retained evidence includes the implemented graph, V1 prompts and state schema, real run history, execution details, and screenshots of the required scenarios. V2 changes and final outcomes are recorded in Section 7.6.
 
 ### 8.2 Version 2 Improvements
 
-Revisions are made based on problems actually observed in V1 testing. The following are the *target improvement areas* — the specific fixes will depend on what is observed.
+V2 kept the two agents and four graph routes while making these evidence-driven revisions:
 
-**Target Area 1: Feedback volume and priority**
-- If V1 generates too many feedback points at once, V2 applies **progressive disclosure**: generate all feedback in one response, but surface 2-3 priority items prominently and place additional detail in a collapsible expander.
-- This is not staged/multi-turn — all content is generated in one LLM call; the UI controls what is shown first.
+1. **Clarification reliability and specificity**: separate V2 prompts, one bounded coordinator repair, context-sensitive fallback, explicit initial-versus-resumed outline rules, and clarification history in the Support handoff. Clear drafting requests can receive scaffolded support without a complete draft; vague non-answers retain the stopping limit.
+2. **Calibrated feedback and learner agency**: `light_touch` produces one optional priority without practice; `standard` produces two or three choices with all scaffolds and requested exercises pregenerated in one Support call. The learner selects a focus and optional practice in Streamlit without another model call.
+3. **Motivation and affect-oriented design**: an optional ready/unsure/frustrated self-report can inform acknowledgment and reduce unnecessary feedback load. It is not emotion inference, gamification, or evidence of learner outcomes. Boundary B still routes to human review.
+4. **Practice quality and reliability**: examples must use different topics, preserve learner attempts, label hypothetical data, avoid fabricated sources, and use self-checks. One bounded Support repair handles malformed output. The remaining final-run practice limitation is documented in Section 7.6.
 
-**Target Area 2: Clarification specificity**
-- If V1 clarification questions are generic, V2 improves the Assessment Coordinator prompt to identify *what specifically* is missing and ask about it.
-- Example improvement: "I see you've shared an outline. Are you looking for help turning this into paragraphs, or feedback on your thesis statement?" vs. "I need more information."
-
-**Target Area 3: Teacher-flagging transparency**
-- If V1 teacher-flag messages lack clear reasoning, V2 structures the teacher-review node output into two distinct parts: a student-facing supportive message and a teacher-facing evidence summary.
+Teacher review retains the V1 separate student/teacher outputs because Part 3 found that behavior appropriate; it was not changed merely to create an improvement claim.
 
 ### 8.3 Before-and-After Documentation
 
@@ -867,9 +899,9 @@ DEEPSEEK_API_KEY=your_api_key_here
 DEEPSEEK_API_BASE=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-flash
 DEEPSEEK_THINKING=false
-APP_VERSION=v1
+APP_VERSION=v2
 LOG_LEVEL=INFO
-ENABLE_DEBUG_MODE=true
+ENABLE_DEBUG_MODE=false
 DATABASE_PATH=data/writing_assistant.db
 ```
 
@@ -881,13 +913,13 @@ DATABASE_PATH=data/writing_assistant.db
 - Thinking requests send `thinking: {"type": "enabled"}` and `reasoning_effort: "high"`, and omit temperature because DeepSeek ignores it in thinking mode.
 - Both agent calls request `response_format: {"type": "json_object"}` and validate the returned final content with Pydantic.
 - `reasoning_content` is not read or persisted. Coordinator rationale comes from the final JSON.
-- Prototyping defaults to non-thinking. A small real smoke comparison must select and freeze the official mode before V1 evidence; the same mode is then used for V2 and deployment.
+- Official V1 and V2 comparisons use the frozen non-thinking temperature-0 configuration; the same mode remains required for deployment comparisons.
 
 ### 9.4 Error Handling Strategy
 
-`agents/utils.py` defines `WritingAssistantError`, `ConfigurationError`, `APIError`, `RateLimitError`, `AuthError`, `InputValidationError`, and `ResponseValidationError`. `ui/layout.py` converts them into student-safe Streamlit messages; unexpected exception details appear only when `ENABLE_DEBUG_MODE=true`.
+`agents/utils.py` defines `WritingAssistantError`, `ConfigurationError`, `APIError`, `RateLimitError`, `AuthError`, `InputValidationError`, and `ResponseValidationError`. `ui/layout.py` converts them into student-safe Streamlit messages. Response-validation details for current and saved failed runs, plus unexpected exception details, appear only when `ENABLE_DEBUG_MODE=true`. Debug mode gates prompt capture/display controls; captured raw prompt and response fields are omitted from final-state and execution-log views unless prompt display is selected.
 
-`WritingAssistantService` records failed runs and elapsed invocation time in SQLite. Empty input is rejected before creating a run. Every nonempty input reaches the coordinator so safety assessment precedes length-based clarification. Coordinator validation failures use safe clarification fallback; a raw teacher flag is preserved even when other fields are malformed. Support schema failures stop the run without presenting partial feedback. Automatic retries and fallback generation are not in V1.
+`WritingAssistantService` records failed runs and elapsed invocation time in SQLite. Empty input is rejected before creating a run. Every nonempty input reaches the coordinator so safety assessment precedes length-based clarification. V1 coordinator validation failures use safe clarification fallback, and V1 Support schema failures stop the run without partial feedback. V2 permits one bounded schema-repair call per agent invocation. A raw teacher flag is preserved immediately even when other fields are malformed. If both coordinator attempts fail, V2 uses context-sensitive safe clarification; if both Support attempts fail, no partial feedback is shown. Successful repair logs retain all raw responses when capture is enabled, and observability sums actual `api_calls` values.
 
 ### 9.5 Performance Considerations
 
@@ -931,13 +963,13 @@ DATABASE_PATH=data/writing_assistant.db
 - [x] Run all frozen fixtures and documented edge cases with that configuration
 - [x] Document actual V1 behavior and capture real dashboard screenshots/logs in Section 7.5
 - [x] Record three candidate problems for human V1 review without committing to V2 fixes
-- [ ] Preserve reviewed V1 with a Git tag (requires a commit/tag decision after review)
+- [x] Preserve reviewed V1 at commit `4eaa0ad` under annotated tag `v1`
 
 **Milestone 4: Evidence-driven V2**
-- [ ] Revise only based on observed V1 problems and keep V1/V2 prompts separate
+- [x] Revise based on observed V1 problems and real V2 development failures; keep V1/V2 prompts separate
 - [ ] Submit a draft to JeepyTA before finalizing V2 and review suggestions with judgment
-- [ ] Rerun identical fixtures with the frozen model configuration
-- [ ] Document actual before-and-after evidence and any remaining problems
+- [x] Rerun identical fixtures with the frozen model configuration
+- [x] Document actual before-and-after evidence and remaining problems in Section 7.6; the Part 4 submission document is still pending
 
 **Milestone 5: Deployment and submission**
 - [ ] Deploy the active V2 app to Streamlit Cloud and test it
@@ -1168,20 +1200,22 @@ DATABASE_PATH=data/writing_assistant.db
 - v1.1 (2026-11-01): Applied corrections from external review, validation, and corrected fix list
 - v1.2 (2026-11-01): Applied fixes from FIX_APPLICATION_REVIEW.md
 - v1.3 (2026-11-02): Reconciled the PRD with locked V1 decisions, the implemented application, and actual V1 verification results
+- v1.4 (2026-11-02): Documented implemented V2 behavior, final real scenario/browser evidence, and remaining limitations
 
 **Approval and Current Status**:
-- [x] Technical feasibility reviewed
-- [x] Rubric alignment reviewed (criteria are targets, not yet satisfied)
-- [x] V1 implementation and automated mocked-model suite completed
-- [x] Real API, frozen-fixture, edge-case, and browser evidence completed
-- [x] Candidate V1 problems recorded for human review
-- [ ] Human V1 review, Git tag, deployment, and V2 completed
+- [x] Technical feasibility and rubric alignment reviewed; rubric completion is not claimed
+- [x] V1 implementation and human review completed; V1 preserved at commit `4eaa0ad` under annotated tag `v1`
+- [x] V2 implementation completed with separate prompts/schemas and the existing two-agent/four-route graph
+- [x] Current 79-check mocked-model suite, final real scenario set, and local browser evidence completed
+- [x] Actual V1/V2 outcomes and remaining practice limitation documented in Sections 7.5–7.6
+- [x] V2 changes committed locally
+- [ ] V2 push, JeepyTA review, Parts 4–6, deployment, deployed verification, and final submission
 
 **Next Steps**:
-1. Review the actual V1 outcomes and candidate problems in Section 7.5
-2. Decide which observed problems should drive V2 changes
-3. Commit and tag the reviewed V1 baseline before making V2 behavior changes
-4. Complete evidence-driven V2, deployment, JeepyTA review, and submission documentation
+1. Draft Part 4 with actual side-by-side V1/V2 evidence and the remaining practice limitation
+2. Submit the V2 draft to JeepyTA and evaluate actual suggestions with judgment
+3. Push the V1/V2 commits and `v1` tag, then deploy the active V2 app and verify required scenarios
+4. Complete Parts 5–6, application access, the AI Use Acknowledgment, and redacted final submission materials
 
 ---
 

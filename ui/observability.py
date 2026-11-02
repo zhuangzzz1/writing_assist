@@ -24,7 +24,19 @@ def render_observability(state: dict | None, options: dict) -> None:
             st.write(state["coordinator_reasoning"])
 
     logs = state.get("execution_logs", [])
-    api_calls = sum(1 for log in logs if log.get("api_call"))
+    visible_logs = logs
+    if not options["show_prompts"]:
+        visible_logs = [
+            {
+                key: value
+                for key, value in log.items()
+                if key not in {"prompt", "raw_response", "raw_responses"}
+            }
+            for log in logs
+        ]
+    api_calls = sum(
+        log.get("api_calls", 1 if log.get("api_call") else 0) for log in logs
+    )
     total_ms = sum(log.get("duration_ms", 0) for log in logs)
     if options["show_timing"]:
         metric_columns = st.columns(3)
@@ -44,17 +56,19 @@ def render_observability(state: dict | None, options: dict) -> None:
                 if "prompt" in log:
                     st.markdown("**Prompt**")
                     st.json(log["prompt"])
-                    st.markdown("**Raw model response**")
-                    st.code(log.get("raw_response", ""))
+                    responses = log.get("raw_responses", [log.get("raw_response", "")])
+                    for response_index, response in enumerate(responses, start=1):
+                        st.markdown(f"**Raw model response {response_index}**")
+                        st.code(response)
                 elif log.get("api_call"):
                     st.caption("Prompt capture was disabled for this run.")
 
     if options["show_state"]:
         with st.expander("Final state and state changes"):
-            st.json(state, expanded=False)
+            st.json({**state, "execution_logs": visible_logs}, expanded=False)
     if options["show_logs"]:
         with st.expander("Execution logs"):
-            st.json(logs, expanded=False)
+            st.json(visible_logs, expanded=False)
 
     if state.get("teacher_message"):
         with st.expander("Teacher-facing evidence (evaluator view)", expanded=True):

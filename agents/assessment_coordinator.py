@@ -52,11 +52,30 @@ class AssessmentOutput(BaseModel):
         return self
 
 
+class AssessmentOutputV2(AssessmentOutput):
+    revision_need: Literal["not_applicable", "light_touch", "standard"]
+
+    @model_validator(mode="after")
+    def check_revision_need(self):
+        if self.routing_decision == "support_agent":
+            if self.revision_need == "not_applicable":
+                raise ValueError("Support routes require light_touch or standard revision need.")
+            if self.revision_need == "light_touch" and len(self.issues) != 1:
+                raise ValueError("Light-touch support requires exactly one issue.")
+        elif self.revision_need != "not_applicable":
+            raise ValueError("Non-support routes require not_applicable revision need.")
+        return self
+
+
 @dataclass
 class AssessmentResult:
     values: dict[str, Any]
-    raw_response: str
+    raw_responses: list[str]
     messages: list[dict[str, str]]
+
+    @property
+    def raw_response(self) -> str:
+        return self.raw_responses[-1]
 
 
 class AssessmentCoordinator:
@@ -72,6 +91,8 @@ class AssessmentCoordinator:
             "student_concerns": state.get("student_concerns", ""),
             "clarification_history": state.get("clarification_history", []),
         }
+        if self.version == "v2":
+            payload["affect_check_in"] = state.get("affect_check_in", "")
         return [
             {"role": "system", "content": PROMPTS[self.version]["coordinator"]},
             {
@@ -82,8 +103,21 @@ class AssessmentCoordinator:
         ]
 
     @staticmethod
-    def _fallback_values() -> dict[str, Any]:
-        return {
+    def _fallback_values(state: WritingAssistantState | None = None) -> dict[str, Any]:
+        question = (
+            "Is this a complete draft you want feedback on, or an outline or idea "
+            "you want help developing?"
+        )
+        history = state.get("clarification_history", []) if state else []
+        if history:
+            answer = history[-1].get("answer", "").strip()
+            if len(answer) > 180:
+                answer = answer[:177].rstrip() + "..."
+            question = (
+                f'You explained: "{answer}" Which should I focus on first: developing '
+                "your ideas, organizing your paragraphs, or improving your sentences?"
+            )
+        values = {
             "writing_complete": False,
             "missing_context": True,
             "unclear_intent": True,
@@ -102,11 +136,11 @@ class AssessmentCoordinator:
                 "The assessment response could not be validated, so the safe fallback "
                 "is to clarify the student's goal."
             ),
-            "clarification_question": (
-                "Is this a complete draft you want feedback on, or an outline or idea "
-                "you want help developing?"
-            ),
+            "clarification_question": question,
         }
+        if state and state.get("app_version") == "v2":
+            values["revision_need"] = "not_applicable"
+        return values
 
     @staticmethod
     def _safety_fallback(raw: dict[str, Any]) -> dict[str, Any]:
@@ -149,7 +183,7 @@ class AssessmentCoordinator:
         elif route == "support_agent":
             values["needs_feedback"] = True
             values["no_issues_found"] = False
-            if not values["skill_gaps"]:
+            if not values["skill_gaps"] or values.get("revision_need") == "light_touch":
                 values["needs_practice"] = False
         elif route == "direct_response":
             values["no_issues_found"] = True
@@ -158,27 +192,65 @@ class AssessmentCoordinator:
         else:
             values["needs_feedback"] = False
             values["needs_practice"] = False
+        if "revision_need" in values and route != "support_agent":
+            values["revision_need"] = "not_applicable"
         values["coordinator_decision"] = route
         return values
+
+    def _values_from_response(self, raw_response: str) -> dict[str, Any]:
+        raw = parse_json_object(raw_response)
+        output_class = AssessmentOutputV2 if self.version == "v2" else AssessmentOutput
+        if raw.get("flag_teacher") is True:
+            try:
+                assessment = output_class.model_validate(raw)
+            except ValidationError:
+                return self._safety_fallback(raw)
+        else:
+            assessment = output_class.model_validate(raw)
+        return assessment.model_dump()
 
     def run(self, state: WritingAssistantState) -> AssessmentResult:
         messages = self._messages(state)
         raw_response = self.client.chat_completion(messages, json_mode=True)
+        raw_responses = [raw_response]
+        repair_count = 0
         try:
-            raw = parse_json_object(raw_response)
-            if raw.get("flag_teacher") is True:
-                try:
-                    assessment = AssessmentOutput.model_validate(raw)
-                    values = assessment.model_dump()
-                except ValidationError:
-                    values = self._safety_fallback(raw)
+            values = self._values_from_response(raw_response)
+        except (ResponseValidationError, ValidationError) as exc:
+            if self.version != "v2":
+                values = self._fallback_values()
             else:
-                assessment = AssessmentOutput.model_validate(raw)
-                values = assessment.model_dump()
-        except (ResponseValidationError, ValidationError):
-            values = self._fallback_values()
+                repair_count = 1
+                messages = [
+                    *messages,
+                    {"role": "assistant", "content": raw_response},
+                    {
+                        "role": "user",
+                        "content": (
+                            "The previous response failed validation. Return only a corrected "
+                            "complete JSON object that follows the system schema. Use the "
+                            "original submission and clarification history, preserve any "
+                            "teacher flag, and do not explain the correction. Validation error: "
+                            f"{str(exc)[:2000]}"
+                        ),
+                    },
+                ]
+                raw_response = self.client.chat_completion(messages, json_mode=True)
+                raw_responses.append(raw_response)
+                try:
+                    values = self._values_from_response(raw_response)
+                except (ResponseValidationError, ValidationError):
+                    values = self._fallback_values(state)
+                    values["coordinator_reasoning"] = (
+                        "The assessment and its single correction attempt could not be "
+                        "validated, so the safe fallback uses the existing clarification "
+                        "history to ask a context-sensitive question."
+                    )
+        if self.version == "v2":
+            values.setdefault("revision_need", "not_applicable")
+            values["coordinator_repair_count"] = repair_count
         return AssessmentResult(
             values=self._normalize(values),
-            raw_response=raw_response,
+            raw_responses=raw_responses,
             messages=messages,
         )

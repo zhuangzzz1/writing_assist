@@ -130,7 +130,7 @@ class DeepSeekClient:
 
 def parse_json_object(content: str) -> dict[str, Any]:
     stripped = content.strip()
-    if stripped.startswith("```json") and stripped.endswith("```"):
+    if stripped.lower().startswith("```json") and stripped.endswith("```"):
         stripped = stripped[7:-3].strip()
     elif stripped.startswith("```") and stripped.endswith("```"):
         stripped = stripped[3:-3].strip()

@@ -36,11 +36,29 @@ class SupportOutput(BaseModel):
     practice: PracticeOutput | None
 
 
+class PriorityOutputV2(PriorityOutput):
+    skill: str = Field(min_length=1)
+    practice: PracticeOutput | None
+
+
+class SupportOutputV2(BaseModel):
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    affect_acknowledgment: str
+    strengths: list[str] = Field(min_length=1, max_length=3)
+    priorities: list[PriorityOutputV2] = Field(min_length=1, max_length=3)
+
+
 @dataclass
 class SupportResult:
     values: dict[str, Any]
     raw_response: str
     messages: list[dict[str, str]]
+    raw_responses: list[str] | None = None
+
+    def __post_init__(self):
+        if self.raw_responses is None:
+            self.raw_responses = [self.raw_response]
 
 
 class InstructionalSupportAgent:
@@ -61,6 +79,14 @@ class InstructionalSupportAgent:
             "needs_practice": state.get("needs_practice", False),
             "coordinator_rationale": state.get("coordinator_reasoning", ""),
         }
+        if self.version == "v2":
+            payload.update(
+                {
+                    "affect_check_in": state.get("affect_check_in", ""),
+                    "revision_need": state.get("revision_need", "standard"),
+                    "clarification_history": state.get("clarification_history", []),
+                }
+            )
         return [
             {"role": "system", "content": PROMPTS[self.version]["support"]},
             {
@@ -87,6 +113,22 @@ class InstructionalSupportAgent:
         return "\n\n".join(lines)
 
     @staticmethod
+    def _format_feedback_v2(output: SupportOutputV2, acknowledgment: str) -> str:
+        lines = []
+        if acknowledgment:
+            lines.append(acknowledgment)
+        lines.append("## What is working well")
+        lines.extend(f"- {strength}" for strength in output.strengths)
+        lines.extend(
+            [
+                "\n## Choose your revision focus",
+                "Choose one useful next step. You do not need to complete every suggestion, "
+                "and you can change your choice.",
+            ]
+        )
+        return "\n\n".join(lines)
+
+    @staticmethod
     def _format_practice(practice: PracticeOutput) -> str:
         lines = [
             f"## Targeted practice: {practice.skill}",
@@ -101,9 +143,101 @@ class InstructionalSupportAgent:
         )
         return "\n\n".join(lines)
 
+    def _run_v2(
+        self,
+        state: WritingAssistantState,
+        messages: list[dict[str, str]],
+        raw_response: str,
+        raw_responses: list[str],
+    ) -> SupportResult:
+        try:
+            output = SupportOutputV2.model_validate(parse_json_object(raw_response))
+        except (ResponseValidationError, ValidationError) as exc:
+            raise ResponseValidationError(
+                "The Support Agent returned an invalid V2 feedback structure."
+            ) from exc
+
+        revision_need = state.get("revision_need", "standard")
+        if revision_need == "light_touch" and len(output.priorities) != 1:
+            raise ResponseValidationError(
+                "Light-touch support must contain exactly one revision priority."
+            )
+        if revision_need == "standard" and not 2 <= len(output.priorities) <= 3:
+            raise ResponseValidationError(
+                "Standard support must contain two or three revision priorities."
+            )
+        if state.get("needs_practice") and any(
+            priority.practice is None for priority in output.priorities
+        ):
+            raise ResponseValidationError(
+                "Each V2 revision choice must include its requested practice exercise."
+            )
+
+        affect = state.get("affect_check_in", "")
+        acknowledgment = output.affect_acknowledgment if affect in ("unsure", "frustrated") else ""
+        if affect in ("unsure", "frustrated") and not acknowledgment:
+            raise ResponseValidationError(
+                "The Support Agent did not acknowledge the student's self-reported affect."
+            )
+
+        feedback = self._format_feedback_v2(output, acknowledgment)
+        practice_exercises: list[dict[str, Any]] = []
+        option_lines = []
+        for index, priority in enumerate(output.priorities):
+            option_lines.append(f"- {priority.title}")
+            if state.get("needs_practice") and priority.practice is not None:
+                practice_exercises.append(
+                    {**priority.practice.model_dump(), "priority_index": index}
+                )
+        student_output = feedback + "\n\n" + "\n".join(option_lines)
+
+        return SupportResult(
+            values={
+                "feedback_type": "scaffolded",
+                "feedback_content": feedback,
+                "feedback_strengths": output.strengths,
+                "feedback_priorities": [
+                    priority.model_dump(exclude={"practice"})
+                    for priority in output.priorities
+                ],
+                "practice_exercises": practice_exercises,
+                "student_output": student_output,
+            },
+            raw_response=raw_response,
+            messages=messages,
+            raw_responses=raw_responses,
+        )
+
     def run(self, state: WritingAssistantState) -> SupportResult:
         messages = self._messages(state)
         raw_response = self.client.chat_completion(messages, json_mode=True)
+        if self.version == "v2":
+            try:
+                return self._run_v2(state, messages, raw_response, [raw_response])
+            except ResponseValidationError as exc:
+                messages = [
+                    *messages,
+                    {"role": "assistant", "content": raw_response},
+                    {
+                        "role": "user",
+                        "content": (
+                            "The previous Support response failed validation. Return only a "
+                            "corrected complete JSON object that follows the system schema and "
+                            "preserves the coordinator's handoff. Keep valid content when "
+                            "possible, include every required field and every requested "
+                            "choice-specific practice, and do not explain the correction. "
+                            f"Validation error: {str(exc)[:2000]}"
+                        ),
+                    },
+                ]
+                repaired_response = self.client.chat_completion(messages, json_mode=True)
+                return self._run_v2(
+                    state,
+                    messages,
+                    repaired_response,
+                    [raw_response, repaired_response],
+                )
+
         try:
             output = SupportOutput.model_validate(parse_json_object(raw_response))
         except (ResponseValidationError, ValidationError) as exc:

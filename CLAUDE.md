@@ -19,10 +19,20 @@ Use only synthetic writing. This is an educational demo, not production software
 - Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates. Do not add audience-specific agents without evidence and a separate architecture decision.
 - Keep the two decision-making agents. Teacher review, clarification, and direct response are deterministic nodes.
 - Use `deepseek-flash` through `requests`. Official V1 used non-thinking mode at temperature 0 after a real smoke comparison; keep that configuration fixed for V2 and deployment comparisons. Thinking mode ignores temperature.
-- Preserve V1 with a Git tag before V2 work. Deploy only the active version; use saved runs and screenshots for comparison rather than a runtime V1/V2 selector.
+- Preserve V1 with a Git tag before V2 work. V1 is commit `4eaa0ad` under annotated tag `v1`. Deploy only the active version; use saved runs and screenshots for comparison rather than a runtime V1/V2 selector.
 - Build the full three-column dashboard in V1, including routing, timeline, state changes, graph visualization, debug controls, fixture loading, and persistent history.
 - Store checkpoints and run history in SQLite locally and on Streamlit Cloud. Filter by random session IDs in URLs, but do not describe this as secure isolation or authentication.
 - Retain data until the user chooses **Delete my data** or the cloud filesystem is replaced. No automatic retention period is applied.
+
+## Current V2 Decisions
+
+- Keep V1/V2 prompts and output schemas separate. Keep the two agents and four routes; learner focus and practice selection are Streamlit presentation choices after graph completion, not new agent routes or model calls.
+- The coordinator sets `revision_need`: `light_touch` returns one optional priority and no practice; `standard` returns two or three choices and, when `needs_practice` is true, one pregenerated exercise per choice. `direct_response` remains reserved for no actionable issues.
+- The optional `affect_check_in` values are empty/skipped, `ready`, `unsure`, and `frustrated`. Treat them as self-reports, never inferred emotion scores. Mild affect can inform tone and reduce unnecessary feedback load; Boundary B still requires human review. Do not claim measured motivation or engagement outcomes.
+- Each V2 agent invocation permits one bounded schema-repair call after validation failure. Preserve raw teacher flags immediately. If both attempts fail, the coordinator uses context-sensitive safe clarification and Support stops without partial feedback. Debug logs retain all responses on successful repairs and `api_calls` records actual call counts.
+- Initial outline submissions with unclear goals require clarification. A clear request for thesis or paragraph drafting can route to Support even without a complete draft or existing main point. Vague non-answers remain unclear and retain the two-answer stopping limit.
+- Support receives V2 clarification history. Practice examples must differ from the student's draft and practice task, use hypothetical labels for invented observations/data, and avoid fabricated sources. The final real incomplete run still included an example explanation similar to the requested attempt; do not claim non-answer scaffolding is fully reliable.
+- Current evidence is `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`; 79 mocked-model checks pass. JeepyTA review, Parts 4–6, deployment, and learner-outcome evaluation remain pending.
 
 ## Architecture
 
@@ -59,13 +69,13 @@ pytest
 streamlit run app.py
 ```
 
-There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 complete.
+There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 or V2 complete. The current suite has 79 checks.
 
 ## Safety, Privacy, and Evidence
 
 The UI warning is: "Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service."
 
-Writing, grade level, assignment context, student concerns, and clarification answers may be sent to DeepSeek and stored in SQLite. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never promise otherwise, and do not improvise crisis keywords, hotline numbers, or localized crisis protocols.
+Writing, grade level, assignment context, student concerns, optional affect self-reports, and clarification answers may be sent to DeepSeek and stored in SQLite. V2 Support also receives clarification history. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never promise otherwise, and do not improvise crisis keywords, hotline numbers, or localized crisis protocols.
 
 Use byte-identical fixtures for V1/V2. Temperature 0 reduces variability only in non-thinking mode and never guarantees identical output. Record actual routes, concise final-output rationales, outputs, timing, and errors. Do not store or present hidden chain-of-thought as coordinator reasoning.
 

@@ -81,3 +81,72 @@ def support_payload(include_practice=True):
             "practice": practice,
         }
     )
+
+
+def coordinator_payload_v2(route="support_agent", revision_need=None, **overrides):
+    if revision_need is None:
+        revision_need = "standard" if route == "support_agent" else "not_applicable"
+    payload = json.loads(coordinator_payload(route))
+    payload["revision_need"] = revision_need
+    if route == "support_agent":
+        payload["issues"].append(
+            {
+                "type": "evidence",
+                "severity": "medium",
+                "description": "The class vote needs explanation and limitations.",
+            }
+        )
+        payload["skill_gaps"].append("evidence")
+    if revision_need == "light_touch":
+        payload["issues"] = [
+            {
+                "type": "word choice",
+                "severity": "low",
+                "description": "One generic phrase could be more vivid.",
+            }
+        ]
+        payload["skill_gaps"] = ["word choice"]
+        payload["needs_practice"] = False
+    payload.update(overrides)
+    return json.dumps(payload)
+
+
+def support_payload_v2(include_practice=True, revision_need="standard"):
+    base = json.loads(support_payload(include_practice=False))
+    priorities = []
+    for index, priority in enumerate(base["priorities"]):
+        skill = "thesis" if index == 0 else "evidence"
+        practice = None
+        if include_practice and revision_need == "standard":
+            practice = {
+                "skill": skill,
+                "instructions": f"Practice {skill} with a new idea.",
+                "steps": ["Read the example.", "Write your own attempt.", "Use the self-check."],
+                "worked_example": (
+                    "Our library should open earlier because students need a quiet place to read."
+                    if index == 0
+                    else "A class survey about recess can show opinions in one class, not every school."
+                ),
+                "success_check": "Did you make your own attempt and explain your thinking?",
+            }
+        priorities.append({**priority, "skill": skill, "practice": practice})
+    if revision_need == "light_touch":
+        priorities = [
+            {
+                "title": "Make one phrase more vivid",
+                "why_it_matters": "A precise detail can help readers picture the moment.",
+                "example_from_writing": "The garden was nice.",
+                "next_step": "Replace one general word with a detail you noticed.",
+                "skill": "word choice",
+                "practice": None,
+            }
+        ]
+    return json.dumps(
+        {
+            "affect_acknowledgment": (
+                "It makes sense to feel unsure; one small revision choice is enough for now."
+            ),
+            "strengths": base["strengths"],
+            "priorities": priorities,
+        }
+    )

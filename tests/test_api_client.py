@@ -89,11 +89,14 @@ def test_unexpected_response_is_categorized():
         make_client(session).chat_completion([])
 
 
-def test_parse_json_object_and_fenced_json():
+def test_parse_json_object():
     assert parse_json_object('{"route": "support_agent"}') == {"route": "support_agent"}
-    assert parse_json_object('```json\n{"route": "direct_response"}\n```') == {
-        "route": "direct_response"
-    }
+
+
+@pytest.mark.parametrize("fence", ["json", "JSON", "Json"])
+def test_parse_json_object_accepts_fenced_json(fence):
+    content = f'```{fence}\n{{"route": "direct_response"}}\n```'
+    assert parse_json_object(content) == {"route": "direct_response"}
 
 
 @pytest.mark.parametrize("content", ["not json", "[]", '"text"'])
@@ -104,5 +107,7 @@ def test_parse_json_object_rejects_malformed_values(content):
 
 def test_input_validation_rejects_only_empty_input_and_preserves_text():
     assert validate_writing_input("  short  ") == "  short  "
+    long_writing = "x" * 8_001
+    assert validate_writing_input(long_writing) == long_writing
     with pytest.raises(InputValidationError):
         validate_writing_input("  \n ")

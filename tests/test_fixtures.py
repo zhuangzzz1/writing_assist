@@ -24,3 +24,8 @@ def test_frozen_fixtures_parse_without_changing_writing(name, grade, assignment,
     assert fixture.grade_level == grade
     assert fixture.assignment_context == assignment
     assert bool(fixture.student_concerns) is has_concern
+
+
+def test_unknown_fixture_name_is_rejected():
+    with pytest.raises(KeyError):
+        load_fixture("Unknown fixture")

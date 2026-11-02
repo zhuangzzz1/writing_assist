@@ -54,7 +54,7 @@ Input → Assessment Coordinator → (conditional routing) →
                                 ├─→ Ask Clarification (missing info)
                                 │   └─→ interrupt → student answer → Coordinator reassessment
                                 ├─→ Support Agent (normal case)
-                                │   └─→ Feedback + one targeted exercise when warranted
+                                │   └─→ V1: feedback + one exercise; V2: pregenerated learner choices/practices
                                 ├─→ Teacher Review (boundary case)
                                 └─→ Direct Response (no actionable issues)
 ```
@@ -76,7 +76,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 
 3. **Main task**: Analyze student writing drafts and provide developmentally-appropriate feedback with scaffolding
 
-4. **User input**: Writing draft, one flexible assignment type or prompt field (optional), grade level, specific concerns (optional), and clarification answers when requested
+4. **User input**: Writing draft, one flexible assignment type or prompt field (optional), grade level, specific concerns (optional), an optional affect self-report in V2, and clarification answers when requested
 
 5. **Architecture choice**: **2-agent system with LangGraph state graph**
 
@@ -155,34 +155,35 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 ### **Part 4: Version 2 with Before-and-After Evidence** 
 *(Addresses Rubric Criterion 3 & 4: 40%)*
 
-**Revisions to make** (apply only to problems actually observed in V1 testing):
+**Implemented V2 revisions** (driven by Part 3 review and subsequent real testing):
 
-**Target Area 1: Feedback volume and priority**
-- **If observed**: V1 Support Agent generates too many feedback points at once
-- **V2 fix**: Progressive disclosure — generate all feedback in one response, but surface 2-3 priority items prominently and place additional detail in a collapsible expander in the UI
-- **Why**: Less overwhelming for 5th-7th graders; mirrors how teachers scaffold feedback. This is not multi-turn — all content is generated in one LLM call.
+1. **Clarification reliability and intent handling**
+   - Added one bounded coordinator schema-repair call, context-sensitive fallback, and actual API-call/response logging.
+   - Distinguished unclear initial outlines from explicit requests for thesis or paragraph drafting. Clear requests can reach Support without a complete draft; vague non-answers retain the two-answer clarification limit.
+   - Final result: the incomplete fixture asked one specific question and reached Support after one answer rather than requiring two answers and a generic fallback.
 
-**Target Area 2: Clarification specificity**
-- **If observed**: V1 clarification questions are generic ("I need more information")
-- **V2 fix**: Improve the Assessment Coordinator prompt to identify *what specifically* is missing and ask about it ("I see you've shared an outline. Are you looking for help turning this into paragraphs, or feedback on your thesis statement?")
-- **Why**: Models good questioning; helps students understand what "complete" means
+2. **Feedback volume, learner agency, and affect**
+   - Added `light_touch` versus `standard` support. The strong V1 narrative moved from three priorities to one optional priority without practice.
+   - Standard support pregenerates two or three focus-specific scaffolds and optional practices in one Support call. The learner chooses a focus and whether to view practice; no additional model call or graph route occurs.
+   - Added an optional ready/unsure/frustrated self-report. It informs tone and can reduce unnecessary load but is not an emotion diagnosis. Both affect supplements ended with one light-touch focus; Boundary B still routed to human review.
 
-**Target Area 3: Teacher-flagging transparency**
-- **If observed**: V1 teacher-flag messages lack clear reasoning
-- **V2 fix**: Restructure the teacher-review node output into two distinct parts: a student-facing supportive message and a teacher-facing evidence summary
-- **Why**: Transparency for students and teachers; builds trust
+3. **Practice quality and Support reliability**
+   - Added one bounded Support schema-repair call after a real development run failed on missing choice-specific practice.
+   - Practice instructions require different topics, learner attempts, self-checks, hypothetical labels for invented data, and no fabricated sources.
+   - Final normal-case practices use different topics and hypothetical examples. One final incomplete-case evidence example still includes an explanation similar to the requested attempt, so non-answer scaffolding remains a documented limitation rather than a fully solved problem.
 
-**Before-and-after evidence**:
-- Rerun the identical frozen test case fixtures on both V1 and V2
-- Side-by-side comparison of actual V1 vs V2 outputs
-- Document what changed and why with real screenshots
+**Evidence collected**:
+- V1 preserved at commit `4eaa0ad` under annotated tag `v1`.
+- 79 automated checks pass with mocked model calls and temporary databases.
+- Final real V2 set uses identical frozen fixtures and V1 supplementary inputs under non-thinking temperature 0. Results are in `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`.
+- Browser checks restored real saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
+- These artifacts support design/output claims only, not measured improvements in learner motivation, engagement, affect, or learning.
 
-**JeepyTA feedback loop**:
-- Submit V2 draft PDF to JeepyTA before finalizing (required by Part 4)
-- Document one suggestion you accepted and one you rejected with reasoning (Part 5 requirement)
-- Review suggestions with judgment — you are not required to accept every suggestion
-
-**Strategic note**: This section is worth 40% combined. Show clear, evidence-based improvement. The problems fixed should be the ones you actually observed, not ones you scripted in advance.
+**Still required for Part 4 and submission**:
+- Write the Part 4 side-by-side document using actual V1 and final V2 outputs; include the remaining limitation and development-repair evidence.
+- Submit the V2 draft PDF to JeepyTA and review suggestions with judgment before finalizing.
+- Document one accepted and one rejected actual JeepyTA suggestion for Part 5. Do not invent feedback or learner reactions.
+- Deploy the active V2 app and verify required scenarios before presenting a URL as working.
 
 ---
 
@@ -226,7 +227,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - The Assessment-Support split produces different prompting requirements (structured JSON output vs. warm student-facing prose) that are easier to optimise in separate agents. A single agent would need to switch modes, making prompt engineering harder and behaviour less consistent. Three or more agents would add coordination overhead without clear educational benefit. After testing, document whether the 2-agent design handled all three cases appropriately and whether a simpler design would have sufficed.
 
 **Paragraph 3: Limitations and human oversight**
-- Limitations: Cannot detect all concerning content; may miss cultural context; practice is limited to one coordinator-identified gap per support run; shared-demo session filtering is not authentication. Human review is needed for concerning content, revision frustration, unresolved clarification after two answers, and situations outside the system's educational role. Teachers should review feedback before real student use in any production setting.
+- Limitations: Cannot detect all concerning content; may miss cultural context; V2 pregenerates practice for each standard choice but one final incomplete example still revealed an explanation similar to the requested attempt; affect self-reports and output rubrics do not measure learner outcomes; shared-demo session filtering is not authentication. Human review is needed for concerning content, revision frustration, unresolved clarification after two answers, and situations outside the system's educational role. Teachers should review feedback before real student use in any production setting.
 
 ---
 
@@ -245,10 +246,12 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - Preserve verified V1 with a Git tag before changing V2 behavior
 
 ### **Phase 3: Build Version 2 (Refinement)**
-- Fix observed problems from V1 testing
-- Submit V2 draft PDF to JeepyTA before finalizing
-- Incorporate relevant JeepyTA feedback with judgment
-- Retest using the identical frozen fixtures
+- [x] Fix observed problems from V1 testing while keeping V1/V2 prompts separate
+- [x] Preserve V1 at commit `4eaa0ad` under annotated tag `v1`
+- [x] Retest identical frozen fixtures and V1 supplementary inputs with the frozen model configuration
+- [x] Record final actual outcomes and the remaining practice limitation in `PRD.md` Section 7.6
+- [ ] Submit V2 draft PDF to JeepyTA before finalizing
+- [ ] Incorporate relevant JeepyTA feedback with judgment
 
 ### **Phase 4: Documentation**
 - Write architecture justification

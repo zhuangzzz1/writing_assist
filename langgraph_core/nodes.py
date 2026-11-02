@@ -17,19 +17,27 @@ def _with_metadata(
     wall_started: float,
     timer_started: float,
     messages: list[dict[str, str]] | None = None,
-    raw_response: str | None = None,
+    raw_response: str | list[str] | None = None,
 ) -> dict[str, Any]:
+    raw_responses = (
+        [raw_response]
+        if isinstance(raw_response, str)
+        else list(raw_response or [])
+    )
     log: dict[str, Any] = {
         "node": node,
         "display_name": display_name,
         "timestamp": wall_started,
         "duration_ms": max(0, round((time.perf_counter() - timer_started) * 1000)),
         "state_changes": values.copy(),
-        "api_call": raw_response is not None,
+        "api_call": bool(raw_responses),
+        "api_calls": len(raw_responses),
     }
     if state.get("debug_enabled") and messages is not None:
         log["prompt"] = messages
-        log["raw_response"] = raw_response
+        log["raw_response"] = raw_responses[-1] if raw_responses else None
+        if len(raw_responses) > 1:
+            log["raw_responses"] = raw_responses
     values["agent_path"] = [*state.get("agent_path", []), display_name]
     values["execution_logs"] = [*state.get("execution_logs", []), log]
     values["timestamps"] = {**state.get("timestamps", {}), node: wall_started}
@@ -78,7 +86,7 @@ def make_assessment_node(coordinator: AssessmentCoordinator):
             wall_started,
             timer_started,
             result.messages,
-            result.raw_response,
+            result.raw_responses,
         )
 
     return assessment_node
@@ -125,7 +133,7 @@ def make_support_node(support_agent: InstructionalSupportAgent):
             wall_started,
             timer_started,
             result.messages,
-            result.raw_response,
+            result.raw_responses,
         )
 
     return support_node

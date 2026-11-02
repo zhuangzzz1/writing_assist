@@ -11,8 +11,9 @@ def test_each_valid_route(decision):
     assert route_from_assessment({"routing_decision": decision}) == decision
 
 
-def test_teacher_flag_overrides_contradictory_route():
-    state = {"routing_decision": "ask_clarification", "flag_teacher": True}
+@pytest.mark.parametrize("decision", ["ask_clarification", "support_agent", "direct_response"])
+def test_teacher_flag_overrides_contradictory_route(decision):
+    state = {"routing_decision": decision, "flag_teacher": True}
     assert route_from_assessment(state) == "teacher_review"
 
 
