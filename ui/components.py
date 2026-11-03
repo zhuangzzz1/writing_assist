@@ -66,12 +66,9 @@ def load_fixture_into_session(name: str) -> None:
 def format_practice(practice: dict) -> str:
     lines = [practice["instructions"]]
     lines.extend(f"{index}. {step}" for index, step in enumerate(practice["steps"], 1))
-    lines.extend(
-        [
-            f"**Brief example:** {practice['worked_example']}",
-            f"**Check your attempt:** {practice['success_check']}",
-        ]
-    )
+    if practice.get("worked_example"):
+        lines.append(f"**Brief example:** {practice['worked_example']}")
+    lines.append(f"**Check your attempt:** {practice['success_check']}")
     return "\n\n".join(lines)
 
 

@@ -185,8 +185,26 @@ def test_v2_support_returns_focus_specific_practice_and_affect_acknowledgment():
     assert {
         exercise["priority_index"] for exercise in result.values["practice_exercises"]
     } == {0, 1}
+    assert all(
+        "worked_example" not in exercise
+        for exercise in result.values["practice_exercises"]
+    )
     assert "practice" not in result.values["feedback_priorities"][0]
     assert "feel unsure" in result.values["feedback_content"]
+
+
+def test_v2_support_discards_model_supplied_complete_worked_examples():
+    output = json.loads(support_payload_v2())
+    for priority in output["priorities"]:
+        priority["practice"]["worked_example"] = "A complete response to copy."
+    support = InstructionalSupportAgent(FakeClient([json.dumps(output)]), "v2")
+
+    result = support.run(v2_support_state())
+
+    assert all(
+        "worked_example" not in exercise
+        for exercise in result.values["practice_exercises"]
+    )
 
 
 def test_v2_light_touch_returns_one_optional_priority_without_practice():

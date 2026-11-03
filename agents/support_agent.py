@@ -28,6 +28,15 @@ class PracticeOutput(BaseModel):
     success_check: str = Field(min_length=1)
 
 
+class PracticeOutputV2(BaseModel):
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    skill: str = Field(min_length=1)
+    instructions: str = Field(min_length=1)
+    steps: list[str] = Field(min_length=2, max_length=4)
+    success_check: str = Field(min_length=1)
+
+
 class SupportOutput(BaseModel):
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
@@ -38,7 +47,7 @@ class SupportOutput(BaseModel):
 
 class PriorityOutputV2(PriorityOutput):
     skill: str = Field(min_length=1)
-    practice: PracticeOutput | None
+    practice: PracticeOutputV2 | None
 
 
 class SupportOutputV2(BaseModel):

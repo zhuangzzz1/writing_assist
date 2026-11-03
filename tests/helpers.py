@@ -121,12 +121,7 @@ def support_payload_v2(include_practice=True, revision_need="standard"):
             practice = {
                 "skill": skill,
                 "instructions": f"Practice {skill} with a new idea.",
-                "steps": ["Read the example.", "Write your own attempt.", "Use the self-check."],
-                "worked_example": (
-                    "Our library should open earlier because students need a quiet place to read."
-                    if index == 0
-                    else "A class survey about recess can show opinions in one class, not every school."
-                ),
+                "steps": ["Choose your own idea.", "Write your own attempt.", "Use the self-check."],
                 "success_check": "Did you make your own attempt and explain your thinking?",
             }
         priorities.append({**priority, "skill": skill, "practice": practice})

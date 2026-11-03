@@ -10,6 +10,7 @@ from tests.helpers import (
     support_payload,
     support_payload_v2,
 )
+from ui.components import format_practice
 
 
 APP_PATH = str(Path(__file__).resolve().parents[1] / "app.py")
@@ -26,6 +27,20 @@ def configured_app(tmp_path, monkeypatch, version="v1", debug=True):
     monkeypatch.setenv("ENABLE_DEBUG_MODE", str(debug).lower())
     monkeypatch.setenv("APP_VERSION", version)
     return AppTest.from_file(APP_PATH, default_timeout=15)
+
+
+def test_v2_practice_formats_without_a_complete_worked_example():
+    formatted = format_practice(
+        {
+            "instructions": "Write your own claim.",
+            "steps": ["Choose a topic.", "State your position."],
+            "success_check": "Did you write your own claim?",
+        }
+    )
+
+    assert "Write your own claim." in formatted
+    assert "Check your attempt" in formatted
+    assert "Brief example" not in formatted
 
 
 def test_app_renders_dashboard_and_loads_frozen_fixture(tmp_path, monkeypatch):
@@ -207,7 +222,8 @@ def test_v2_app_lets_learner_choose_focus_and_optional_practice_without_new_call
     practice.set_value("practice").run()
 
     assert not app.exception
-    assert any("Our library should open earlier" in item.value for item in app.markdown)
+    assert any("Practice thesis with a new idea." in item.value for item in app.markdown)
+    assert not any("Brief example" in item.value for item in app.markdown)
     assert len(calls) == 2
 
 
