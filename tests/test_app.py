@@ -42,6 +42,57 @@ def test_app_renders_dashboard_and_loads_frozen_fixture(tmp_path, monkeypatch):
     assert all(item.key != "affect_check_in" for item in app.selectbox)
 
 
+def test_developer_controls_can_hide_and_show(tmp_path, monkeypatch):
+    app = configured_app(tmp_path, monkeypatch)
+    app.run()
+
+    assert not app.exception
+    assert app.selectbox(key="grade_level").label == "Grade level"
+    assert any(
+        item.value == "developer controls (for testing and debugging)"
+        for item in app.header
+    )
+
+    app.button(key="hide_developer_controls").click().run()
+
+    assert not app.exception
+    assert app.session_state.developer_controls_visible is False
+    assert app.button(key="show_developer_controls").label == "Show Developer Controls"
+    assert all(item.key != "load_Normal case" for item in app.button)
+
+    app.button(key="show_developer_controls").click().run()
+
+    assert not app.exception
+    assert app.session_state.developer_controls_visible is True
+    assert any(item.key == "hide_developer_controls" for item in app.button)
+    assert any(item.key == "load_Normal case" for item in app.button)
+
+
+def test_agent_observability_can_hide_and_show(tmp_path, monkeypatch):
+    app = configured_app(tmp_path, monkeypatch)
+    app.run()
+
+    assert not app.exception
+    assert any(item.value == "Agent observability" for item in app.subheader)
+
+    app.button(key="hide_agent_observability").click().run()
+
+    assert not app.exception
+    assert app.session_state.agent_observability_visible is False
+    assert (
+        app.button(key="show_agent_observability").label
+        == "Show Agent Observability"
+    )
+    assert all(item.value != "Agent observability" for item in app.subheader)
+
+    app.button(key="show_agent_observability").click().run()
+
+    assert not app.exception
+    assert app.session_state.agent_observability_visible is True
+    assert any(item.key == "hide_agent_observability" for item in app.button)
+    assert any(item.value == "Agent observability" for item in app.subheader)
+
+
 def test_app_normal_flow_displays_feedback_and_practice(tmp_path, monkeypatch):
     responses = iter([coordinator_payload(), support_payload()])
     monkeypatch.setattr(

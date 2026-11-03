@@ -143,6 +143,12 @@ def _render_input(service: WritingAssistantService, session_id: str) -> None:
     if st.session_state.get("loaded_fixture"):
         st.caption(f"Loaded synthetic fixture: {st.session_state.loaded_fixture}")
     with st.form("writing_analysis_form"):
+        st.selectbox(
+            "Grade level",
+            ["5th Grade", "6th Grade", "7th Grade"],
+            index=1,
+            key="grade_level",
+        )
         st.text_area(
             "Student writing",
             key="writing_input",
@@ -237,17 +243,14 @@ def _render_sidebar(
     client: DeepSeekClient,
     session_id: str,
 ) -> dict:
-    st.sidebar.header("Controls")
+    st.sidebar.header("developer controls (for testing and debugging)")
+    if st.sidebar.button("hide developer controls", key="hide_developer_controls"):
+        st.session_state.developer_controls_visible = False
+        st.rerun()
     version_number = 2 if service.version == "v2" else 1
     st.sidebar.markdown(f"**Agent-Based Application Version {version_number}**")
     st.sidebar.caption(
         f"Model: {client.model} | Thinking: {'on' if client.thinking else 'off'}"
-    )
-    st.sidebar.selectbox(
-        "Grade level",
-        ["5th Grade", "6th Grade", "7th Grade"],
-        index=1,
-        key="grade_level",
     )
 
     st.sidebar.markdown("**Frozen synthetic test cases**")
@@ -355,11 +358,74 @@ def render_dashboard(service: WritingAssistantService, client: DeepSeekClient) -
         records = service.list_runs(session_id)
         if records:
             _load_record(records[0])
+    developer_controls_visible = st.session_state.get("developer_controls_visible", True)
+    agent_observability_visible = st.session_state.get(
+        "agent_observability_visible", True
+    )
+    if not developer_controls_visible or not agent_observability_visible:
+        developer_action_column, observability_action_column = st.columns(
+            [1.65, 1], gap="large"
+        )
+        with developer_action_column:
+            if not developer_controls_visible:
+                if st.button(
+                    "Show Developer Controls",
+                    key="show_developer_controls",
+                    type="primary",
+                ):
+                    st.session_state.developer_controls_visible = True
+                    st.rerun()
+        with observability_action_column:
+            if not agent_observability_visible:
+                if st.button(
+                    "Show Agent Observability",
+                    key="show_agent_observability",
+                    type="primary",
+                ):
+                    st.session_state.agent_observability_visible = True
+                    st.rerun()
     st.title("Writing Assistant")
     st.caption("Two-agent formative writing support for grades 5–7")
-    options = _render_sidebar(service, client, session_id)
-    main_column, observability_column = st.columns([1.65, 1], gap="large")
-    with main_column:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarHeader"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    if developer_controls_visible:
+        options = _render_sidebar(service, client, session_id)
+    else:
+        st.markdown(
+            """
+            <style>
+            [data-testid="stSidebar"] {
+                display: none;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        options = {
+            "show_state": st.session_state.get("show_state", True),
+            "show_timing": st.session_state.get("show_timing", True),
+            "show_logs": st.session_state.get("show_logs", False),
+            "show_prompts": _debug_enabled()
+            and st.session_state.get("show_prompts", False),
+        }
+    if agent_observability_visible:
+        main_column, observability_column = st.columns([1.65, 1], gap="large")
+        with main_column:
+            _render_main(service, session_id)
+        with observability_column:
+            if st.button(
+                "Hide Agent Observability", key="hide_agent_observability"
+            ):
+                st.session_state.agent_observability_visible = False
+                st.rerun()
+            render_observability(_display_state(), options)
+    else:
         _render_main(service, session_id)
-    with observability_column:
-        render_observability(_display_state(), options)

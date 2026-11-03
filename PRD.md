@@ -430,11 +430,12 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 │            │                          │                     │
 │  SIDEBAR   │     MAIN CONTENT         │   OBSERVABILITY     │
 │            │                          │                     │
-│  Controls  │   Input & Output         │   Agent Details     │
-│  • Version │   ┌──────────────┐       │   ┌───────────────┐ │
-│  • Grade   │   │  Writing     │       │   │ Routing Path  │ │
-│  • Test    │   │  Input Area  │       │   │ A→S→Feedback  │ │
-│    Cases   │   │              │       │   └───────────────┘ │
+│ developer │   Input & Output         │   Agent Details     │
+│ controls  │   Grade level            │   ┌───────────────┐ │
+│  • Version│   ┌──────────────┐       │   │ Routing Path  │ │
+│  • Hide   │   │  Writing     │       │   │ A→S→Feedback  │ │
+│  • Test   │   │  Input Area  │       │   └───────────────┘ │
+│    Cases  │   │              │       │                     │
 │            │   │              │       │                     │
 │  Test      │   └──────────────┘       │   ┌───────────────┐ │
 │  Cases:    │                          │   │ Timeline      │ │
@@ -457,9 +458,9 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 
 ### 6.2 Key UI Components
 
-**Sidebar (Controls & Settings)**
+**Sidebar: developer controls (for testing and debugging)**
+- Text call-to-action button to hide the developer controls; a prominent primary **Show Developer Controls** button at the top of the main content restores them
 - Fixed active-version label (V1 during this milestone); V1 is preserved by a Git tag, not a runtime selector
-- Grade level: Dropdown (5th / 6th / 7th Grade)
 - Test case loader: Buttons (Load Normal / Incomplete / Boundary A / Boundary B)
 - Debug options: State, timing, and logs; captured prompt/response controls and opt-in capture on new runs require server-side debug mode
 - Persistent run history: Compact table and saved-run loader for completed or pending runs
@@ -467,6 +468,7 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 
 **Main Content Area**
 - **Input Section**:
+  - Grade level: Dropdown (5th / 6th / 7th Grade)
   - Large text area for writing input (15+ lines)
   - Optional: Flexible assignment type or prompt text input
   - Optional: Student concerns text input
@@ -483,6 +485,7 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
   - LLM responses (if debug enabled)
 
 **Right Panel (Observability)**
+- **Hide Agent Observability** hides the panel and expands the writing area; a prominent primary **Show Agent Observability** button in the upper-right restores it
 - **Routing Visualization**:
   - Text path: "Assessment Coordinator → Support Agent → Feedback"
   - Visual indicator of route taken
