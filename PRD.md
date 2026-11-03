@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD)
 # Multi-Agent Writing Assistant for 5th-7th Grade Students
 
-**Version**: 1.5
-**Date**: 2026-11-02
+**Version**: 1.7
+**Date**: 2026-11-03
 **Course**: EDUC 6192 - LLM and Education (UPenn GSE)
 **Assignment**: Applied Assignment 4 - Agent-based Educational Application
 **Delivery Approach**: Verified implementation milestones with separate real-evidence gates
@@ -765,7 +765,7 @@ Original Parts 1–3 sectional drafts and nine cropped V1 evidence figures are p
 
 These were the observations available at the time of the V1 human review, not scripted evidence or preselected fixes. The resulting V2 revisions and final outcomes are documented in Section 7.6.
 
-### 7.6 Final V2 Verification Results
+### 7.6 Pre-JeepyTA V2 Verification Results
 
 V2 was implemented after the Part 3 human review and preservation of V1 at commit `4eaa0ad` under annotated tag `v1`. The final comparison set used the same frozen fixtures and V1 supplementary inputs with `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode. Prompt/raw-response capture was enabled. These are small synthetic scenario observations, not general model-quality or learner-outcome claims.
 
@@ -797,7 +797,34 @@ The final run session is `d63ccfadc8294aa5b528309461ca2c52`. Run states, checkpo
 - The final incomplete-case evidence exercise asks the learner to explain a hypothetical survey but also supplies an explanation in its worked example. Non-answer scaffolding therefore remains **not fully reliable**, even though the normal-case examples improved. This limitation must appear in Part 4 rather than being hidden.
 - Temperature 0 does not guarantee identical outputs. The real scenarios establish behavior in this sample only. No real learners were studied.
 - Browser verification restored actual saved V2 runs, displayed the frustrated learner's single focus, and exercised normal-case focus and optional practice selection without another model call. Captures are `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
-- Parts 4–6 and the consolidated submission draft now exist in `submission/Applied_Assignment_4_Full_Draft.md` with rendered HTML/PDF output and ten embedded figures. JeepyTA review, verified application access, deployment, deployed scenario verification, final submission, and rubric completion remain unverified.
+- Parts 4–6 and the consolidated submission draft now exist in `submission/Applied_Assignment_4_Full_Draft.md` with rendered HTML/PDF output and ten embedded figures.
+- V2 is deployed at `https://writingassist-zhuang.streamlit.app` from `main` commit `8828fc9` with Python 3.12 and the frozen model configuration. On 2026-11-03, the public browser app, normal support and practice selection, incomplete clarification/exact resume, and Boundary A teacher review passed. The deployed runs used two, four, and one API calls respectively; the incomplete run included one bounded repair and no surfaced error. Evidence is `data/evidence/deployed_v2_verification_20261103.json` plus four deployment captures. A standalone `curl` health check timed out, so no health-endpoint success is claimed; the public URL itself loaded in Chrome.
+- At the end of this pre-review verification, JeepyTA review, final submission, and rubric completion remained unverified.
+
+### 7.7 Post-JeepyTA Final Verification Results
+
+JeepyTA reviewed the draft and public repository on 2026-11-03. The feedback confirmed the meaningful routing, distinct two-agent responsibilities, comparable testing, evidence-based revisions, and honest limitations. The accepted revisions removed complete worked examples, simplified clarification wording, made repair frequency explicit, synchronized documentation, and clarified instructional frustration escalation. The optional direct-response run was declined because that route remains explicitly labeled as unit-tested but unobserved in real-model runs.
+
+Final V2 retains the two agents and four routes. Its V2 practice schema now accepts only instructions, two to four steps, and a self-check; a model-supplied `worked_example` is discarded, and the UI conditionally renders examples only for preserved V1 runs. The current mocked-model suite has **83 passing checks**. The definitive real-model set reused byte-identical inputs and answers from the eight pre-review scenarios under `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode.
+
+| Case | Actual post-JeepyTA V2 result | Coordinator repairs |
+| --- | --- | ---: |
+| Normal frozen fixture | `support_agent`, `standard`; 3 choices and 3 practices without worked answers; 2 steps, 3 calls, 11.03 seconds | 1 |
+| Incomplete frozen fixture | One specific clarification, then `standard` support after the same first answer; 3 choices and 3 practices; 4 steps, 3 calls, 9.00 seconds | 0 |
+| Boundary A | `teacher_review` / `concerning_content`; separate outputs and no critique; 2 steps, 1 call, 1.79 seconds | 0 |
+| Boundary B | `teacher_review` / `frustration`; effort acknowledgment and human follow-up; 2 steps, 1 call, 2.89 seconds | 0 |
+| Same strong garden narrative | `support_agent`, `light_touch`; 1 optional priority and no practice; 2 calls, 3.47 seconds | 0 |
+| Same clarification-limit input and answers | `teacher_review` / `clarification_limit` after two unclear answers; 6 steps, 3 calls, 4.07 seconds | 0 |
+| Supplementary `unsure` check-in | Brief acknowledgment with `standard` support, 3 choices and 3 practices; 2 steps, 3 calls, 9.90 seconds | 1 |
+| Supplementary `frustrated` check-in | Brief acknowledgment with 1 `light_touch` focus and no practice; 2 calls, 4.82 seconds | 0 |
+
+No Support repair occurred in the definitive set; coordinator repair occurred in 2 of 8 scenarios. No final practice record contains `worked_example`. The incomplete evidence exercise supplies a hypothetical cafeteria-survey scenario but requires the learner to provide the claim-evidence explanation. The incomplete clarification asks one main question with three choices, although the first clarification-limit question still combines topic and requested help; this remaining wording limitation is disclosed in the submission.
+
+An intermediate post-review candidate misrouted Boundary B to Support and included an unnamed-study practice scenario. Those observations led to a stronger instructional-escalation rule and stricter hypothetical-scenario instructions. The definitive set retained both boundary routes and contained no study/research references in practice. Earlier candidate databases and summaries remain development evidence, not the final baseline.
+
+The definitive session is `94b6cdf516f74b629f396cf7a74bfefc`. Evidence is in git-ignored `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`. Browser checks of saved final runs confirmed focus/practice selection without another model call and no **Brief example** in final V2 practice. Raw captures are `data/evidence/v2_post_review_normal_full.png` and `v2_post_review_incomplete_route.png`; the corresponding submission crops use post-review filenames.
+
+Post-JeepyTA V2 was pushed and deployed at commit `7d94b58`. The first updated process still served the old schema; an explicitly authorized reboot loaded the new build. On 2026-11-03, deployed normal support used 2 steps, 3 calls, and 10.37 seconds; incomplete clarification/exact resume used 4 steps, 3 calls, and 8.48 seconds; and Boundary A used 2 steps, 1 call, and 2.39 seconds. Normal and incomplete optional practice displayed instructions, steps, and a self-check with no **Brief example** or complete worked answer, and focus/practice selection made no additional model call. Evidence is `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three deployment captures.
 
 ---
 
@@ -816,7 +843,7 @@ V2 kept the two agents and four graph routes while making these evidence-driven 
 1. **Clarification reliability and specificity**: separate V2 prompts, one bounded coordinator repair, context-sensitive fallback, explicit initial-versus-resumed outline rules, and clarification history in the Support handoff. Clear drafting requests can receive scaffolded support without a complete draft; vague non-answers retain the stopping limit.
 2. **Calibrated feedback and learner agency**: `light_touch` produces one optional priority without practice; `standard` produces two or three choices with all scaffolds and requested exercises pregenerated in one Support call. The learner selects a focus and optional practice in Streamlit without another model call.
 3. **Motivation and affect-oriented design**: an optional ready/unsure/frustrated self-report can inform acknowledgment and reduce unnecessary feedback load. It is not emotion inference, gamification, or evidence of learner outcomes. Boundary B still routes to human review.
-4. **Practice quality and reliability**: examples must use different topics, preserve learner attempts, label hypothetical data, avoid fabricated sources, and use self-checks. One bounded Support repair handles malformed output. The remaining final-run practice limitation is documented in Section 7.6.
+4. **Practice quality and reliability**: after JeepyTA review, final V2 removed complete worked examples from its practice schema. Exercises use instructions, two to four steps, and a self-check; any supplied scenario must be explicitly hypothetical, avoid invented sources, and preserve the learner's target response. The schema discards a model-supplied `worked_example`, and the UI still renders preserved V1 examples. One bounded Support repair handles malformed output. The earlier limitation and post-review evidence are documented in Sections 7.6–7.7.
 
 Teacher review retains the V1 separate student/teacher outputs because Part 3 found that behavior appropriate; it was not changed merely to create an improvement claim.
 
@@ -970,14 +997,14 @@ DATABASE_PATH=data/writing_assistant.db
 
 **Milestone 4: Evidence-driven V2**
 - [x] Revise based on observed V1 problems and real V2 development failures; keep V1/V2 prompts separate
-- [ ] Submit a draft to JeepyTA before finalizing V2 and review suggestions with judgment
+- [x] Submit a draft to JeepyTA before finalizing V2 and review suggestions with judgment
 - [x] Rerun identical fixtures with the frozen model configuration
-- [x] Document actual before-and-after evidence and remaining problems in Section 7.6 and draft Part 4 in the consolidated submission document
+- [x] Document actual before-and-after evidence and remaining problems in Sections 7.6–7.7 and the concise submission document
 
 **Milestone 5: Deployment and submission**
-- [ ] Deploy the active V2 app to Streamlit Cloud and test it
-- [ ] Finalize all eight submission items; the draft contains Parts 1–6, access placeholders, and the AI Use Acknowledgment, with a 294-word reflection
-- [ ] Finalize the redacted PDF after JeepyTA and verified-access updates, then submit the JeepyTA link on Canvas
+- [x] Deploy the post-JeepyTA V2 app and test the public app, normal case, incomplete/resume case, and Boundary A
+- [x] Finalize all eight submission items in the concise Markdown document, including verified application access and the AI Use Acknowledgment
+- [x] Regenerate and visually verify the redacted 23-page final PDF; final Canvas submission remains open
 
 ---
 
@@ -996,7 +1023,7 @@ DATABASE_PATH=data/writing_assistant.db
 - [ ] Demonstrates meaningful agent-controlled decisions
 - [ ] Conditional routing (not fixed workflow)
 - [ ] Distinct and necessary agent roles
-- [ ] Evidence: Working Streamlit Cloud deployment + screenshots
+- [x] Evidence: Working Streamlit Cloud deployment at `https://writingassist-zhuang.streamlit.app`, deployment screenshots, and `data/evidence/deployed_v2_verification_20261103.json`
 
 **Criterion 3: Agent Behavior, Coordination, Boundaries (20%)**
 - [ ] Handles normal, incomplete, boundary cases appropriately
@@ -1205,21 +1232,25 @@ DATABASE_PATH=data/writing_assistant.db
 - v1.3 (2026-11-02): Reconciled the PRD with locked V1 decisions, the implemented application, and actual V1 verification results
 - v1.4 (2026-11-02): Documented implemented V2 behavior, final real scenario/browser evidence, and remaining limitations
 - v1.5 (2026-11-02): Assembled and rubric-reviewed Parts 1–6, application-access placeholders, and the AI Use Acknowledgment in a consolidated Markdown/HTML/PDF draft with ten figures
+- v1.6 (2026-11-03): Deployed V2 to Streamlit Cloud, verified the public app and required scenarios, and updated verified application access
+- v1.7 (2026-11-03): Incorporated JeepyTA feedback, removed complete V2 worked examples, clarified instructional escalation, completed the 83-check and definitive eight-scenario sets, and verified the post-review deployment
 
 **Approval and Current Status**:
 - [x] Technical feasibility and rubric alignment reviewed; rubric completion is not claimed
-- [x] V1 implementation and human review completed; V1 preserved at commit `4eaa0ad` under annotated tag `v1`
+- [x] V1 implementation and human review completed; V1 preserved at commit `4eaa0ad` under annotated tag `v1`, now public on GitHub
 - [x] V2 implementation completed with separate prompts/schemas and the existing two-agent/four-route graph
-- [x] Current 79-check mocked-model suite, final real scenario set, and local browser evidence completed
-- [x] Actual V1/V2 outcomes and remaining practice limitation documented in Sections 7.5–7.6
-- [x] V2 changes committed locally
-- [x] Parts 4–6 and consolidated submission draft completed; final administrative and external-access steps remain open
-- [ ] V2 push, JeepyTA review, verified application access, deployment, deployed verification, and final submission
+- [x] Current 83-check mocked-model suite, definitive real scenario set, and local browser evidence completed
+- [x] Actual V1/V2 outcomes and remaining limitations documented in Sections 7.5–7.7
+- [x] Post-JeepyTA V2 changes committed and deployed from `origin/main` at commit `7d94b58`
+- [x] Concise submission completed with verified application access, actual review decisions, and ten figures; final administrative steps remain open
+- [x] Post-JeepyTA deployment and normal/incomplete/Boundary A verification completed after an authorized reboot
+- [x] JeepyTA review completed on 2026-11-03
+- [ ] Final Canvas submission and rubric completion
 
 **Next Steps**:
-1. Replace the student-name placeholder and submit the consolidated V2 draft to JeepyTA; record actual feedback and decisions with judgment
-2. Push the V1/V2 commits and `v1` tag, then deploy the active V2 app and verify required scenarios
-3. Replace access placeholders, remove draft-production notes, regenerate the redacted final PDF, and complete Canvas submission
+1. Submit the verified final PDF's JeepyTA assignment link on Canvas
+2. Keep the public README, PDF, and deployed behavior synchronized after any future change
+3. Retain synthetic-only use and do not commit secrets, databases, or unredacted evidence
 
 ---
 

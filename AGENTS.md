@@ -14,12 +14,12 @@ V2 is implemented as the active application, with V1 preserved at commit `4eaa0a
 
 - `app.py`, `agents/`, `langgraph_core/`, `ui/`, and `storage/` implement the application.
 - `requirements.txt`, `requirements-dev.txt`, `.env.example`, and `pytest.ini` configure it; `.env.example` and the application default select V2.
-- The current suite has 79 passing checks using mocked model calls and temporary databases.
+- The current suite has 83 passing checks using mocked model calls and temporary databases.
 - Real V1 and V2 comparisons used the frozen configuration: `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode.
-- Actual V1 outcomes are in `PRD.md` Section 7.5. Final V2 outcomes and the remaining practice limitation are in Section 7.6.
-- Final V2 evidence is in git-ignored `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`, with two local browser captures in `data/evidence/`.
-- Parts 1–6 are drafted and assembled with application-access and AI-use sections in `submission/Applied_Assignment_4_Full_Draft.md`, with a rendered HTML/PDF draft and ten embedded figures. The student-name, JeepyTA, and verified-access placeholders still require completion; deployment, deployed-scenario verification, final submission, and rubric completion remain incomplete.
-- V2 changes are committed locally; the V1/V2 commits and local `v1` tag have not been pushed.
+- Actual V1 outcomes are in `PRD.md` Section 7.5, pre-review V2 outcomes in Section 7.6, and definitive post-JeepyTA outcomes in Section 7.7.
+- Final V2 evidence is in git-ignored `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`, with post-review browser captures in `data/evidence/`.
+- The concise authoritative submission is `submission/Applied_Assignment_4_Revised.md`, with `submission/Patrick_Zhuang_Assignment_4.pdf` and ten embedded figures. JeepyTA review was completed on 2026-11-03; final Canvas submission and rubric completion remain open.
+- The post-JeepyTA code is deployed from `origin/main` at commit `7d94b58`, and the annotated `v1` tag is public. After an authorized reboot, the public app and normal, incomplete/resume, and Boundary A scenarios passed on 2026-11-03. Evidence is in `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three captures.
 
 Do not claim real model quality, learner-outcome improvements, performance targets, rubric completion, or deployment until corresponding artifacts exist. Design/output evidence is not evidence of improved learner motivation or engagement. Historical review documents are not evidence of current behavior.
 
@@ -30,9 +30,9 @@ Do not claim real model quality, learner-outcome improvements, performance targe
 - `CLAUDE.md`: Detailed coding guidance, locked V1 decisions, and current V2 decisions.
 - `EDUC_6192_Fall_2026_Syllabus.md`: Authoritative assignment requirements.
 - `test_cases/`: Four committed, frozen, synthetic fixtures; do not edit them for official runs.
-- `submission/`: Consolidated full draft in Markdown/HTML/PDF, sectional drafts, and cropped evidence figures. `Applied_Assignment_4_Full_Draft.md` is the authoritative submission text; `*_Review*.md` files are historical review records, not current behavior evidence.
+- `submission/`: Concise final submission, preserved full/sectional drafts, and cropped evidence figures. `Applied_Assignment_4_Revised.md` is the authoritative submission text and `Patrick_Zhuang_Assignment_4.pdf` is the submission PDF; `Applied_Assignment_4_Full_Draft.*` preserves the longer pre-review draft. `*_Review*.md` files are historical review records, not current behavior evidence.
 - `CORRECTED_FIX_LIST.md`: Historical corrected design-review action list; current code and PRD supersede old state descriptions.
-- `REVIEW_ANALYSIS.md`, `REVIEW_VALIDATION.md`, `FIX_APPLICATION_REVIEW.md`, `FIX_APPLICATION_REVIEW_VALIDATION.md`: Historical records only.
+- `REVIEW_ANALYSIS.md`, `REVIEW_VALIDATION.md`, `FIX_APPLICATION_REVIEW.md`, `FIX_APPLICATION_REVIEW_VALIDATION.md`, `CODE_REVIEW.md`, `PROMPT_REVIEW.md`, `PROMPT_IMPROVEMENT_PLAN.md`: Historical development review records only; current code and PRD supersede old state descriptions.
 
 When architecture or development rules change, keep `PRD.md`, `project_plan.md`, `CLAUDE.md`, and this file consistent with actual code.
 
@@ -62,7 +62,7 @@ Preserve two distinct decision-making agents unless real testing supports an arc
    - In V2, also selects `light_touch` or `standard` revision need and permits one bounded schema repair.
 2. **Instructional Support Agent**
    - Produces warm, grade-appropriate feedback grounded in coordinator findings and V2 clarification history.
-   - V1 returns 2-3 priorities and one exercise when requested. V2 returns one light-touch priority or 2-3 standard choices, with one pregenerated optional exercise per standard choice when requested.
+   - V1 returns 2-3 priorities and one exercise when requested. V2 returns one light-touch priority or 2-3 standard choices, with one pregenerated optional exercise per standard choice when requested. Final V2 practice uses instructions, steps, and a self-check without complete worked examples.
    - Uses coordinator-identified gaps and does not own initial routing. V2 permits one bounded schema repair.
 
 ```text
@@ -129,7 +129,7 @@ For official comparisons:
 
 `.env.example` defines `DEEPSEEK_API_KEY`, `DEEPSEEK_API_BASE` (`https://api.deepseek.com`), `DEEPSEEK_MODEL`, `DEEPSEEK_THINKING`, `APP_VERSION`, `LOG_LEVEL`, `ENABLE_DEBUG_MODE`, and `DATABASE_PATH`.
 
-The deployment target is Streamlit Cloud. Push to GitHub, connect at `share.streamlit.io`, and configure secrets there. No deployment has been performed or verified. Cloud SQLite durability ends when the filesystem is replaced. Test the deployed app and required scenarios before presenting a URL as working.
+The active post-JeepyTA V2 app is deployed on Streamlit Cloud at `https://writingassist-zhuang.streamlit.app` from `main` commit `7d94b58`, using Python 3.12 and secrets configured in Streamlit Cloud. After an authorized reboot, the public app and required normal, incomplete/resume, and Boundary A scenarios were verified in Chrome on 2026-11-03. Normal and incomplete practice displayed no **Brief example** or complete worked answer. Evidence is in git-ignored `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three deployment captures. Cloud SQLite durability ends when the filesystem is replaced. Future revisions must be pushed and retested before presenting them as deployed behavior.
 
 For submission, review JeepyTA feedback with judgment before finalizing V2, submit the JeepyTA assignment link on Canvas, and include all eight syllabus items in one document, including application access and an AI Use Acknowledgment.
 

@@ -169,21 +169,21 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 
 3. **Practice quality and Support reliability**
    - Added one bounded Support schema-repair call after a real development run failed on missing choice-specific practice.
-   - Practice instructions require different topics, learner attempts, self-checks, hypothetical labels for invented data, and no fabricated sources.
-   - Final normal-case practices use different topics and hypothetical examples. One final incomplete-case evidence example still includes an explanation similar to the requested attempt, so non-answer scaffolding remains a documented limitation rather than a fully solved problem.
+   - After JeepyTA review, final V2 removed complete worked examples from its practice schema. Exercises use instructions, steps, and a self-check, preserve learner attempts, label hypothetical scenarios, and avoid invented sources.
+   - The definitive incomplete case requires the learner's own claim-evidence explanation. A compound clarification-limit question remains a documented wording limitation.
 
 **Evidence collected**:
-- V1 preserved at commit `4eaa0ad` under annotated tag `v1`.
-- 79 automated checks pass with mocked model calls and temporary databases.
-- Final real V2 set uses identical frozen fixtures and V1 supplementary inputs under non-thinking temperature 0. Results are in `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`.
-- Browser checks restored real saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
+- V1 preserved at commit `4eaa0ad` under the annotated `v1` tag, now pushed to GitHub.
+- 83 automated checks pass with mocked model calls and temporary databases.
+- The definitive post-JeepyTA V2 set uses identical frozen fixtures and V1 supplementary inputs under non-thinking temperature 0. Results are in `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`.
+- Browser checks restored final saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_post_review_normal_full.png` and `v2_post_review_incomplete_route.png`.
+- The post-JeepyTA code is deployed at `7d94b58`. After an authorized reboot, normal, incomplete/resume, and Boundary A passed on 2026-11-03 with no **Brief example** in practice. Evidence is in `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three deployment captures.
 - These artifacts support design/output claims only, not measured improvements in learner motivation, engagement, affect, or learning.
 
 **Part 4 draft and remaining submission requirements**:
-- The side-by-side Part 4 document and Parts 5–6 are drafted in `submission/Part4_Part6_Draft.md` and consolidated in `submission/Applied_Assignment_4_Full_Draft.md`, with actual outputs, remaining limitations, and development-repair evidence.
-- Submit the V2 draft PDF to JeepyTA and review suggestions with judgment before finalizing; insert the actual review record in Part 4.
-- Part 5 already documents accepted and rejected tool-generated development suggestions. Add actual JeepyTA feedback only after it exists; do not invent feedback or learner reactions.
-- Replace the student-name and verified-access placeholders, deploy the active V2 app, and verify required scenarios before presenting a URL as working.
+- The authoritative concise submission is `submission/Applied_Assignment_4_Revised.md`, with actual outputs, repair frequency, remaining limitations, and the November 3 JeepyTA review record.
+- JeepyTA feedback was reviewed with judgment: scaffold, clarification, repair-reporting, documentation, and frustration-threshold recommendations were accepted; the optional direct-response run was declined.
+- Patrick Zhuang is named in the submission, and draft-production notes were removed. `submission/Patrick_Zhuang_Assignment_4.pdf` has been regenerated and visually verified as a 23-page document; final Canvas submission remains open.
 
 ---
 
@@ -251,9 +251,9 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - [x] Fix observed problems from V1 testing while keeping V1/V2 prompts separate
 - [x] Preserve V1 at commit `4eaa0ad` under annotated tag `v1`
 - [x] Retest identical frozen fixtures and V1 supplementary inputs with the frozen model configuration
-- [x] Record final actual outcomes and the remaining practice limitation in `PRD.md` Section 7.6
-- [ ] Submit V2 draft PDF to JeepyTA before finalizing
-- [ ] Incorporate relevant JeepyTA feedback with judgment
+- [x] Record pre-review outcomes and limitations in `PRD.md` Section 7.6 and definitive post-review outcomes in Section 7.7
+- [x] Submit V2 draft PDF to JeepyTA before finalizing
+- [x] Incorporate relevant JeepyTA feedback with judgment
 
 ### **Phase 4: Documentation**
 - Write architecture justification

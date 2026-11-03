@@ -31,8 +31,8 @@ Use only synthetic writing. This is an educational demo, not production software
 - The optional `affect_check_in` values are empty/skipped, `ready`, `unsure`, and `frustrated`. Treat them as self-reports, never inferred emotion scores. Mild affect can inform tone and reduce unnecessary feedback load; Boundary B still requires human review. Do not claim measured motivation or engagement outcomes.
 - Each V2 agent invocation permits one bounded schema-repair call after validation failure. Preserve raw teacher flags immediately. If both attempts fail, the coordinator uses context-sensitive safe clarification and Support stops without partial feedback. Debug logs retain all responses on successful repairs and `api_calls` records actual call counts.
 - Initial outline submissions with unclear goals require clarification. A clear request for thesis or paragraph drafting can route to Support even without a complete draft or existing main point. Vague non-answers remain unclear and retain the two-answer stopping limit.
-- Support receives V2 clarification history. Practice examples must differ from the student's draft and practice task, use hypothetical labels for invented observations/data, and avoid fabricated sources. The final real incomplete run still included an example explanation similar to the requested attempt; do not claim non-answer scaffolding is fully reliable.
-- Current evidence is `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`; 79 mocked-model checks pass. Parts 1–6 and the consolidated Markdown/HTML/PDF submission draft are complete with ten embedded figures. JeepyTA review, verified application access, deployment, and learner-outcome evaluation remain pending.
+- Support receives V2 clarification history. Final V2 practice contains instructions, two to four steps, and a self-check, not a complete worked example. The V2 schema discards any model-supplied `worked_example`; supplied scenarios must be explicitly hypothetical, avoid invented sources, and preserve the learner's target response. V1 practice and saved V1 rendering remain unchanged.
+- Current definitive evidence is `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`; 83 mocked-model checks pass. The concise authoritative submission is `submission/Applied_Assignment_4_Revised.md`, with `submission/Patrick_Zhuang_Assignment_4.pdf` and ten figures. JeepyTA review is complete. Post-JeepyTA code is deployed at `7d94b58`; after an authorized reboot, normal, incomplete/resume, and Boundary A passed on 2026-11-03 with no **Brief example** in practice. Deployment evidence is `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three captures. Final Canvas submission, rubric completion, and learner-outcome evaluation remain open.
 
 ## Architecture
 
@@ -69,7 +69,7 @@ pytest
 streamlit run app.py
 ```
 
-There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 or V2 complete. The current suite has 79 checks.
+There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 or V2 complete. The current suite has 83 checks.
 
 ## Safety, Privacy, and Evidence
 
