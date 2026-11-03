@@ -18,7 +18,7 @@ V2 is implemented as the active application, with V1 preserved at commit `4eaa0a
 - Real V1 and V2 comparisons used the frozen configuration: `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode.
 - Actual V1 outcomes are in `PRD.md` Section 7.5. Final V2 outcomes and the remaining practice limitation are in Section 7.6.
 - Final V2 evidence is in git-ignored `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`, with two local browser captures in `data/evidence/`.
-- Parts 1–3 are complete. V2 implementation and real scenario evidence exist, but Parts 4–6, JeepyTA review, final application access, the AI Use Acknowledgment, deployment, and rubric completion remain incomplete.
+- Parts 1–6 are drafted and assembled with application-access and AI-use sections in `submission/Applied_Assignment_4_Full_Draft.md`, with a rendered HTML/PDF draft and ten embedded figures. The student-name, JeepyTA, and verified-access placeholders still require completion; deployment, deployed-scenario verification, final submission, and rubric completion remain incomplete.
 - V2 changes are committed locally; the V1/V2 commits and local `v1` tag have not been pushed.
 
 Do not claim real model quality, learner-outcome improvements, performance targets, rubric completion, or deployment until corresponding artifacts exist. Design/output evidence is not evidence of improved learner motivation or engagement. Historical review documents are not evidence of current behavior.
@@ -30,7 +30,7 @@ Do not claim real model quality, learner-outcome improvements, performance targe
 - `CLAUDE.md`: Detailed coding guidance, locked V1 decisions, and current V2 decisions.
 - `EDUC_6192_Fall_2026_Syllabus.md`: Authoritative assignment requirements.
 - `test_cases/`: Four committed, frozen, synthetic fixtures; do not edit them for official runs.
-- `submission/`: Current Parts 1–3 drafts and cropped evidence figures. Its `*_Review*.md` files are historical review records, not current behavior evidence.
+- `submission/`: Consolidated full draft in Markdown/HTML/PDF, sectional drafts, and cropped evidence figures. `Applied_Assignment_4_Full_Draft.md` is the authoritative submission text; `*_Review*.md` files are historical review records, not current behavior evidence.
 - `CORRECTED_FIX_LIST.md`: Historical corrected design-review action list; current code and PRD supersede old state descriptions.
 - `REVIEW_ANALYSIS.md`, `REVIEW_VALIDATION.md`, `FIX_APPLICATION_REVIEW.md`, `FIX_APPLICATION_REVIEW_VALIDATION.md`: Historical records only.
 

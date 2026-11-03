@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # Multi-Agent Writing Assistant for 5th-7th Grade Students
 
-**Version**: 1.4
+**Version**: 1.5
 **Date**: 2026-11-02
 **Course**: EDUC 6192 - LLM and Education (UPenn GSE)
 **Assignment**: Applied Assignment 4 - Agent-based Educational Application
@@ -753,7 +753,7 @@ The official configuration was frozen as `deepseek-flash`, non-thinking mode, te
 
 Real run state is in git-ignored `data/v1_official.db`. Original screenshots are in `data/evidence/v1_normal_ui.png`, `v1_incomplete_resumed_ui.png`, `v1_boundary_a_ui.png`, and `v1_boundary_b_ui.png`. Mode-comparison runs are in `data/mode_nonthinking_fixed.db` and `data/mode_thinking_fixed.db`.
 
-Current Parts 1–3 drafts and nine cropped evidence figures are in `submission/`. Figure 2 is a supplementary capture of the frozen incomplete fixture and configuration, not one of the ten official runs; its wording differs from the official run, and its isolated temporary capture database was removed after capture, so that record is not retained. The other figures document official saved runs or the current V1 instruction source, with composite crops disclosed in the draft appendix.
+Original Parts 1–3 sectional drafts and nine cropped V1 evidence figures are preserved in `submission/`; the consolidated full draft uses six of those V1 figures plus four final V2 captures. In the original V1 numbering, Figure 2 is a supplementary capture of the frozen incomplete fixture and configuration, not one of the ten official runs; its wording differs from the official run, and its isolated temporary capture database was removed after capture, so that record is not retained. The other V1 figures document official saved runs or the preserved V1 instruction source, with composite crops disclosed in the consolidated captions.
 
 **Observations for human V1 review (not predetermined V2 commitments)**:
 1. One coordinator reassessment during the incomplete run failed validation and used the generic safe clarification fallback. The next resume succeeded, but structured-output reliability needs review. The raw response was not captured, so the specific validation defect is unknown.
@@ -794,7 +794,7 @@ The final run session is `d63ccfadc8294aa5b528309461ca2c52`. Run states, checkpo
 - The final incomplete-case evidence exercise asks the learner to explain a hypothetical survey but also supplies an explanation in its worked example. Non-answer scaffolding therefore remains **not fully reliable**, even though the normal-case examples improved. This limitation must appear in Part 4 rather than being hidden.
 - Temperature 0 does not guarantee identical outputs. The real scenarios establish behavior in this sample only. No real learners were studied.
 - Browser verification restored actual saved V2 runs, displayed the frustrated learner's single focus, and exercised normal-case focus and optional practice selection without another model call. Captures are `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
-- JeepyTA review, Part 4–6 documents, deployment, deployed scenario verification, and rubric completion remain unverified.
+- Parts 4–6 and the consolidated submission draft now exist in `submission/Applied_Assignment_4_Full_Draft.md` with rendered HTML/PDF output and ten embedded figures. JeepyTA review, verified application access, deployment, deployed scenario verification, final submission, and rubric completion remain unverified.
 
 ---
 
@@ -969,12 +969,12 @@ DATABASE_PATH=data/writing_assistant.db
 - [x] Revise based on observed V1 problems and real V2 development failures; keep V1/V2 prompts separate
 - [ ] Submit a draft to JeepyTA before finalizing V2 and review suggestions with judgment
 - [x] Rerun identical fixtures with the frozen model configuration
-- [x] Document actual before-and-after evidence and remaining problems in Section 7.6; the Part 4 submission document is still pending
+- [x] Document actual before-and-after evidence and remaining problems in Section 7.6 and draft Part 4 in the consolidated submission document
 
 **Milestone 5: Deployment and submission**
 - [ ] Deploy the active V2 app to Streamlit Cloud and test it
-- [ ] Complete all eight submission items, including the 200-300 word reflection, application access, and AI Use Acknowledgment
-- [ ] Compile redacted evidence into the required document and submit the JeepyTA link on Canvas
+- [ ] Finalize all eight submission items; the draft contains Parts 1–6, access placeholders, and the AI Use Acknowledgment, with a 294-word reflection
+- [ ] Finalize the redacted PDF after JeepyTA and verified-access updates, then submit the JeepyTA link on Canvas
 
 ---
 
@@ -1201,6 +1201,7 @@ DATABASE_PATH=data/writing_assistant.db
 - v1.2 (2026-11-01): Applied fixes from FIX_APPLICATION_REVIEW.md
 - v1.3 (2026-11-02): Reconciled the PRD with locked V1 decisions, the implemented application, and actual V1 verification results
 - v1.4 (2026-11-02): Documented implemented V2 behavior, final real scenario/browser evidence, and remaining limitations
+- v1.5 (2026-11-02): Assembled and rubric-reviewed Parts 1–6, application-access placeholders, and the AI Use Acknowledgment in a consolidated Markdown/HTML/PDF draft with ten figures
 
 **Approval and Current Status**:
 - [x] Technical feasibility and rubric alignment reviewed; rubric completion is not claimed
@@ -1209,13 +1210,13 @@ DATABASE_PATH=data/writing_assistant.db
 - [x] Current 79-check mocked-model suite, final real scenario set, and local browser evidence completed
 - [x] Actual V1/V2 outcomes and remaining practice limitation documented in Sections 7.5–7.6
 - [x] V2 changes committed locally
-- [ ] V2 push, JeepyTA review, Parts 4–6, deployment, deployed verification, and final submission
+- [x] Parts 4–6 and consolidated submission draft completed; final administrative and external-access steps remain open
+- [ ] V2 push, JeepyTA review, verified application access, deployment, deployed verification, and final submission
 
 **Next Steps**:
-1. Draft Part 4 with actual side-by-side V1/V2 evidence and the remaining practice limitation
-2. Submit the V2 draft to JeepyTA and evaluate actual suggestions with judgment
-3. Push the V1/V2 commits and `v1` tag, then deploy the active V2 app and verify required scenarios
-4. Complete Parts 5–6, application access, the AI Use Acknowledgment, and redacted final submission materials
+1. Replace the student-name placeholder and submit the consolidated V2 draft to JeepyTA; record actual feedback and decisions with judgment
+2. Push the V1/V2 commits and `v1` tag, then deploy the active V2 app and verify required scenarios
+3. Replace access placeholders, remove draft-production notes, regenerate the redacted final PDF, and complete Canvas submission
 
 ---
 

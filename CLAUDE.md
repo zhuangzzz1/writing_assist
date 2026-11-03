@@ -32,7 +32,7 @@ Use only synthetic writing. This is an educational demo, not production software
 - Each V2 agent invocation permits one bounded schema-repair call after validation failure. Preserve raw teacher flags immediately. If both attempts fail, the coordinator uses context-sensitive safe clarification and Support stops without partial feedback. Debug logs retain all responses on successful repairs and `api_calls` records actual call counts.
 - Initial outline submissions with unclear goals require clarification. A clear request for thesis or paragraph drafting can route to Support even without a complete draft or existing main point. Vague non-answers remain unclear and retain the two-answer stopping limit.
 - Support receives V2 clarification history. Practice examples must differ from the student's draft and practice task, use hypothetical labels for invented observations/data, and avoid fabricated sources. The final real incomplete run still included an example explanation similar to the requested attempt; do not claim non-answer scaffolding is fully reliable.
-- Current evidence is `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`; 79 mocked-model checks pass. JeepyTA review, Parts 4–6, deployment, and learner-outcome evaluation remain pending.
+- Current evidence is `data/v2_official.db` and `data/evidence/v2_final_release_summary.json`; 79 mocked-model checks pass. Parts 1–6 and the consolidated Markdown/HTML/PDF submission draft are complete with ten embedded figures. JeepyTA review, verified application access, deployment, and learner-outcome evaluation remain pending.
 
 ## Architecture
 

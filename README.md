@@ -44,7 +44,7 @@ Authoritative evidence is in:
 
 All databases and evidence files are git-ignored. The final V2 set covers the four frozen fixtures, the V1 strong narrative and clarification-limit inputs, and two supplementary affect checks. It shows design and output alignment only; it does not establish improved learner motivation, engagement, affect, or learning outcomes. One incomplete-case practice example still supplies an explanation similar to the requested attempt, so non-answer scaffolding is not fully reliable.
 
-JeepyTA review, Parts 4–6, final application access, the AI Use Acknowledgment, deployment, and deployed-scenario verification remain incomplete.
+Parts 1–6 are drafted and assembled with application-access and AI-use sections in `submission/Applied_Assignment_4_Full_Draft.md`, with rendered HTML/PDF output and ten embedded figures. The student-name, JeepyTA, and verified-access placeholders, deployment, deployed-scenario verification, and final submission remain incomplete.
 
 ## Configuration
 

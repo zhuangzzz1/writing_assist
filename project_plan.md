@@ -179,11 +179,11 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - Browser checks restored real saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_normal_choice_practice.jpg` and `v2_frustrated_light_ui.jpg`.
 - These artifacts support design/output claims only, not measured improvements in learner motivation, engagement, affect, or learning.
 
-**Still required for Part 4 and submission**:
-- Write the Part 4 side-by-side document using actual V1 and final V2 outputs; include the remaining limitation and development-repair evidence.
-- Submit the V2 draft PDF to JeepyTA and review suggestions with judgment before finalizing.
-- Document one accepted and one rejected actual JeepyTA suggestion for Part 5. Do not invent feedback or learner reactions.
-- Deploy the active V2 app and verify required scenarios before presenting a URL as working.
+**Part 4 draft and remaining submission requirements**:
+- The side-by-side Part 4 document and Parts 5–6 are drafted in `submission/Part4_Part6_Draft.md` and consolidated in `submission/Applied_Assignment_4_Full_Draft.md`, with actual outputs, remaining limitations, and development-repair evidence.
+- Submit the V2 draft PDF to JeepyTA and review suggestions with judgment before finalizing; insert the actual review record in Part 4.
+- Part 5 already documents accepted and rejected tool-generated development suggestions. Add actual JeepyTA feedback only after it exists; do not invent feedback or learner reactions.
+- Replace the student-name and verified-access placeholders, deploy the active V2 app, and verify required scenarios before presenting a URL as working.
 
 ---
 
@@ -197,21 +197,23 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
    - Support Agent prompt (empathetic, scaffolding focus)
    - LangGraph state schema and conditional edge logic
 
-2. **Two important revisions** (from V1→V2):
-   - [To be filled with the two most significant revisions actually made after V1 testing — e.g., progressive disclosure if feedback volume was an observed problem, or clarification specificity if generic questions were observed]
+2. **Two important revisions documented in the draft** (from V1→V2):
+   - Clarification now uses the student's answer more effectively, includes clarification history in Support, and permits bounded coordinator repair while retaining the two-answer limit.
+   - Feedback now uses light-touch/standard calibration, learner-selected scaffolds and optional practice, different-topic examples, explicit affect self-reports, and bounded Support repair.
 
 3. **Why multi-agent coordination is necessary**:
-   - Assessment and intervention require different "mindsets" (analytical vs. supportive)
+   - Assessment and intervention require different output contracts (analytical structured findings vs. warm instructional scaffolding)
    - Conditional routing means Support Agent only runs when needed (not a fixed workflow)
-   - State management tracks conversation context across agents
+   - State management tracks conversation context across agents, including V2 clarification history
    - Clear handoff: Assessment determines *what* student needs → Support determines *how* to provide it
 
-4. **AI suggestion example**:
-   - **Accepted**: [To be filled with an actual JeepyTA suggestion you accepted and why]
-   - **Rejected**: [To be filled with an actual JeepyTA suggestion you rejected and why]
+4. **AI suggestion examples documented in the draft**:
+   - **Accepted**: Gate raw prompt/response controls behind server-side debug mode because session URLs are not authentication.
+   - **Rejected in its original form**: Do not compress worked-example rules into three rules when that would remove learner-attempt and topic-separation safeguards. These are tool-generated development reviews, not claimed JeepyTA feedback.
 
-5. **Your judgment example**:
-   - [To be filled with a real decision you made during development — e.g., why you kept 2 agents instead of adding a third, or why you chose a particular prompt structure]
+5. **Human-judgment examples documented in the draft**:
+   - Kept two agents but used deterministic teacher-review and clarification nodes rather than adding audience-specific agents.
+   - Reserved `direct_response` for no actionable issues and used light-touch support when one meaningful suggestion remained.
 
 ---
 
