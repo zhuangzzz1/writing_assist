@@ -1,5 +1,7 @@
 # Writing Assistant Multi-Agent System - Project Plan
 
+> **Current implementation note (2026-11-10):** V3 is now the active local application, implemented under `PRD_V3_ITERATIVE_REVISION.md`. The plan below preserves the historical V1→V2 assignment strategy and is not a description of current V3 behavior. Local V3 is not deployed; the historical public app remains V2 at commit `7d94b58`.
+
 ## Overview
 
 **Course**: EDUC 6192 - LLM and Education (UPenn GSE)  
@@ -165,7 +167,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 2. **Feedback volume, learner agency, and affect**
    - Added `light_touch` versus `standard` support. The strong V1 narrative moved from three priorities to one optional priority without practice.
    - Standard support pregenerates two or three focus-specific scaffolds and optional practices in one Support call. The learner chooses a focus and whether to view practice; no additional model call or graph route occurs.
-   - Added an optional ready/unsure/frustrated self-report. It informs tone and can reduce unnecessary load but is not an emotion diagnosis. Both affect supplements ended with one light-touch focus; Boundary B still routed to human review.
+   - Added an optional ready/unsure/frustrated self-report. It informs tone and can reduce unnecessary load but is not an emotion diagnosis. The frustrated-garden supplement ended with one light-touch focus, while the unsure-uniforms supplement retained standard support; Boundary B still routed to human review.
 
 3. **Practice quality and Support reliability**
    - Added one bounded Support schema-repair call after a real development run failed on missing choice-specific practice.
@@ -181,9 +183,9 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - These artifacts support design/output claims only, not measured improvements in learner motivation, engagement, affect, or learning.
 
 **Part 4 draft and remaining submission requirements**:
-- The authoritative concise submission is `submission/Applied_Assignment_4_Revised.md`, with actual outputs, repair frequency, remaining limitations, and the November 3 JeepyTA review record.
+- The authoritative concise submission is `submission/Applied_Assignment_4_Concise_user_edited.md`, with actual outputs, repair frequency, remaining limitations, and the November 3 JeepyTA review record.
 - JeepyTA feedback was reviewed with judgment: scaffold, clarification, repair-reporting, documentation, and frustration-threshold recommendations were accepted; the optional direct-response run was declined.
-- Patrick Zhuang is named in the submission, and draft-production notes were removed. `submission/Patrick_Zhuang_Assignment_4.pdf` has been regenerated and visually verified as a 23-page document; final Canvas submission remains open.
+- Patrick Zhuang is named in the submission, and draft-production notes were removed. `submission/Applied_Assignment_4_Concise_user_edited.pdf` has been generated and visually verified as a 20-page document with ten embedded figures; final Canvas submission remains open.
 
 ---
 
@@ -199,7 +201,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 
 2. **Two important revisions documented in the draft** (from V1→V2):
    - Clarification now uses the student's answer more effectively, includes clarification history in Support, and permits bounded coordinator repair while retaining the two-answer limit.
-   - Feedback now uses light-touch/standard calibration, learner-selected scaffolds and optional practice, different-topic examples, explicit affect self-reports, and bounded Support repair.
+   - Feedback now uses light-touch/standard calibration, learner-selected scaffolds and optional practice, instructions/steps/self-checks without complete worked examples, explicit affect self-reports, and bounded Support repair.
 
 3. **Why multi-agent coordination is necessary**:
    - Assessment and intervention require different output contracts (analytical structured findings vs. warm instructional scaffolding)
@@ -229,7 +231,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - The Assessment-Support split produces different prompting requirements (structured JSON output vs. warm student-facing prose) that are easier to optimise in separate agents. A single agent would need to switch modes, making prompt engineering harder and behaviour less consistent. Three or more agents would add coordination overhead without clear educational benefit. After testing, document whether the 2-agent design handled all three cases appropriately and whether a simpler design would have sufficed.
 
 **Paragraph 3: Limitations and human oversight**
-- Limitations: Cannot detect all concerning content; may miss cultural context; V2 pregenerates practice for each standard choice but one final incomplete example still revealed an explanation similar to the requested attempt; affect self-reports and output rubrics do not measure learner outcomes; shared-demo session filtering is not authentication. Human review is needed for concerning content, revision frustration, unresolved clarification after two answers, and situations outside the system's educational role. Teachers should review feedback before real student use in any production setting.
+- Limitations: Cannot detect all concerning content; may miss cultural context; the V2 schema prevents a separate `worked_example` field from being stored but cannot guarantee that permitted instructions or steps never reveal an answer; the first clarification-limit question still combines topic and requested help; affect self-reports and output rubrics do not measure learner outcomes; shared-demo session filtering is not authentication. Human review is needed for concerning content, revision frustration, unresolved clarification after two answers, and situations outside the system's educational role. Teachers should review feedback before real student use in any production setting.
 
 ---
 

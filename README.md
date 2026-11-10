@@ -1,12 +1,14 @@
-# Writing Assistant
+# Writing Coach — V3 Iterative Revision
 
-A two-agent writing assistant for students in grades 5–7, built with LangGraph, DeepSeek, Streamlit, and SQLite. It provides age-appropriate feedback and targeted practice, asks clarifying questions with exact graph resume, and routes boundary cases to a clearly simulated teacher-review view.
+A local synthetic-classroom prototype for grades 5–7. Two LangGraph agents provide genre-sensitive assessment and bounded revision support while the student preserves authorship: choose one to three goals, edit the complete draft, submit immutable revision snapshots, repeat or stop, and finish with a grounded original-to-final reflection.
 
-V2 adds learner-selected revision focuses, optional choice-specific practice, calibrated light-touch or standard feedback, an optional affect self-report, and one bounded schema-repair attempt per agent invocation. The two agents and four graph routes remain unchanged. Learner choices affect presentation only; they do not trigger another model call.
+V3 supports argument, informational, and narrative writing; optional assignment/source context; correctable genre inference; exact goal highlights; pregenerated hints; neutral small-change handling; clarification and simulated teacher review; read-only history; session restoration/deletion; and opt-in developer observability. It does not assign grades, predict ELPAC/SBAC outcomes, write replacement responses, or claim that writing is ready to submit.
+
+See `V3_OUTCOMES_REPORT.md` for baseline and improvement evidence, `V3_INVESTIGATION_EVIDENCE.md` for the consolidated evidence index, `CHANGELOG.md` for changes, and `EDUCATOR_REVIEW_PROTOCOL.md` for the pending educator gate.
 
 ## Local setup
 
-Requires Python 3.11 or newer.
+Requires Python 3.11+; the project uses Python 3.12 locally.
 
 ```bash
 python3.12 -m venv .venv
@@ -15,13 +17,13 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-Add your DeepSeek API key to `.env` and set `APP_VERSION=v2`. Never commit this file. Use only synthetic writing: the demo sends submitted writing and metadata to an external AI service and stores run data in the configured SQLite database. The optional affect check-in is also sent and stored; it is self-reported, not an emotion diagnosis.
+Add your DeepSeek API key to `.env` and keep `DEEPSEEK_THINKING=false` for the selected local runtime. Never commit this file. Then run:
 
 ```bash
 streamlit run app.py
 ```
 
-The default database is `data/writing_assistant.db`, which is git-ignored. The dashboard filters history by a random session identifier in the URL; this is not authentication or secure multi-user isolation. Use **Delete my data** to remove the current session's history and checkpoints. Data is otherwise retained until manual deletion or cloud filesystem replacement.
+The default database is `data/writing_assistant_v3.db`, which is git-ignored. Use only synthetic writing. Submitted text and context are sent to an external AI service and stored locally with execution details. Random session URLs filter history but are not authentication. **Delete my data** removes the current session's compositions, snapshots, reflections, execution records, and checkpoints.
 
 ## Tests
 
@@ -29,25 +31,29 @@ The default database is `data/writing_assistant.db`, which is git-ignored. The d
 pytest
 ```
 
-The current suite has **83 passing checks** using mocked model responses and temporary SQLite databases. Real DeepSeek calls are separate scenario evidence, not interchangeable with unit tests.
+The current suite has **172 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 30-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
 
-## Current V2 status
+## Real-model evaluation
 
-V2 is implemented and verified through the automated suite, real scenario runs, and browser checks of saved runs. V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag, which is now pushed to GitHub. The post-JeepyTA V2 code is pushed to `origin/main` at commit `7d94b58`.
+With authorization for billable DeepSeek calls, run the paired core comparison and the non-thinking acceptance set:
 
-Authoritative evidence is in:
+```bash
+python scripts/evaluate_v3.py --scenario-set core --modes nonthinking thinking
+python scripts/evaluate_v3.py --scenario-set acceptance --modes nonthinking
+```
 
-- `PRD.md` Section 7.5 for actual V1 results, Section 7.6 for pre-review V2 results, and Section 7.7 for post-JeepyTA results.
-- `data/v1_official.db` and `data/v2_final_post_jeepyta_20261103.db` for saved runs and checkpoints.
-- `data/evidence/v2_final_post_jeepyta_20261103_summary.json` for the definitive eight-scenario V2 set.
-- `data/evidence/v2_post_review_normal_full.png` and `v2_post_review_incomplete_route.png` for local browser captures.
+The core comparison covers argument/source, source mismatch, missing source, RACES informational, narrative, human review, and a full garden revision/reflection loop. The acceptance set covers all 30 PRD scenarios. Outputs include structured responses, routes, errors, invalid final responses and validation errors for repairs, plus model/graph/service timing and token usage in git-ignored files under `data/`. The student runtime uses explicit non-thinking mode and never switches modes automatically.
 
-All databases and evidence files are git-ignored. The final V2 set covers the four frozen fixtures, the V1 strong narrative and clarification-limit inputs, and two supplementary affect checks. It shows design and output alignment only; it does not establish improved learner motivation, engagement, affect, or learning outcomes. Final V2 practice contains instructions, steps, and a self-check without complete worked examples. A compound clarification-limit question remains a disclosed limitation.
+The earlier completed pair used prompt/schema `v3.1.0` and is stored at `data/evidence/v3_paired_evaluation_20261110T094344Z.json`. All six scenarios completed in each mode. Thinking used 17 calls, including two schema repairs, 68,407 total tokens (24,926 reasoning tokens), and 246.2 seconds of cumulative model latency. Non-thinking used 15 calls, no repairs, 36,340 total tokens, and 64.2 seconds. These results supported the 2026-11-10 non-thinking runtime decision; they are not a general quality or learner-outcome conclusion.
 
-The post-JeepyTA V2 app is deployed at **https://writingassist-zhuang.streamlit.app** from commit `7d94b58`. After an authorized reboot, the public app and normal, incomplete/resume, and Boundary A scenarios were verified in Chrome on 2026-11-03. Normal and incomplete practice showed no **Brief example** or complete worked answer. Evidence is in git-ignored `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three deployment captures. The concise submission is `submission/Applied_Assignment_4_Revised.md`, with `submission/Patrick_Zhuang_Assignment_4.pdf` and ten embedded figures. JeepyTA review is complete; final Canvas submission and rubric completion remain open.
+A real browser walkthrough at 1280px verified the complete select–edit–review–next-round–finish loop, including exact highlights and stale-highlight removal. Captures are git-ignored under `data/evidence/v3_local_*`. These synthetic checks do not establish educator approval, pedagogical effectiveness, or learner outcomes.
+
+`EDUCATOR_REVIEW_PROTOCOL.md` provides the full-context three-educator walk-through protocol. Recruitment, reviewer assessments, and the gate decision remain pending.
 
 ## Configuration
 
-Official V1 and V2 comparisons use `DEEPSEEK_THINKING=false` and temperature 0 with `deepseek-flash` and JSON mode. Keep that configuration fixed for deployment comparisons. Thinking mode ignores temperature, and temperature 0 does not guarantee identical output.
+`.env.example` documents the model, explicit thinking flag, reasoning-effort, timeout, database, debug, and neutral small-change threshold settings. Non-thinking runtime requests use temperature 0; controlled thinking requests omit temperature. Prompt/schema/fixture versions and authorized model metadata are recorded with reviews; raw hidden reasoning is never stored or shown. Final prompt/response capture requires both server-side `ENABLE_DEBUG_MODE=true` and separate opt-in for new reviews.
 
-`ENABLE_DEBUG_MODE=false` is the default. Set it to `true` only for local evaluation to enable the prompt capture/display controls; capture remains opt-in for each new run. Raw prompt and response fields stay hidden from state and log views unless prompt display is selected.
+## Historical V1/V2 record
+
+`PRD.md` remains the authoritative V1/V2 coursework and evidence record. V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag. The historical post-JeepyTA V2 deployment is at `https://writingassist-zhuang.streamlit.app` from commit `7d94b58`; this local V3 implementation is not deployed. The authoritative coursework submission remains `submission/Applied_Assignment_4_Concise_user_edited.md` and its visually verified PDF.

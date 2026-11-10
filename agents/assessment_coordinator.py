@@ -4,66 +4,128 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from agents.prompts import PROMPTS
-from agents.utils import DeepSeekClient, ResponseValidationError, parse_json_object
-from langgraph_core.state import TeacherFlagCategory, WritingAssistantState
+from agents.prompts import COORDINATOR_FINAL_PROMPT, COORDINATOR_ROUND_PROMPT
+from agents.utils import (
+    DeepSeekClient,
+    ResponseValidationError,
+    ensure_bounded_language,
+    parse_json_object,
+)
+from langgraph_core.revision import (
+    build_text_diff,
+    reference_is_valid,
+    reference_overlaps_change,
+)
+from langgraph_core.state import (
+    Genre,
+    ObservationStatus,
+    RoutingDecision,
+    TeacherFlagCategory,
+    WritingAssistantState,
+)
 
 
 class IssueOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    type: str = Field(min_length=1)
-    severity: Literal["high", "medium", "low"]
+    goal_id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
+    category: Literal[
+        "central_idea",
+        "task_alignment",
+        "evidence_elaboration",
+        "organization",
+        "language_conventions",
+        "source_use",
+    ]
     description: str = Field(min_length=1)
+    draft_reference: str = Field(min_length=1)
+    paragraph_number: int = Field(ge=1)
+    occurrence: int = Field(ge=1)
+    source_dependent: bool
+    source_location: str = ""
+    regression: bool = False
+
+
+class GoalObservationOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    goal_id: str = Field(min_length=1)
+    status: ObservationStatus
+    observation: str = Field(min_length=1)
+    evidence_reference: str = ""
+    carry_forward: bool
 
 
 class AssessmentOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    writing_complete: bool
-    missing_context: bool
-    unclear_intent: bool
-    no_issues_found: bool
-    strengths: list[str]
+    working_genre: Genre | Literal[""]
+    genre_confidence: Literal["", "low", "medium", "high"]
+    genre_basis: str
+    strengths: list[str] = Field(max_length=3)
     issues: list[IssueOutput] = Field(max_length=5)
-    skill_gaps: list[str] = Field(max_length=5)
-    routing_decision: Literal[
-        "ask_clarification",
-        "support_agent",
-        "teacher_review",
-        "direct_response",
-    ]
+    source_limitations: list[str] = Field(max_length=3)
+    selected_goal_observations: list[GoalObservationOutput] = Field(max_length=3)
+    routing_decision: RoutingDecision
     flag_teacher: bool
     teacher_flag_reason: str
     teacher_flag_category: TeacherFlagCategory
     teacher_evidence: list[str] = Field(max_length=5)
-    needs_feedback: bool
-    needs_practice: bool
     coordinator_reasoning: str = Field(min_length=1)
-    clarification_question: str
+    clarification_question: str = ""
+    clarification_choices: list[str] = Field(default_factory=list, max_length=4)
 
     @model_validator(mode="after")
     def check_route_details(self):
-        self.strengths = self.strengths[:3]
         if self.routing_decision == "ask_clarification" and not self.clarification_question:
-            raise ValueError("Clarification routes require a question.")
+            raise ValueError("Clarification routes require one question.")
         if self.routing_decision == "teacher_review" and not self.teacher_flag_reason:
             raise ValueError("Teacher review requires a reason.")
+        if self.routing_decision == "support_agent" and not self.issues:
+            raise ValueError("Support requires at least one meaningful issue.")
+        if self.routing_decision == "direct_response" and self.issues:
+            raise ValueError("Direct response cannot contain actionable issues.")
+        goal_ids = [issue.goal_id for issue in self.issues]
+        if len(goal_ids) != len(set(goal_ids)):
+            raise ValueError("Issue goal IDs must be unique.")
+        observation_ids = [item.goal_id for item in self.selected_goal_observations]
+        if len(observation_ids) != len(set(observation_ids)):
+            raise ValueError("Each selected goal can have only one observation.")
         return self
 
 
-class AssessmentOutputV2(AssessmentOutput):
-    revision_need: Literal["not_applicable", "light_touch", "standard"]
+class ComparisonFindingOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    finding_id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
+    summary: str = Field(min_length=1)
+    original_reference: str = ""
+    final_reference: str = ""
+    goal_id: str = ""
 
     @model_validator(mode="after")
-    def check_revision_need(self):
-        if self.routing_decision == "support_agent":
-            if self.revision_need == "not_applicable":
-                raise ValueError("Support routes require light_touch or standard revision need.")
-            if self.revision_need == "light_touch" and len(self.issues) != 1:
-                raise ValueError("Light-touch support requires exactly one issue.")
-        elif self.revision_need != "not_applicable":
-            raise ValueError("Non-support routes require not_applicable revision need.")
+    def check_reference(self):
+        if not self.original_reference and not self.final_reference:
+            raise ValueError("A comparison finding needs an exact draft reference.")
+        return self
+
+
+class FinalAssessmentOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    original_strengths: list[str] = Field(max_length=3)
+    improvements: list[ComparisonFindingOutput] = Field(max_length=5)
+    regressions: list[ComparisonFindingOutput] = Field(max_length=3)
+    future_areas: list[str] = Field(max_length=3)
+    coordinator_reasoning: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def check_finding_ids(self):
+        finding_ids = [
+            finding.finding_id for finding in [*self.improvements, *self.regressions]
+        ]
+        if len(finding_ids) != len(set(finding_ids)):
+            raise ValueError("Comparison finding IDs must be unique.")
         return self
 
 
@@ -72,6 +134,7 @@ class AssessmentResult:
     values: dict[str, Any]
     raw_responses: list[str]
     messages: list[dict[str, str]]
+    model_calls: list[dict[str, Any]]
 
     @property
     def raw_response(self) -> str:
@@ -79,22 +142,34 @@ class AssessmentResult:
 
 
 class AssessmentCoordinator:
-    def __init__(self, client: DeepSeekClient, version: str = "v1"):
+    def __init__(self, client: DeepSeekClient):
         self.client = client
-        self.version = version
 
-    def _messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
-        payload = {
-            "writing": state["writing"],
+    def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
+        payload: dict[str, Any] = {
+            "current_draft": state["writing"],
             "grade_level": state["grade_level"],
-            "assignment_context": state.get("assignment_context", ""),
-            "student_concerns": state.get("student_concerns", ""),
-            "clarification_history": state.get("clarification_history", []),
+            "genre_selection": state["genre_selection"],
+            "assignment_prompt": state["assignment_prompt"],
+            "teacher_directions": state["teacher_directions"],
+            "source_material_available": state["source_material_available"],
+            "source_material": state["source_material"],
+            "student_concerns": state["student_concerns"],
+            "clarification_history": state["clarification_history"],
+            "revision_number": state["revision_number"],
         }
-        if self.version == "v2":
-            payload["affect_check_in"] = state.get("affect_check_in", "")
+        if state["revision_number"] > 0:
+            payload.update(
+                {
+                    "original_draft": state["original_writing"],
+                    "previous_draft": state["previous_writing"],
+                    "text_diff": state["text_diff"],
+                    "selected_goals": state["selected_goals"],
+                    "goal_self_reports": state["goal_self_reports"],
+                }
+            )
         return [
-            {"role": "system", "content": PROMPTS[self.version]["coordinator"]},
+            {"role": "system", "content": COORDINATOR_ROUND_PROMPT},
             {
                 "role": "user",
                 "content": "Assess this submission and return the required JSON object:\n"
@@ -102,51 +177,81 @@ class AssessmentCoordinator:
             },
         ]
 
+    def _final_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
+        payload = {
+            "original_draft": state["original_writing"],
+            "final_submitted_draft": state["writing"],
+            "grade_level": state["grade_level"],
+            "working_genre": state.get("working_genre", ""),
+            "assignment_prompt": state["assignment_prompt"],
+            "teacher_directions": state["teacher_directions"],
+            "source_material_available": state["source_material_available"],
+            "source_material": state["source_material"],
+            "text_diff": state["text_diff"],
+            "revision_history": state.get("revision_history", []),
+        }
+        return [
+            {"role": "system", "content": COORDINATOR_FINAL_PROMPT},
+            {
+                "role": "user",
+                "content": "Compare these submitted drafts and return the required JSON:\n"
+                + json.dumps(payload, ensure_ascii=False),
+            },
+        ]
+
+    def _metadata(self) -> dict[str, Any]:
+        metadata = getattr(self.client, "last_response_metadata", {})
+        if metadata:
+            return dict(metadata)
+        config = self.client.model_config() if hasattr(self.client, "model_config") else {}
+        return {**config, "token_usage": {}}
+
     @staticmethod
-    def _fallback_values(state: WritingAssistantState | None = None) -> dict[str, Any]:
+    def _fallback_values(state: WritingAssistantState) -> dict[str, Any]:
+        history = state.get("clarification_history", [])
         question = (
-            "Is this a complete draft you want feedback on, or an outline or idea "
-            "you want help developing?"
+            "What would you like help with: your main idea, your organization, or "
+            "your sentences? You can also describe a different goal."
         )
-        history = state.get("clarification_history", []) if state else []
         if history:
             answer = history[-1].get("answer", "").strip()
             if len(answer) > 180:
                 answer = answer[:177].rstrip() + "..."
             question = (
-                f'You explained: "{answer}" Which should I focus on first: developing '
-                "your ideas, organizing your paragraphs, or improving your sentences?"
+                f'You answered: "{answer}" What is one thing you want your reader '
+                "to understand or notice in this draft?"
             )
-        values = {
-            "writing_complete": False,
-            "missing_context": True,
-            "unclear_intent": True,
-            "no_issues_found": False,
+        return {
+            "working_genre": (
+                state["genre_selection"] if state["genre_selection"] != "auto" else ""
+            ),
+            "genre_confidence": "",
+            "genre_basis": "",
             "strengths": [],
             "issues": [],
-            "skill_gaps": [],
+            "source_limitations": [],
+            "selected_goal_observations": [],
             "routing_decision": "ask_clarification",
             "flag_teacher": False,
             "teacher_flag_reason": "",
             "teacher_flag_category": "none",
             "teacher_evidence": [],
-            "needs_feedback": False,
-            "needs_practice": False,
             "coordinator_reasoning": (
-                "The assessment response could not be validated, so the safe fallback "
-                "is to clarify the student's goal."
+                "The assessment could not be validated, so the system is asking for "
+                "essential context instead of guessing."
             ),
             "clarification_question": question,
+            "clarification_choices": [],
         }
-        if state and state.get("app_version") == "v2":
-            values["revision_need"] = "not_applicable"
-        return values
 
     @staticmethod
     def _safety_fallback(raw: dict[str, Any]) -> dict[str, Any]:
-        values = AssessmentCoordinator._fallback_values()
         category = raw.get("teacher_flag_category")
-        if category not in ("concerning_content", "frustration", "clarification_limit"):
+        if category not in (
+            "concerning_content",
+            "serious_discouragement",
+            "clarification_limit",
+        ):
             category = "concerning_content"
         evidence = raw.get("teacher_evidence")
         if not isinstance(evidence, list) or not all(
@@ -156,101 +261,237 @@ class AssessmentCoordinator:
         reason = raw.get("teacher_flag_reason")
         if not isinstance(reason, str) or not reason.strip():
             reason = (
-                "The coordinator flagged this submission for human review, but some "
-                "assessment details could not be validated."
+                "The Coordinator requested human review, but some assessment details "
+                "could not be validated."
             )
-        values.update(
+        return {
+            "working_genre": "",
+            "genre_confidence": "",
+            "genre_basis": "",
+            "strengths": [],
+            "issues": [],
+            "source_limitations": [],
+            "selected_goal_observations": [],
+            "routing_decision": "teacher_review",
+            "flag_teacher": True,
+            "teacher_flag_reason": reason.strip(),
+            "teacher_flag_category": category,
+            "teacher_evidence": evidence[:5],
+            "coordinator_reasoning": "A human-review flag overrides malformed assessment details.",
+            "clarification_question": "",
+            "clarification_choices": [],
+        }
+
+    @staticmethod
+    def _validate_round(output: AssessmentOutput, state: WritingAssistantState) -> None:
+        selected = state["genre_selection"]
+        if selected != "auto" and output.working_genre != selected:
+            raise ValueError("The working genre must match the student's explicit selection.")
+        if output.routing_decision in ("support_agent", "direct_response"):
+            if not output.working_genre:
+                raise ValueError("Normal feedback requires a working genre.")
+        optional_language = "language corrections are optional" in state["teacher_directions"].lower()
+        if optional_language:
+            for issue in output.issues:
+                description = issue.description.lower()
+                explicitly_nonobscuring = any(
+                    phrase in description
+                    for phrase in (
+                        "non-obscuring",
+                        "not obscure",
+                        "does not obscure",
+                        "do not obscure",
+                        "without obscuring",
+                    )
+                )
+                claims_obscured_meaning = any(
+                    phrase in description
+                    for phrase in ("obscur", "cannot understand", "unintelligible")
+                )
+                if issue.category == "language_conventions" and (
+                    explicitly_nonobscuring or not claims_obscured_meaning
+                ):
+                    raise ValueError(
+                        "Non-obscuring language mechanics cannot become a revision goal "
+                        "when the teacher marks language corrections as optional."
+                    )
+        for issue in output.issues:
+            if not reference_is_valid(
+                state["writing"],
+                issue.draft_reference,
+                issue.paragraph_number,
+                issue.occurrence,
+            ):
+                raise ValueError(
+                    f"Issue {issue.goal_id} does not have an exact, correctly located reference."
+                )
+            if issue.source_dependent:
+                if not state["source_material_available"]:
+                    raise ValueError("Source-dependent findings require supplied source material.")
+                if not issue.source_location:
+                    raise ValueError("Source-dependent findings require a source location.")
+            elif issue.source_location:
+                raise ValueError("A source location is only valid for source-dependent findings.")
+
+        if state["revision_number"] > 0 and output.routing_decision in (
+            "support_agent",
+            "direct_response",
+        ):
+            expected_ids = [goal["goal_id"] for goal in state["selected_goals"]]
+            actual_ids = [item.goal_id for item in output.selected_goal_observations]
+            if set(actual_ids) != set(expected_ids) or len(actual_ids) != len(expected_ids):
+                raise ValueError("Every selected goal requires exactly one observation.")
+            for item in output.selected_goal_observations:
+                if item.evidence_reference and not (
+                    item.evidence_reference in state["writing"]
+                    or item.evidence_reference in state["previous_writing"]
+                ):
+                    raise ValueError("Goal observation evidence must quote a submitted draft.")
+        elif output.selected_goal_observations:
+            raise ValueError("Initial and boundary routes cannot contain revision observations.")
+        ensure_bounded_language(
             {
-                "routing_decision": "teacher_review",
-                "flag_teacher": True,
-                "teacher_flag_reason": reason.strip(),
-                "teacher_flag_category": category,
-                "teacher_evidence": evidence[:5],
-                "coordinator_reasoning": "A teacher flag overrides malformed assessment details.",
-            }
+                "strengths": output.strengths,
+                "issues": [issue.model_dump() for issue in output.issues],
+                "source_limitations": output.source_limitations,
+                "selected_goal_observations": [
+                    item.model_dump() for item in output.selected_goal_observations
+                ],
+                "clarification_question": output.clarification_question,
+                "clarification_choices": output.clarification_choices,
+            },
+            state["source_material_available"],
         )
+
+    @staticmethod
+    def _validate_final(output: FinalAssessmentOutput, state: WritingAssistantState) -> None:
+        original = state["original_writing"]
+        final = state["writing"]
+        actual_diff = build_text_diff(original, final)
+        for finding in [*output.improvements, *output.regressions]:
+            if finding.original_reference and finding.original_reference not in original:
+                raise ValueError("Original comparison references must be exact.")
+            if finding.final_reference and finding.final_reference not in final:
+                raise ValueError("Final comparison references must be exact.")
+        if not actual_diff["changed"] and (output.improvements or output.regressions):
+            raise ValueError("Unchanged drafts cannot produce improvement or regression findings.")
+        for finding in output.improvements:
+            if not finding.final_reference:
+                raise ValueError("An improvement requires an exact final-draft reference.")
+            if not reference_overlaps_change(
+                original, final, finding.final_reference, "after"
+            ):
+                raise ValueError("An improvement reference must overlap an actual text change.")
+        for finding in output.regressions:
+            original_changed = bool(finding.original_reference) and reference_overlaps_change(
+                original, final, finding.original_reference, "before"
+            )
+            final_changed = bool(finding.final_reference) and reference_overlaps_change(
+                original, final, finding.final_reference, "after"
+            )
+            if not (original_changed or final_changed):
+                raise ValueError("A regression reference must overlap an actual text change.")
+
+    @staticmethod
+    def _normalize_round(values: dict[str, Any]) -> dict[str, Any]:
+        if values["flag_teacher"] or values["routing_decision"] == "teacher_review":
+            values["routing_decision"] = "teacher_review"
+            values["flag_teacher"] = True
+            if values["teacher_flag_category"] == "none":
+                values["teacher_flag_category"] = "concerning_content"
+            if not values["teacher_flag_reason"]:
+                values["teacher_flag_reason"] = (
+                    "The Coordinator requested human review for this submission."
+                )
+        else:
+            values["flag_teacher"] = False
+        values["coordinator_repair_count"] = values.get("coordinator_repair_count", 0)
+        return values
+
+    def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
+        raw = parse_json_object(raw_response)
+        safety_requested = raw.get("flag_teacher") is True or raw.get(
+            "routing_decision"
+        ) == "teacher_review"
+        try:
+            output = AssessmentOutput.model_validate(raw)
+            self._validate_round(output, state)
+        except (ValidationError, ValueError):
+            if safety_requested:
+                return self._safety_fallback(raw)
+            raise
+        return self._normalize_round(output.model_dump())
+
+    def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
+        output = FinalAssessmentOutput.model_validate(parse_json_object(raw_response))
+        self._validate_final(output, state)
+        values = output.model_dump()
+        values["comparison_improvements"] = values.pop("improvements")
+        values["comparison_regressions"] = values.pop("regressions")
         return values
 
     @staticmethod
-    def _normalize(values: dict[str, Any]) -> dict[str, Any]:
-        route = values["routing_decision"]
-        if route == "teacher_review":
-            values["flag_teacher"] = True
-            values["needs_feedback"] = False
-            values["needs_practice"] = False
-            if values["teacher_flag_category"] == "none":
-                values["teacher_flag_category"] = "concerning_content"
-        elif route == "support_agent":
-            values["needs_feedback"] = True
-            values["no_issues_found"] = False
-            if not values["skill_gaps"] or values.get("revision_need") == "light_touch":
-                values["needs_practice"] = False
-        elif route == "direct_response":
-            values["no_issues_found"] = True
-            values["needs_feedback"] = False
-            values["needs_practice"] = False
-        else:
-            values["needs_feedback"] = False
-            values["needs_practice"] = False
-        if "revision_need" in values and route != "support_agent":
-            values["revision_need"] = "not_applicable"
-        values["coordinator_decision"] = route
-        return values
-
-    def _values_from_response(self, raw_response: str) -> dict[str, Any]:
-        raw = parse_json_object(raw_response)
-        output_class = AssessmentOutputV2 if self.version == "v2" else AssessmentOutput
-        if raw.get("flag_teacher") is True:
-            try:
-                assessment = output_class.model_validate(raw)
-            except ValidationError:
-                return self._safety_fallback(raw)
-        else:
-            assessment = output_class.model_validate(raw)
-        return assessment.model_dump()
+    def _repair_messages(
+        messages: list[dict[str, str]], raw_response: str, error: Exception
+    ) -> list[dict[str, str]]:
+        return [
+            *messages,
+            {"role": "assistant", "content": raw_response},
+            {
+                "role": "user",
+                "content": (
+                    "The previous response failed deterministic validation. Return only a "
+                    "corrected complete JSON object with exactly the required fields. Preserve "
+                    "any human-review flag, keep valid content when possible, use exact draft "
+                    "references and locations, and do not explain the correction. Validation "
+                    f"error: {str(error)[:2000]}"
+                ),
+            },
+        ]
 
     def run(self, state: WritingAssistantState) -> AssessmentResult:
-        messages = self._messages(state)
+        from time import perf_counter
+
+        final_mode = state["review_mode"] == "final"
+        messages = self._final_messages(state) if final_mode else self._round_messages(state)
+        call_started = perf_counter()
         raw_response = self.client.chat_completion(messages, json_mode=True)
+        initial_metadata = self._metadata()
+        initial_metadata["latency_ms"] = max(0, round((perf_counter() - call_started) * 1000))
         raw_responses = [raw_response]
+        model_calls = [initial_metadata]
         repair_count = 0
         try:
-            values = self._values_from_response(raw_response)
-        except (ResponseValidationError, ValidationError) as exc:
-            if self.version != "v2":
-                values = self._fallback_values()
-            else:
-                repair_count = 1
-                messages = [
-                    *messages,
-                    {"role": "assistant", "content": raw_response},
-                    {
-                        "role": "user",
-                        "content": (
-                            "The previous response failed validation. Return only a corrected "
-                            "complete JSON object that follows the system schema. Use the "
-                            "original submission and clarification history, preserve any "
-                            "teacher flag, and do not explain the correction. Validation error: "
-                            f"{str(exc)[:2000]}"
-                        ),
-                    },
-                ]
-                raw_response = self.client.chat_completion(messages, json_mode=True)
-                raw_responses.append(raw_response)
-                try:
-                    values = self._values_from_response(raw_response)
-                except (ResponseValidationError, ValidationError):
-                    values = self._fallback_values(state)
-                    values["coordinator_reasoning"] = (
-                        "The assessment and its single correction attempt could not be "
-                        "validated, so the safe fallback uses the existing clarification "
-                        "history to ask a context-sensitive question."
-                    )
-        if self.version == "v2":
-            values.setdefault("revision_need", "not_applicable")
-            values["coordinator_repair_count"] = repair_count
-        return AssessmentResult(
-            values=self._normalize(values),
-            raw_responses=raw_responses,
-            messages=messages,
-        )
+            values = (
+                self._final_values(raw_response, state)
+                if final_mode
+                else self._round_values(raw_response, state)
+            )
+        except (ResponseValidationError, ValidationError, ValueError) as exc:
+            repair_count = 1
+            messages = self._repair_messages(messages, raw_response, exc)
+            call_started = perf_counter()
+            raw_response = self.client.chat_completion(messages, json_mode=True)
+            repair_metadata = self._metadata()
+            repair_metadata["latency_ms"] = max(0, round((perf_counter() - call_started) * 1000))
+            repair_metadata["schema_repair"] = True
+            raw_responses.append(raw_response)
+            model_calls.append(repair_metadata)
+            try:
+                values = (
+                    self._final_values(raw_response, state)
+                    if final_mode
+                    else self._round_values(raw_response, state)
+                )
+            except (ResponseValidationError, ValidationError, ValueError) as repair_exc:
+                if final_mode:
+                    raise ResponseValidationError(
+                        "The final comparison could not be validated after one correction."
+                    ) from repair_exc
+                values = self._fallback_values(state)
+                values["coordinator_reasoning"] = (
+                    "The assessment and its single correction could not be validated, "
+                    "so the system is asking for essential context instead of guessing."
+                )
+        values["coordinator_repair_count"] = repair_count
+        return AssessmentResult(values, raw_responses, messages, model_calls)

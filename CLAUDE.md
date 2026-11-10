@@ -1,62 +1,54 @@
 # CLAUDE.md
 
-This file provides guidance to coding agents working in this repository.
+Guidance for coding agents working in this repository.
 
 ## Project Overview
 
-This is a two-agent writing assistant for 5th-7th grade students, built as an academic project for EDUC 6192 (LLM and Education) at UPenn GSE. LangGraph coordinates an Assessment Coordinator and an Instructional Support Agent. The rubric prioritizes educational fit, meaningful agent-controlled decisions, appropriate boundaries, observable behavior, and genuine V1-to-V2 improvement.
+V3 is a two-agent iterative writing coach for grades 5–7, built with LangGraph, explicitly configured DeepSeek non-thinking mode, Streamlit CCv2, Pydantic, and SQLite. Students select one to three goals, edit their own complete draft, submit immutable revisions, and stop voluntarily with an original-to-final reflection. Use only synthetic writing. This is not production software for minors.
 
-Use only synthetic writing. This is an educational demo, not production software for minors.
+`PRD_V3_ITERATIVE_REVISION.md` is the active product contract. `PRD.md` and the annotated `v1` tag preserve historical V1/V2 coursework and evidence; the old runtime paths have been replaced.
 
-## Locked V1 Decisions
+## Current V3 Decisions
 
-- Build V1 as a genuine best effort. Do not script failures or predetermine V2 changes.
-- Normal support returns strengths, 2-3 revision priorities, and one targeted exercise when the coordinator identifies a gap that warrants practice. Practice does not replace feedback.
-- The optional assignment input is one flexible **assignment type or prompt** field (`assignment_context`). Missing assignment context is not automatically a clarification trigger.
-- Only empty input is rejected locally. Every nonempty submission goes to the coordinator so safety assessment precedes short/non-writing clarification rules.
-- Clarification uses exact LangGraph `interrupt()`/`Command(resume=...)` with a stable thread ID and SQLite checkpoints. A reply loops back to the coordinator for reassessment.
-- After two clarification answers remain ambiguous, escalate to non-safety teacher review with the clarification history.
-- Teacher review bypasses the Support Agent and uses coordinator evidence plus reviewed category-specific templates. Do not add audience-specific agents without evidence and a separate architecture decision.
-- Keep the two decision-making agents. Teacher review, clarification, and direct response are deterministic nodes.
-- Use `deepseek-flash` through `requests`. Official V1 used non-thinking mode at temperature 0 after a real smoke comparison; keep that configuration fixed for V2 and deployment comparisons. Thinking mode ignores temperature.
-- Preserve V1 with a Git tag before V2 work. V1 is commit `4eaa0ad` under annotated tag `v1`. Deploy only the active version; use saved runs and screenshots for comparison rather than a runtime V1/V2 selector.
-- Build the full three-column dashboard in V1, including routing, timeline, state changes, graph visualization, debug controls, fixture loading, and persistent history.
-- Store checkpoints and run history in SQLite locally and on Streamlit Cloud. Filter by random session IDs in URLs, but do not describe this as secure isolation or authentication.
-- Retain data until the user chooses **Delete my data** or the cloud filesystem is replaced. No automatic retention period is applied.
-
-## Current V2 Decisions
-
-- Keep V1/V2 prompts and output schemas separate. Keep the two agents and four routes; learner focus and practice selection are Streamlit presentation choices after graph completion, not new agent routes or model calls.
-- The coordinator sets `revision_need`: `light_touch` returns one optional priority and no practice; `standard` returns two or three choices and, when `needs_practice` is true, one pregenerated exercise per choice. `direct_response` remains reserved for no actionable issues.
-- The optional `affect_check_in` values are empty/skipped, `ready`, `unsure`, and `frustrated`. Treat them as self-reports, never inferred emotion scores. Mild affect can inform tone and reduce unnecessary feedback load; Boundary B still requires human review. Do not claim measured motivation or engagement outcomes.
-- Each V2 agent invocation permits one bounded schema-repair call after validation failure. Preserve raw teacher flags immediately. If both attempts fail, the coordinator uses context-sensitive safe clarification and Support stops without partial feedback. Debug logs retain all responses on successful repairs and `api_calls` records actual call counts.
-- Initial outline submissions with unclear goals require clarification. A clear request for thesis or paragraph drafting can route to Support even without a complete draft or existing main point. Vague non-answers remain unclear and retain the two-answer stopping limit.
-- Support receives V2 clarification history. Final V2 practice contains instructions, two to four steps, and a self-check, not a complete worked example. The V2 schema discards any model-supplied `worked_example`; supplied scenarios must be explicitly hypothetical, avoid invented sources, and preserve the learner's target response. V1 practice and saved V1 rendering remain unchanged.
-- Current definitive evidence is `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`; 83 mocked-model checks pass. The concise authoritative submission is `submission/Applied_Assignment_4_Revised.md`, with `submission/Patrick_Zhuang_Assignment_4.pdf` and ten figures. JeepyTA review is complete. Post-JeepyTA code is deployed at `7d94b58`; after an authorized reboot, normal, incomplete/resume, and Boundary A passed on 2026-11-03 with no **Brief example** in practice. Deployment evidence is `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three captures. Final Canvas submission, rubric completion, and learner-outcome evaluation remain open.
+- Keep two model-driven agents. The Coordinator owns assessment, genre, source limits, selected-goal observations, comparison findings, human-review flags, and routing. Support owns student-facing round feedback, bounded scaffolds, and final reflection.
+- Teacher review, clarification, direct response, diffs, milestones, and lifecycle operations are deterministic. Do not add a comparison agent or audience-specific agents without a separate architecture decision.
+- Every nonempty draft goes to the Coordinator. Empty drafts are rejected locally. Explicit length limits reject oversized input without truncation.
+- Genre selection is `auto`, `argument`, `informational`, or `narrative`. Explicit student correction triggers a new assessment of the latest submitted snapshot, not a new revision snapshot or clarification confirmation.
+- V3 has no affect field or check-in. **Show less feedback** and **I’m stuck** only reveal pregenerated presentation content; they make no model call and never infer emotion, effort, or teacher review.
+- Source availability is deterministic. Source-dependent findings require locations; no-source accuracy claims and invented source content are invalid.
+- Every candidate reference must be an exact current-draft substring with correct paragraph/occurrence metadata. Support must preserve Coordinator references and source limitations exactly.
+- Hints contain a passage reference, two to four linked steps, and a self-check. Optional sentence starters use `____` and leave all substance to the student. V3 does not generate optional practice exercises in round feedback.
+- Revision observations cover every selected goal and use descriptive statuses, not scores or attempt assumptions. Optional attempted/deferred self-reports are stored with the revision snapshot.
+- Final reflection uses deterministic original/latest-submitted diffs and Coordinator finding IDs. Support cannot omit regressions, add improvements, or change verified references.
+- Each agent invocation permits one bounded repair. Coordinator failure after repair falls back to safe clarification; Support/final failure produces no partial feedback. API and thinking-mode failures propagate rather than silently switching modes.
 
 ## Architecture
 
 ```text
-Input -> Assessment Coordinator -> conditional route
-    |- ask_clarification -> interrupt -> answer -> Assessment Coordinator
-    |- support_agent -> feedback + optional targeted practice -> END
-    |- teacher_review -> separate student/teacher outputs -> END
-    `- direct_response -> affirm without forced criticism -> END
+Submitted draft -> Assessment Coordinator -> conditional route
+    |- ask_clarification -> interrupt -> answer -> Coordinator
+    |- support_agent -> candidates + pregenerated scaffolds -> END
+    |- teacher_review -> separate student/evaluator outputs -> END
+    `- direct_response -> no manufactured revision -> END
+
+Finish confirmation -> deterministic original/final diff
+    -> Coordinator comparison -> Support final reflection -> END
 ```
 
-`routing_decision` is authoritative: `ask_clarification`, `support_agent`, `teacher_review`, or `direct_response`. The router checks `flag_teacher` first, then the enum. Missing or malformed output falls back to `ask_clarification`, never `support_agent`. `needs_feedback` and `needs_practice` are Support Agent inputs only.
+`langgraph_core/state.py` uses `TypedDict`/`NotRequired`. Initialize inputs, IDs, model configuration, and execution metadata together. Each node returns only fields it owns. Replacement lists prevent duplicate history during interrupt replay.
 
-`langgraph_core/state.py` uses Python 3.11+ `TypedDict`/`NotRequired`. Initialize inputs and execution metadata in the initial state. Each node returns only fields it owns; downstream reads use `state.get()` for values that may be absent. Clarification history replaces lists rather than using additive reducers so node replay cannot duplicate entries.
+`langgraph_core/revision.py` owns exact reference location, word-level diffs, and neutral change notifications. It makes no quality judgments.
 
 ## Code Organization
 
-- `app.py`: Streamlit entry point and cached runtime setup
-- `agents/`: DeepSeek client, coordinator/support logic, and separate versioned prompts
-- `langgraph_core/`: state, node functions, routing, graph construction, and invocation helpers
-- `ui/`: input/output components, dashboard layout, observability, and graph visualization
-- `storage/`: run-history interface and SQLite implementation
-- `test_cases/`: four frozen synthetic fixtures; do not edit them for official runs
-- `tests/`: pytest unit/integration tests using mocked model calls and temporary databases
+- `app.py`: Streamlit entry point and cached V3 runtime.
+- `agents/`: DeepSeek HTTP client, V3 prompts, structured Coordinator/Support validation, repair, and authorized model metadata.
+- `langgraph_core/`: V3 state, nodes, routing, graph/service operations, and deterministic revision utilities.
+- `storage/`: Composition, snapshot, round, reflection, restoration, and deletion persistence.
+- `ui/`: Student workflow, scenario loading, CCv2 highlighted editor, and opt-in observability.
+- `test_cases/v3/scenarios.json`: Separate versioned V3 synthetic presets. Root fixture files remain frozen historical V1/V2 evidence.
+- `scripts/evaluate_v3.py`: Explicit representative paired real-model evaluation.
+- `tests/`: Mocked unit/integration/AppTest coverage with temporary SQLite databases.
 
 ## Commands
 
@@ -64,19 +56,42 @@ Input -> Assessment Coordinator -> conditional route
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env  # Add DEEPSEEK_API_KEY locally
+cp .env.example .env
 pytest
 streamlit run app.py
 ```
 
-There is no separate formatter, linter, or type-checker configured. Run pytest after each implementation stage and exercise real fixture flows before calling V1 or V2 complete. The current suite has 83 checks.
+No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 172 checks. Browser and real-model evidence are separate from unit tests.
+
+For authorized billable evaluation:
+
+```bash
+python scripts/evaluate_v3.py --scenario-set core --modes nonthinking thinking
+python scripts/evaluate_v3.py --scenario-set acceptance --modes nonthinking
+```
+
+The runner writes git-ignored databases and a JSON summary under `data/`, including invalid final responses and validation errors for repair diagnosis. It never stores raw hidden reasoning and never switches modes automatically. Inspect actual outputs before making quality claims. The earlier completed `v3.1.0` evidence is `data/evidence/v3_paired_evaluation_20261110T094344Z.json`: all six scenarios completed per mode; thinking used 17 calls/two repairs/68,407 tokens/246.2 seconds of model latency, while non-thinking used 15 calls/no repairs/36,340 tokens/64.2 seconds. This limited result supported the 2026-11-10 non-thinking runtime decision, not a general pedagogical-quality claim. Current improvement evidence is `V3_OUTCOMES_REPORT.md` Section 16, with acceptance set `data/evidence/v3_acceptance_evaluation_20261110T160932Z.json`, targeted #7/#24 corrections, and paired cores `data/evidence/v3_core_evaluation_20261110T161430Z.json` and `data/evidence/v3_core_evaluation_20261110T162342Z.json`.
+
+## Model Configuration
+
+- Student runtime uses `DEEPSEEK_THINKING=false` and temperature 0. Controlled thinking comparisons omit temperature and include configured reasoning effort.
+- Record `model_name`, actual `thinking_enabled`, applicable `reasoning_effort`, prompt/schema/fixture versions, provider IDs, latency, and available token counts.
+- Raw hidden reasoning is never stored or displayed. Evaluation diagnostics may retain final prompts and invalid final JSON responses; student debug capture remains separately opt-in.
+- Neither mode is a student-facing selector or an automatic fallback.
+
+## Storage and UI Invariants
+
+- Persist original and every revision snapshot before model review. Snapshot updates are prohibited by SQLite trigger; deletion intentionally cascades for **Delete my data**.
+- Retry uses the existing round/reflection and never creates a duplicate snapshot.
+- Session IDs filter history but are not authentication. Missing/corrupt storage produces a safe recovery view and preserves any runtime editor text for copying.
+- Keep the initial editor constrained and the desktop workspace 60/40. Marked grid rows must override Streamlit child column widths to 100% to avoid applying percentages twice.
+- The CCv2 editor keeps text synchronized with Session State, highlights exact selected references, recalculates on edits, and drops stale highlights rather than relocating them.
+- Step navigation and dialog cancellation preserve the editor and existing feedback. The final comparison uses submitted snapshots, never unsubmitted editor text.
 
 ## Safety, Privacy, and Evidence
 
 The UI warning is: "Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service."
 
-Writing, grade level, assignment context, student concerns, optional affect self-reports, and clarification answers may be sent to DeepSeek and stored in SQLite. V2 Support also receives clarification history. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never promise otherwise, and do not improvise crisis keywords, hotline numbers, or localized crisis protocols.
+Writing, assignment/source context, concerns, clarification answers, selected goals, self-reports, and diffs may be sent to DeepSeek and stored in SQLite. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never invent crisis resources or diagnose students.
 
-Use byte-identical fixtures for V1/V2. Temperature 0 reduces variability only in non-thinking mode and never guarantees identical output. Record actual routes, concise final-output rationales, outputs, timing, and errors. Do not store or present hidden chain-of-thought as coordinator reasoning.
-
-The assignment requires all eight submission items in `EDUC_6192_Fall_2026_Syllabus.md`, real V1 review, evidence-based V2 changes, JeepyTA feedback reviewed with judgment, application access, and an AI Use Acknowledgment. Keep `PRD.md`, `project_plan.md`, `AGENTS.md`, and this file consistent with actual behavior.
+Historical V1 evidence is at commit `4eaa0ad` under the `v1` tag. Historical V1/V2 outcomes are in `PRD.md` Sections 7.5–7.7; the old V2 public deployment is commit `7d94b58`. Local V3 is not deployed. Do not claim learner outcomes, educator approval, or pedagogical effectiveness from mocked tests or synthetic model outputs.

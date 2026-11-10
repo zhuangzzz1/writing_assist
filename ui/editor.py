@@ -1,0 +1,146 @@
+from typing import Any
+
+import streamlit as st
+
+
+_EDITOR = st.components.v2.component(
+    "v3_goal_highlight_editor",
+    html="""
+<div class="editor-shell">
+  <div class="editor-wrap">
+    <div class="editor-highlights" aria-hidden="true"><pre id="highlight-content"></pre></div>
+    <textarea id="essay-editor" aria-label="Editable essay draft" spellcheck="true"></textarea>
+  </div>
+  <div class="editor-status"><span id="draft-status">Unsubmitted edits stay in this workspace.</span><span id="word-count">0 words</span></div>
+</div>
+""",
+    css="""
+.editor-shell { width: 100%; }
+.editor-wrap { position: relative; height: 480px; background: #fff; }
+.editor-highlights { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; border: 1px solid transparent; border-radius: 10px; background: #fff; }
+.editor-highlights pre { margin: 0; color: #243042; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: normal; tab-size: 4; }
+#essay-editor { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 18px; resize: none; border: 1px solid #b8c5d6; border-radius: 10px; background: transparent; color: transparent; -webkit-text-fill-color: transparent; caret-color: #1f2937; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; line-height: 1.7; overflow: auto; scrollbar-width: none; }
+#essay-editor::-webkit-scrollbar { display: none; }
+#essay-editor::selection { background: rgba(49,87,200,.25); }
+#essay-editor:focus-visible { outline: 3px solid rgba(49,87,200,.32); outline-offset: 2px; }
+.editor-highlights pre { padding: 18px; }
+.goal-highlight { padding: 1px 0; border-bottom: 2px solid #805600; border-radius: 2px; background: rgba(246,180,77,.52); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.editor-status { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: #526174; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+""",
+    js=r"""
+export default function (component) {
+  const { data, parentElement, setStateValue } = component
+  const editor = parentElement.querySelector('#essay-editor')
+  const highlightContent = parentElement.querySelector('#highlight-content')
+  const wordCount = parentElement.querySelector('#word-count')
+  if (!editor || !highlightContent || !wordCount) return
+
+  const nextValue = data.value ?? ''
+  if (editor.value !== nextValue) editor.value = nextValue
+  const goals = Array.isArray(data.goals) ? data.goals : []
+  const selectedKey = goals.map(goal => goal.goal_id).join('|')
+  const previousKey = editor.dataset.selectedKey || ''
+  const newlySelected = goals.filter(goal => !previousKey.split('|').includes(goal.goal_id))
+
+  function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]))
+  }
+  function paragraphSpans(text) {
+    const spans = []
+    const separator = /(?:\r?\n[ \t]*){2,}/g
+    let start = 0
+    let match
+    while ((match = separator.exec(text)) !== null) {
+      spans.push([start, match.index])
+      start = match.index + match[0].length
+    }
+    spans.push([start, text.length])
+    return spans
+  }
+  function locate(text, goal) {
+    const spans = paragraphSpans(text)
+    const paragraphNumber = Number(goal.paragraph_number)
+    const occurrence = Number(goal.occurrence)
+    if (paragraphNumber < 1 || occurrence < 1 || paragraphNumber > spans.length) return null
+    const [paragraphStart, paragraphEnd] = spans[paragraphNumber - 1]
+    const paragraph = text.slice(paragraphStart, paragraphEnd)
+    const reference = goal.draft_reference
+    if (!reference) return null
+    let index = -1
+    for (let count = 0; count < occurrence; count += 1) {
+      index = paragraph.indexOf(reference, index + 1)
+      if (index < 0) return null
+    }
+    return { goal, start: paragraphStart + index, end: paragraphStart + index + reference.length }
+  }
+  function syncScroll() {
+    highlightContent.style.transform = `translate(${-editor.scrollLeft}px, ${-editor.scrollTop}px)`
+  }
+  function renderHighlights() {
+    const text = editor.value
+    const ranges = goals.map(goal => locate(text, goal)).filter(Boolean).sort((a,b) => a.start - b.start)
+    let cursor = 0
+    let html = ''
+    ranges.forEach(range => {
+      if (range.start < cursor) return
+      html += escapeHTML(text.slice(cursor, range.start))
+      html += `<mark class="goal-highlight" data-goal="${escapeHTML(range.goal.goal_id)}" aria-label="Selected goal reference">${escapeHTML(text.slice(range.start, range.end))}</mark>`
+      cursor = range.end
+    })
+    highlightContent.innerHTML = html + escapeHTML(text.slice(cursor)) + '\n'
+    syncScroll()
+  }
+  function updateCount() {
+    const trimmed = editor.value.trim()
+    wordCount.textContent = `${trimmed ? trimmed.split(/\s+/).length : 0} words`
+  }
+  function scrollGoalIntoView(goal) {
+    const marker = highlightContent.querySelector(`[data-goal="${goal.goal_id}"]`)
+    if (!marker) return
+    editor.scrollTo({top: Math.max(0, marker.offsetTop - editor.clientHeight * .3), behavior: 'smooth'})
+  }
+
+  editor.oninput = () => {
+    updateCount()
+    renderHighlights()
+    setStateValue('value', editor.value)
+  }
+  editor.onscroll = syncScroll
+  editor.onblur = () => {
+    if (editor.value !== data.value) setStateValue('value', editor.value)
+  }
+  updateCount()
+  renderHighlights()
+  if (selectedKey !== previousKey && newlySelected.length) scrollGoalIntoView(newlySelected[newlySelected.length - 1])
+  editor.dataset.selectedKey = selectedKey
+}
+""",
+)
+
+
+def goal_highlight_editor(
+    *,
+    composition_id: str,
+    initial_value: str,
+    selected_goals: list[dict[str, Any]],
+) -> str:
+    key = f"essay_editor_{composition_id}"
+    component_state = st.session_state.get(key, {})
+    value = component_state.get("value", initial_value)
+
+    def sync_value() -> None:
+        value = st.session_state[key]["value"]
+        st.session_state.editor_text = value
+        st.session_state.writing_input = value
+
+    result = _EDITOR(
+        key=key,
+        data={"value": value, "goals": selected_goals},
+        default={"value": value},
+        on_value_change=sync_value,
+        height=530,
+    )
+    value = result.value if result and result.value is not None else value
+    st.session_state.editor_text = value
+    st.session_state.writing_input = value
+    return value

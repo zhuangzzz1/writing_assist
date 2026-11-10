@@ -7,7 +7,7 @@
 **Due:** November 3, 2026  
 **Final application:** Agent-Based Application Version 2
 
-> **Draft completion note — remove before submission:** The writing and local evidence are assembled. Replace `[Student Name]`; submit the draft to JeepyTA and insert the actual review record and decisions in Part 4; add a verified public application URL or attach the required files in Part 7; and export as `FirstName_LastName_Assignment_4.pdf`. Deployment, deployed-scenario verification, and JeepyTA review are not claimed in this draft. All student writing shown is synthetic, and no API keys or real student records are included.
+> **Draft completion note — remove before submission:** The writing and local evidence are assembled. Replace `[Student Name]`; submit the draft to JeepyTA and insert the actual review record and decisions in Part 4; and export as `FirstName_LastName_Assignment_4.pdf`. The public V2 URL and the normal, incomplete/resume, and Boundary A scenarios were verified on November 3, 2026. JeepyTA review is not claimed in this draft. All student writing shown is synthetic, and no API keys or real student records are included.
 
 ---
 
@@ -238,7 +238,7 @@ These problems came from observed V1 behavior, not scripted failures. Part 4 eva
 
 **Agent-Based Application Version 2** retains the two agents and four routes from V1. I changed the instructions, structured handoff, feedback presentation, and bounded error recovery in response to the three problems identified in Part 3; I did not add agents or change the architecture merely to make V2 look more advanced.
 
-The official comparison used byte-identical writing and metadata from the same frozen fixtures, plus the same supplementary strong narrative and clarification-limit answers. Both versions used `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode. The final V2 set also enabled prompt/raw-response capture. The 79-check automated suite passes with mocked model responses and temporary databases. Those tests verify control flow and validation; the behavioral claims below come from the saved real-model runs. Node time is the sum displayed in the dashboard, not total elapsed time spent waiting for a student's answer.
+The official comparison used byte-identical writing and metadata from the same frozen fixtures, plus the same supplementary strong narrative and clarification-limit answers. Both versions used `deepseek-flash`, non-thinking mode, temperature 0, and JSON mode. The final V2 set also enabled prompt/raw-response capture. The current 81-check automated suite passes with mocked model responses and temporary databases. Those tests verify control flow and validation; the behavioral claims below come from the saved real-model runs. Node time is the sum displayed in the dashboard, not total elapsed time spent waiting for a student's answer.
 
 > **Formative-review dependency:** The implementation and scenario verification are complete, but this draft still needs to be submitted to JeepyTA before V2 is finalized for submission. The review date, link, and resulting decisions should be inserted here. No JeepyTA feedback is claimed in this draft. The AI-review examples in Part 5 come from separately documented tool-generated reviews, not from JeepyTA.
 
@@ -358,10 +358,11 @@ Important limits remain. One V2 practice example still reveals the requested exp
 
 ### Public access
 
-**Deployed V2 URL:** [Insert the Streamlit Cloud URL after deployment and verification of the normal, incomplete, and boundary scenarios.]  
-**Source repository:** [Insert the reviewer-accessible GitHub URL after pushing the V2 commit and annotated `v1` tag.]
+**Deployed V2 URL:** https://writingassist-zhuang.streamlit.app  
+**Source repository:** https://github.com/zhuangzzz1/writing_assist  
+**Deployed revision:** `8828fc9` on `main`, using Python 3.12 on Streamlit Cloud
 
-A localhost address is not instructor-accessible. Until a verified URL is supplied, the required application and configuration files should be attached with the submission. No deployment or deployed behavior is claimed in this draft.
+The public URL was loaded successfully on November 3, 2026. Deployed checks covered normal support with learner-selected scaffolding and optional practice, specific clarification followed by exact checkpoint resume on the same run, and Boundary A teacher review with separate student and teacher outputs. The frozen synthetic fixtures were used unchanged. Cloud SQLite data lasts only until manual deletion or filesystem replacement; session URLs are not authentication, so the public demo must remain restricted to synthetic content.
 
 ### Required files and local review
 
@@ -380,7 +381,7 @@ streamlit run app.py
 
 The application defaults to V2. Use only synthetic writing. The evaluator-oriented dashboard intentionally exposes routing, state, timing, and graph details for this assignment; a production student interface should separate or simplify those instruments.
 
-Raw run databases are not submitted because they contain complete inputs, outputs, execution details, and checkpoints. Selected synthetic-run evidence is embedded in this document. If a cloud deployment is used, its SQLite data lasts only until manual deletion or filesystem replacement. Session URLs are not authentication, so the public demo must remain restricted to synthetic content.
+Raw run databases are not submitted because they contain complete inputs, outputs, execution details, and checkpoints. Selected synthetic-run evidence is embedded in this document. The cloud deployment's SQLite data lasts only until manual deletion or filesystem replacement. Session URLs are not authentication, so the public demo must remain restricted to synthetic content.
 
 ## Part 8. AI Use Acknowledgment
 

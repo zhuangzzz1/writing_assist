@@ -1,11 +1,12 @@
 # Product Requirements Document (PRD)
 # Multi-Agent Writing Assistant for 5th-7th Grade Students
 
-**Version**: 1.7
-**Date**: 2026-11-03
+**Version**: 1.8
+**Date**: 2026-11-04
 **Course**: EDUC 6192 - LLM and Education (UPenn GSE)
 **Assignment**: Applied Assignment 4 - Agent-based Educational Application
 **Delivery Approach**: Verified implementation milestones with separate real-evidence gates
+**V3 Local Implementation**: [PRD_V3_ITERATIVE_REVISION.md](PRD_V3_ITERATIVE_REVISION.md) defines the active local V3 iterative revision product. This document remains the authoritative historical record of the implemented V1/V2 coursework application and its evidence; it does not describe V3 behavior or deployment.
 
 ---
 
@@ -20,12 +21,12 @@ A multi-agent system built with LangGraph that provides developmentally-appropri
 3. **Learning**: Build observable system to deeply understand multi-agent interactions
 4. **Academic**: Meet all rubric criteria for EDUC 6192 Assignment 4
 
-### 1.3 Target Metrics (to be validated after implementation)
-- [ ] Passes all 3 test cases (normal, incomplete, boundary)
-- [ ] Demonstrates clear V1→V2 improvement with evidence
-- [ ] Shows meaningful agent-controlled routing decisions
-- [ ] Provides observability into agent behavior
-- [ ] Meets all 5 rubric criteria (100%)
+### 1.3 Target Metrics (validation status)
+- [x] Passed the normal, incomplete, and boundary scenarios in the documented real runs
+- [x] Demonstrated specific V1→V2 changes with before-and-after evidence
+- [x] Showed meaningful agent-controlled routing decisions
+- [x] Provided observability into agent behavior
+- [ ] Meets all 5 rubric criteria (100%); rubric completion is not claimed
 
 ---
 
@@ -459,7 +460,8 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
 ### 6.2 Key UI Components
 
 **Sidebar: developer controls (for testing and debugging)**
-- Text call-to-action button to hide the developer controls; a prominent primary **Show Developer Controls** button at the top of the main content restores them
+- Hidden by default for a student-focused initial view; a prominent primary **Show Developer Controls** button at the top of the main content reveals them
+- Text call-to-action button hides the developer controls again
 - Fixed active-version label (V1 during this milestone); V1 is preserved by a Git tag, not a runtime selector
 - Test case loader: Buttons (Load Normal / Incomplete / Boundary A / Boundary B)
 - Debug options: State, timing, and logs; captured prompt/response controls and opt-in capture on new runs require server-side debug mode
@@ -485,7 +487,8 @@ The submission's AI Use Acknowledgment will state that all test data is syntheti
   - LLM responses (if debug enabled)
 
 **Right Panel (Observability)**
-- **Hide Agent Observability** hides the panel and expands the writing area; a prominent primary **Show Agent Observability** button in the upper-right restores it
+- Hidden by default so the initial view focuses on writing input and student feedback; a prominent primary **Show Agent Observability** button in the upper-right reveals it
+- **Hide Agent Observability** hides the panel again and expands the writing area
 - **Routing Visualization**:
   - Text path: "Assessment Coordinator → Support Agent → Feedback"
   - Visual indicator of route taken
@@ -1004,7 +1007,7 @@ DATABASE_PATH=data/writing_assistant.db
 **Milestone 5: Deployment and submission**
 - [x] Deploy the post-JeepyTA V2 app and test the public app, normal case, incomplete/resume case, and Boundary A
 - [x] Finalize all eight submission items in the concise Markdown document, including verified application access and the AI Use Acknowledgment
-- [x] Regenerate and visually verify the redacted 23-page final PDF; final Canvas submission remains open
+- [x] Generate and visually verify the redacted 20-page PDF from `submission/Applied_Assignment_4_Concise_user_edited.md`; final Canvas submission remains open
 
 ---
 
@@ -1023,7 +1026,7 @@ DATABASE_PATH=data/writing_assistant.db
 - [ ] Demonstrates meaningful agent-controlled decisions
 - [ ] Conditional routing (not fixed workflow)
 - [ ] Distinct and necessary agent roles
-- [x] Evidence: Working Streamlit Cloud deployment at `https://writingassist-zhuang.streamlit.app`, deployment screenshots, and `data/evidence/deployed_v2_verification_20261103.json`
+- [x] Evidence: Working Streamlit Cloud deployment at `https://writingassist-zhuang.streamlit.app`, post-review deployment screenshots, and `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json`
 
 **Criterion 3: Agent Behavior, Coordination, Boundaries (20%)**
 - [ ] Handles normal, incomplete, boundary cases appropriately
@@ -1046,33 +1049,33 @@ DATABASE_PATH=data/writing_assistant.db
 ### 11.2 Definition of Done
 
 **Technical Completion**:
-- [ ] Both agents work reliably in real scenario runs
+- [x] Both agents completed the documented final real scenario runs; this sample does not establish general reliability
 - [x] All 4 routing paths function in automated mocked-model graph tests
-- [ ] Verified V1 is preserved by a Git tag and V2 is deployable as the active app
+- [x] Verified V1 is preserved by a public Git tag and V2 is deployable as the active app
 - [x] Observability dashboard and graph visualization are implemented and covered by headless app/DOT tests
 - [x] Frozen test cases load successfully in automated fixture and Streamlit tests
-- [ ] Frozen test cases complete real model runs successfully
-- [ ] Deployed to Streamlit Cloud with public URL
+- [x] Frozen test cases completed the documented real model runs successfully
+- [x] Deployed to Streamlit Cloud with public URL
 
-**Documentation Completion** (all 8 submission items per syllabus):
-- [ ] 1. Educational Need and Agent Architecture
-- [ ] 2. Agent-Based Application Version 1 and Evidence
-- [ ] 3. Review of Agent-Based Application Version 1
-- [ ] 4. Agent-Based Application Version 2, Before-and-After Evidence, and Verification
-- [ ] 5. Agent Architecture and Development Process
-- [ ] 6. Brief Reflection (200-300 words)
-- [ ] 7. Agent-Based Application Access (Streamlit Cloud URL / files / notebook)
-- [ ] 8. AI Use Acknowledgment (tool, purpose, contribution)
-- [ ] Evidence collected (screenshots, logs, graphs)
-- [ ] Reflection articulates learning
-- [ ] GitHub repo organized and documented
+**Documentation Completion** (all 8 submission items per syllabus; artifact presence, not a rubric-score claim):
+- [x] 1. Educational Need and Agent Architecture
+- [x] 2. Agent-Based Application Version 1 and Evidence
+- [x] 3. Review of Agent-Based Application Version 1
+- [x] 4. Agent-Based Application Version 2, Before-and-After Evidence, and Verification
+- [x] 5. Agent Architecture and Development Process
+- [x] 6. Brief Reflection (213 words in the current concise source)
+- [x] 7. Agent-Based Application Access (Streamlit Cloud URL / files / notebook)
+- [x] 8. AI Use Acknowledgment (tool, purpose, contribution)
+- [x] Evidence collected (screenshots, logs, graphs)
+- [x] Reflection articulates learning
+- [x] GitHub repo organized and documented
 
 **Quality Gates**:
-- [ ] Professor can access and test app via URL
-- [ ] All test cases demonstrate expected behavior
-- [ ] V1→V2 improvements are clear and measurable
-- [ ] No critical bugs or crashes
-- [ ] Error messages are user-friendly
+- [x] The public application URL loaded in the browser, and deployed scenario checks were completed on 2026-11-03
+- [x] All documented final scenarios demonstrate their expected behavior
+- [x] Before-and-after evidence documents specific V1→V2 changes
+- [x] No critical bugs or crashes occurred in the documented final scenarios
+- [x] Standard error paths expose user-safe messages covered by automated tests
 
 ---
 
@@ -1210,15 +1213,13 @@ DATABASE_PATH=data/writing_assistant.db
 
 **Educational Resources**:
 - Grade-level writing standards: Common Core State Standards
-- Developmental appropriateness: [Age-appropriate feedback guidelines]
-- Formative assessment principles: [Educational assessment resources]
 
 ### 14.3 Contact & Support
 
-**Project Owner**: [Your Name]  
+**Project Owner**: Patrick Zhuang
+
 **Course**: EDUC 6192 - LLM and Education  
 **Institution**: University of Pennsylvania, Graduate School of Education  
-**Instructor**: [Instructor Name]  
 **TA**: JeepyTA
 
 ---
@@ -1234,6 +1235,7 @@ DATABASE_PATH=data/writing_assistant.db
 - v1.5 (2026-11-02): Assembled and rubric-reviewed Parts 1–6, application-access placeholders, and the AI Use Acknowledgment in a consolidated Markdown/HTML/PDF draft with ten figures
 - v1.6 (2026-11-03): Deployed V2 to Streamlit Cloud, verified the public app and required scenarios, and updated verified application access
 - v1.7 (2026-11-03): Incorporated JeepyTA feedback, removed complete V2 worked examples, clarified instructional escalation, completed the 83-check and definitive eight-scenario sets, and verified the post-review deployment
+- v1.8 (2026-11-04): Reconciled current submission pointers and evidence gates after repository-synchronization feedback; publication of the newest concise PDF remains pending
 
 **Approval and Current Status**:
 - [x] Technical feasibility and rubric alignment reviewed; rubric completion is not claimed
@@ -1242,15 +1244,16 @@ DATABASE_PATH=data/writing_assistant.db
 - [x] Current 83-check mocked-model suite, definitive real scenario set, and local browser evidence completed
 - [x] Actual V1/V2 outcomes and remaining limitations documented in Sections 7.5–7.7
 - [x] Post-JeepyTA V2 changes committed and deployed from `origin/main` at commit `7d94b58`
-- [x] Concise submission completed with verified application access, actual review decisions, and ten figures; final administrative steps remain open
+- [x] Current concise submission completed in `submission/Applied_Assignment_4_Concise_user_edited.md` and its visually verified 20-page PDF, with application access, actual review decisions, and ten figures; final administrative steps remain open
 - [x] Post-JeepyTA deployment and normal/incomplete/Boundary A verification completed after an authorized reboot
 - [x] JeepyTA review completed on 2026-11-03
 - [ ] Final Canvas submission and rubric completion
 
 **Next Steps**:
-1. Submit the verified final PDF's JeepyTA assignment link on Canvas
-2. Keep the public README, PDF, and deployed behavior synchronized after any future change
-3. Retain synthetic-only use and do not commit secrets, databases, or unredacted evidence
+1. Commit and push the current concise Markdown/PDF and synchronized documentation so the public repository matches the current submission
+2. Submit the verified final PDF's JeepyTA assignment link on Canvas
+3. Keep the public README, PDF, and deployed behavior synchronized after any future change
+4. Retain synthetic-only use and do not commit secrets, databases, or unredacted evidence
 
 ---
 

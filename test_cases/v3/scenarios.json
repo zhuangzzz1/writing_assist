@@ -1,0 +1,71 @@
+{
+  "fixture_version": "v3.1.0",
+  "scenarios": [
+    {
+      "scenario_id": "garden_source_accurate",
+      "name": "Community garden argument with a source",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility.\n\nIn the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce.\n\nA garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens.\n\nIn conclusion, our school should build a community garden.",
+      "assignment_prompt": "Write an argument about whether our school should start a community garden.",
+      "teacher_directions": "Include a clear claim, two reasons, and an explanation of your evidence.",
+      "source_material": "Paragraph 1: An anonymous synthetic class survey asked 50 students whether they would try vegetables from a school garden. 31 students (62%) said yes. The survey measured interest, not health outcomes.",
+      "student_concerns": "I want to explain my evidence more clearly."
+    },
+    {
+      "scenario_id": "garden_source_mismatch",
+      "name": "Community garden argument with a source mismatch",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a community garden because students would learn to care for plants. A school survey included 500 students, and most said they wanted fresh vegetables. This proves that a garden would improve everyone's health.",
+      "assignment_prompt": "Write a source-based argument about a community garden.",
+      "teacher_directions": "Use the supplied survey accurately and explain what it shows.",
+      "source_material": "Paragraph 1: A synthetic class survey included 50 students. 31 students said they would try vegetables from a school garden. The survey did not measure health outcomes.",
+      "student_concerns": ""
+    },
+    {
+      "scenario_id": "source_missing_boundary",
+      "name": "Text-dependent argument without its source",
+      "grade_level": "7th Grade",
+      "genre": "argument",
+      "draft": "The author argues that later start times would help students. The passage says that students were more alert, and this supports the claim that our school should change its schedule. The change could be difficult for families, but the learning benefits matter.",
+      "assignment_prompt": "Use the assigned passage to argue whether the school should adopt later start times.",
+      "teacher_directions": "Explain how the passage supports your position.",
+      "source_material": "",
+      "student_concerns": "Please check whether I used the passage well."
+    },
+    {
+      "scenario_id": "races_informational_pollination",
+      "name": "Informational writing with RACES directions",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Bees are important to gardens. Bees help plants grow. They visit many flowers in one day. Without bees, gardeners would have fewer vegetables.\n\nPeople can help bees by planting flowers. They can also avoid using harmful chemicals.",
+      "assignment_prompt": "Explain how bees help garden plants reproduce and why that matters.",
+      "teacher_directions": "Use RACES: Restate the question, Answer it, Cite the supplied text, Explain the connection, and Sum up.",
+      "source_material": "Paragraph 1: Pollen collects on a bee's body as it visits a flower. When the bee visits another flower of the same kind, some pollen can rub off. This transfer can help the plant form seeds and fruit.",
+      "student_concerns": ""
+    },
+    {
+      "scenario_id": "personal_narrative_voice",
+      "name": "Personal narrative with an informal voice",
+      "grade_level": "5th Grade",
+      "genre": "narrative",
+      "draft": "The auditorium was kinda scary when I looked at all the chairs. My hands felt cold, and I held my note cards tighter. Then Mia smiled at me from the front row. I walked to the microphone and started my first line.",
+      "assignment_prompt": "Tell about a moment when you faced a challenge.",
+      "teacher_directions": "Help readers picture the moment and understand what changed.",
+      "source_material": "",
+      "student_concerns": "I want the ending to show what happened next."
+    },
+    {
+      "scenario_id": "short_grade5_argument",
+      "name": "Short grade-five argument",
+      "grade_level": "5th Grade",
+      "genre": "auto",
+      "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable.",
+      "assignment_prompt": "Write an argument for one improvement to our classroom.",
+      "teacher_directions": "State your idea and explain your reason. You do not need five paragraphs.",
+      "source_material": "",
+      "student_concerns": ""
+    }
+  ]
+}

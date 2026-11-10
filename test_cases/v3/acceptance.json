@@ -1,0 +1,415 @@
+{
+  "fixture_version": "v3.2.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "acceptance_01_accurate_source",
+      "name": "Accurate source argument with revision and reflection",
+      "base_scenario": "garden_source_accurate",
+      "acceptance_focus": "Accurate source use and grounded revision comparison",
+      "revisions": [
+        {
+          "draft": "Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility.\n\nIn the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce.\n\nA garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. When students care for plants without being reminded, they practice noticing shared responsibilities. This can help them contribute to their school community.\n\nIn conclusion, our school should build a community garden.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 2,
+      "scenario_id": "acceptance_02_source_mismatch",
+      "name": "Source mismatch with specific passage reference",
+      "base_scenario": "garden_source_mismatch",
+      "acceptance_focus": "Bounded mismatch observation tied to the supplied passage"
+    },
+    {
+      "number": 3,
+      "scenario_id": "acceptance_03_source_missing",
+      "name": "Text-dependent argument without source",
+      "base_scenario": "source_missing_boundary",
+      "acceptance_focus": "No source accuracy claim and an invitation to add the passage"
+    },
+    {
+      "number": 4,
+      "scenario_id": "acceptance_04_races",
+      "name": "Informational RACES draft",
+      "base_scenario": "races_informational_pollination",
+      "acceptance_focus": "Use RACES terminology and check every requested component"
+    },
+    {
+      "number": 5,
+      "scenario_id": "acceptance_05_narrative",
+      "name": "Narrative development without citation demands",
+      "base_scenario": "personal_narrative_voice",
+      "acceptance_focus": "Narrative development and voice without citations or counterclaims"
+    },
+    {
+      "number": 6,
+      "scenario_id": "acceptance_06_genre_correction",
+      "name": "Auto genre with student correction",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Correctable working genre with reassessment and no new snapshot",
+      "genre_correction": "narrative"
+    },
+    {
+      "number": 7,
+      "scenario_id": "acceptance_07_three_goals",
+      "name": "Three goals revised together",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Gardens are good.\n\nA survey said 500 students want garden vegetables.\n\nFirst, students water plants. Next, they cook vegetables. This helps everyone.",
+      "assignment_prompt": "Argue whether our school should start a garden.",
+      "teacher_directions": "State a clear position, use the supplied source accurately, and connect your reasons in a logical sequence.",
+      "source_material": "Paragraph 1: A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest, not health outcomes.",
+      "student_concerns": "",
+      "acceptance_focus": "Three selected goals, three student-authored changes, and three grounded observations",
+      "revisions": [
+        {
+          "draft": "Our school should start a garden because it can teach responsibility and give students fresh food. The supplied survey of 50 students found that 31 would try garden vegetables, which shows interest rather than health outcomes. First, students can water plants and record what regular care requires. Next, they can explain how that shared work helps the school community. These steps connect the evidence and the responsibility reason to the claim.",
+          "goal_selection": "three",
+          "self_reports": {"all": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "scenario_id": "acceptance_08_one_goal_multiple_rounds",
+      "name": "One goal across two rounds before stopping",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our class should have a reading corner. It would give students a quiet place to read. A corner would be nice.",
+      "assignment_prompt": "Argue for one classroom improvement.",
+      "teacher_directions": "Explain why your improvement matters.",
+      "source_material": "",
+      "student_concerns": "I want to keep working on the same explanation goal.",
+      "acceptance_focus": "One carried goal across two rounds, neutral progress language, and voluntary stopping",
+      "revisions": [
+        {
+          "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers sit at their desks, and it can be hard to focus when classmates are talking. A corner would be nice.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        },
+        {
+          "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers sit at their desks, and it can be hard to focus when classmates are talking. A small corner with cushions and a bookshelf would give those readers a separate place to concentrate without leaving the classroom.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 9,
+      "scenario_id": "acceptance_09_organization_regression",
+      "name": "Revision introduces an organizational regression",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Our cafeteria can reduce food waste by helping students understand what they throw away. First, a waste audit can show which foods are discarded most often. Next, students can use that information to choose smaller portions. Finally, the cafeteria can track whether waste changes after those choices.",
+      "assignment_prompt": "Explain one way the cafeteria could reduce food waste.",
+      "teacher_directions": "Keep the steps in a clear logical sequence.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Recognize a new contradiction or broken sequence without inventing improvement",
+      "revisions": [
+        {
+          "draft": "Our cafeteria can reduce food waste by helping students understand what they throw away. Finally, students can choose smaller portions. First, a waste audit can show which foods are discarded most often, but the audit is not needed before making choices. Next, the cafeteria can track whether waste changes, although no one will know what caused the change.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "scenario_id": "acceptance_10_strong_draft",
+      "name": "Strong draft without manufactured issues",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should add a quiet reading period because it gives students time to practice choosing and enjoying books. During a recent synthetic class discussion, several students said interruptions made sustained reading difficult. A short scheduled period would protect that focus while still allowing teachers to offer help. This routine would support reading without replacing regular instruction.",
+      "assignment_prompt": "Argue for one realistic reading routine at school.",
+      "teacher_directions": "State a claim, give a relevant reason, and explain it.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Affirmation without forced criticism or a required revision"
+    },
+    {
+      "number": 11,
+      "scenario_id": "acceptance_11_final_reflection",
+      "name": "Final reflection distinguishes original strengths from improvement",
+      "grade_level": "5th Grade",
+      "genre": "narrative",
+      "draft": "I stood outside the science room with my poster. The hallway was kinda quiet, and I kept looking at my shoes. Then my friend waved from the door. I walked in and put the poster on the table.",
+      "assignment_prompt": "Tell about a moment when you faced a challenge.",
+      "teacher_directions": "Use details and show what changed.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Original strengths, actual later improvement, optional future possibilities, and encouraging closure",
+      "revisions": [
+        {
+          "draft": "I stood outside the science room with my poster. The hallway was kinda quiet, and I kept looking at my shoes. Then my friend waved from the door. I walked in and put the poster on the table. My hands stopped shaking when I answered the first question, and I smiled because I had made it through the hard part.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 12,
+      "scenario_id": "acceptance_12_concerning_revision",
+      "name": "Concerning revision bypasses normal critique",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "I was nervous before my class presentation. My friend waited beside me while I practiced my first line. Then I walked to the front of the room.",
+      "assignment_prompt": "Write about a personal experience.",
+      "teacher_directions": "Use concrete details.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Human-review override on a later submission without normal writing feedback",
+      "revisions": [
+        {
+          "draft": "I was nervous before my class presentation. I do not feel safe at school because a student keeps waiting for me after class. I have started taking a different way home. I do not want writing feedback today.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "scenario_id": "acceptance_13_scenario_loading",
+      "name": "Complete text-dependent practice scenario",
+      "base_scenario": "garden_source_accurate",
+      "acceptance_focus": "Complete editable scenario fields, recorded fixture version, and overwrite protection"
+    },
+    {
+      "number": 14,
+      "scenario_id": "acceptance_14_one_word_and_punctuation",
+      "name": "One-word and punctuation-only revisions",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Schools must allow gardens. Students would learn responsibility.",
+      "assignment_prompt": "Argue whether schools should allow gardens.",
+      "teacher_directions": "Explain your position.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Neutral change notices without a trivial label or fabricated improvement",
+      "revisions": [
+        {
+          "draft": "Schools should allow gardens. Students would learn responsibility.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        },
+        {
+          "draft": "Schools should allow gardens. Students would learn responsibility!",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "scenario_id": "acceptance_15_deferred_goals",
+      "name": "Two of three selected goals deferred",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should allow a garden. A survey happened. Students would water plants. This would help everyone.",
+      "assignment_prompt": "Argue whether our school should allow a garden.",
+      "teacher_directions": "State a clear position, explain your evidence, and connect your reasons.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Acknowledge one attempted goal and offer two neutral carry-forward choices",
+      "revisions": [
+        {
+          "draft": "Our school should allow a garden because it can teach shared responsibility. A survey happened. Students would water plants. This would help everyone.",
+          "goal_selection": "three",
+          "self_reports": {"first": "attempted", "others": "deferred"}
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "scenario_id": "acceptance_16_scaffold_boundary",
+      "name": "Scaffold boundary with abstract support",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden because it would teach responsibility. Students would water plants and pull weeds. This would help them become better citizens.",
+      "assignment_prompt": "Argue for a school garden and explain your reason.",
+      "teacher_directions": "Use your own explanation rather than a copied sentence.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Specific guided thinking without an assigned-topic replacement answer"
+    },
+    {
+      "number": 17,
+      "scenario_id": "acceptance_17_storage_loss",
+      "name": "Storage loss during composition",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Student-safe recovery with copyable runtime text and no false restoration claim"
+    },
+    {
+      "number": 18,
+      "scenario_id": "acceptance_18_repeated_highlights",
+      "name": "Multiple goals and repeated-passage highlights",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Bees help plants. They visit flowers every day.\n\nBees help plants. Gardeners need this process to grow food.",
+      "assignment_prompt": "Explain how bees help plants reproduce.",
+      "teacher_directions": "Explain the process and connect the paragraphs.",
+      "source_material": "Paragraph 1: Bees can carry pollen from one flower to another. This transfer can help plants form seeds and fruit.",
+      "student_concerns": "",
+      "acceptance_focus": "Correct occurrence metadata, multiple highlights, deselection, and stale removal"
+    },
+    {
+      "number": 19,
+      "scenario_id": "acceptance_19_next_round",
+      "name": "Next-round navigation and editor preservation",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Choose another round while preserving the essay and restoring revision actions",
+      "revisions": [
+        {
+          "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable and help students focus when classmates are talking.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "scenario_id": "acceptance_20_finish_confirmation",
+      "name": "Finish-dialog cancellation and confirmation",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Cancellation preserves state and confirmation is required from both entry points",
+      "revisions": [
+        {
+          "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable and give students a predictable place to focus.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 21,
+      "scenario_id": "acceptance_21_responsibility_hint",
+      "name": "Specific responsibility hint without an answer",
+      "base_scenario": "garden_source_accurate",
+      "acceptance_focus": "Actual passage reference, two to four linked prompts, a self-check, and no completed explanation"
+    },
+    {
+      "number": 22,
+      "scenario_id": "acceptance_22_short_grade5",
+      "name": "Three-to-four-sentence grade-5 argument",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Proportional elaboration without demanding a five-paragraph structure"
+    },
+    {
+      "number": 23,
+      "scenario_id": "acceptance_23_long_informational",
+      "name": "Long grade-7 informational essay with source",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "School gardens are often described as outdoor classrooms because they connect scientific ideas with daily activity. A garden gives students a place to observe plant growth, but the educational value depends on what students actually do and record. A patch of soil by itself does not explain a process.\n\nPlant growth begins with conditions that support seeds. Water enters a seed and activates processes that allow a root and shoot to emerge. Soil, light, and temperature influence whether the young plant continues to grow. Students can observe these changes by measuring the same plants on regular days. A notebook with dates and measurements is more useful than a general statement that the plants are doing fine.\n\nPollination is another process that students can study. Bees and other animals may carry pollen between flowers. This movement can help plants form seeds and fruit. Students who only write that bees are nice miss the relationship between the insect and the plant. A better observation records where the bee lands, what it does, and what part of the plant changes later.\n\nA garden also supports lessons about evidence. If one plant grows taller than another, students should compare light, water, soil, and plant type before offering an explanation. The tallest plant did not necessarily receive the best care. A single observation cannot show every cause, and a class should avoid turning one result into a rule for every garden.\n\nOrganization matters during these investigations. Students can divide responsibilities for watering, measuring, and recording, but they should use the same procedure each time. If one group changes the schedule while another group does not, the records may be difficult to compare. Shared directions help students understand whether differences came from the plants or from the investigation.\n\nTeachers can connect the garden to writing by asking students to explain one process using their observations. The strongest explanation should include a central idea, relevant details, and a clear sequence. Students should identify which claims came from the supplied passage, which came from observation, and which remain uncertain. They should also avoid listing every measurement without explaining why it matters.\n\nA school garden therefore works best as a repeated investigation rather than a one-time decoration. Students can return to the same plants, compare new evidence with earlier notes, and revise their explanations when the evidence changes. This process makes the garden useful for both science and informational writing because it rewards careful observation, organized records, and bounded conclusions.",
+      "assignment_prompt": "Explain how a school garden can support scientific observation and evidence-based informational writing.",
+      "teacher_directions": "Use the supplied passage, organize by subtopic, and prioritize explanation rather than listing facts.",
+      "source_material": "Paragraph 1: Seeds take in water before a root and shoot emerge. Light, temperature, water, and soil conditions affect later growth. Regular measurements taken under consistent conditions are more comparable than occasional observations.\n\nParagraph 2: Pollinators can carry pollen between flowers. This transfer can help plants form seeds and fruit. Observing where an insect lands and what it does can help students describe the process, but one observation does not establish every cause of plant growth.",
+      "student_concerns": "",
+      "acceptance_focus": "A small prioritized issue set and accurate references across multiple paragraphs"
+    },
+    {
+      "number": 24,
+      "scenario_id": "acceptance_24_language_errors",
+      "name": "Grade-6 argument with non-obscuring language errors",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden because it can teach responsibility and give students a useful reason to observe plants. In a synthetic class survey, 31 of 50 students said they would try vegetables from a garden. This detail shows interest in using the garden, although it does not prove that every student would participate.\n\nThe garden would also give a students regular jobs. Students learns to notice when plants need water and to complete a task in weekend without being reminded. These actions can build habits that matter in other shared spaces. The evidence about interest supports the plan, while the daily jobs explain how the plan could help students over time.\n\nSome people may worry that gardening takes time away from class. A teacher can connect the jobs to science observations, so the activity has a clear learning purpose. Students could still make mistake in a notebook, but the mistake would give them something to investigate. The garden is worth trying because it combines student interest, shared responsibility, and a realistic way to study plants.",
+      "assignment_prompt": "Write a source-based argument about whether the school should start a garden.",
+      "teacher_directions": "Prioritize claim, evidence, reasoning, and organization. Language corrections are optional unless they obscure meaning.",
+      "source_material": "Paragraph 1: A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest and did not measure participation or health outcomes.",
+      "student_concerns": "",
+      "acceptance_focus": "Prioritize thinking and organization over non-obscuring article, tense, and preposition errors"
+    },
+    {
+      "number": 25,
+      "scenario_id": "acceptance_25_weak_middle",
+      "name": "Strong outer paragraphs and weak middle explanation",
+      "grade_level": "7th Grade",
+      "genre": "argument",
+      "draft": "Our school should create a student library committee because students can help choose books that match their interests and reading goals. A committee would give readers a structured way to recommend titles, explain gaps in the collection, and discuss choices with the librarian. This approach would support student voice without asking students to make purchasing decisions alone.\n\nStudents have many interests. Some like mysteries and others like science. The committee would meet every week.\n\nReading is important for learning. Books can be about different places. Students would enjoy the meetings.\n\nFor these reasons, a student library committee would give readers a meaningful role in improving the collection while preserving the librarian's professional judgment. The school could begin with a small trial, review student recommendations, and decide whether the process helps readers find more engaging books.",
+      "assignment_prompt": "Argue whether the school should create a student library committee.",
+      "teacher_directions": "Keep the strong introduction and conclusion. Develop the middle paragraphs with specific reasons and connections.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Target middle paragraphs for explanation and cohesion without forcing changes to strong sections"
+    },
+    {
+      "number": 26,
+      "scenario_id": "acceptance_26_informal_narrative",
+      "name": "Grade-5 narrative with informal voice",
+      "base_scenario": "personal_narrative_voice",
+      "acceptance_focus": "Narrative development without formalizing appropriate voice"
+    },
+    {
+      "number": 27,
+      "scenario_id": "acceptance_27_register_shifts",
+      "name": "Grade-7 informational register shifts",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Photosynthesis is kinda amazing because plants make their own food. The aforementioned botanical mechanism utilizes luminous energy to facilitate carbohydrate synthesis. Leaves take in sunlight and use it to change water and carbon dioxide into sugar. This process is super cool and helps plants grow.\n\nChlorophyll is the green pigment that absorbs light energy. The stomata, those tiny little things under the leaf, allow carbon dioxide to enter. Oxygen is released during the process. People often think plants get food from soil, but soil mainly provides water and minerals rather than sugar. Understanding this difference helps readers see why light and air matter so much to plant growth.",
+      "assignment_prompt": "Explain photosynthesis to another seventh-grade student.",
+      "teacher_directions": "Use a consistent explanatory register. Casual or formal wording is not automatically wrong; consider the audience and purpose.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Optional register-consistency focus without declaring either phrasing inherently wrong"
+    },
+    {
+      "number": 28,
+      "scenario_id": "acceptance_28_identical_resubmissions",
+      "name": "Several identical resubmissions",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden because students would learn responsibility. Students would water plants. This would help them become better citizens.",
+      "assignment_prompt": "Argue for a school garden and explain your reason.",
+      "teacher_directions": "Explain the connection in your own words.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Neutral editing, continuation, and finish choices without repetition-based escalation",
+      "revisions": [
+        {
+          "draft": "Our school should start a garden because students would learn responsibility. Students would water plants. This would help them become better citizens.",
+          "goal_selection": "first",
+          "self_reports": {}
+        },
+        {
+          "draft": "Our school should start a garden because students would learn responsibility. Students would water plants. This would help them become better citizens.",
+          "goal_selection": "first",
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "scenario_id": "acceptance_29_support_actions",
+      "name": "Show less feedback and I'm stuck",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should allow a garden. A survey happened. Students would water plants. This would help everyone.",
+      "assignment_prompt": "Argue whether our school should allow a garden.",
+      "teacher_directions": "State a clear position, explain your evidence, and connect your reasons.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Fewer visible choices and one pregenerated next step without a call, escalation, or emotion inference"
+    },
+    {
+      "number": 30,
+      "scenario_id": "acceptance_30_clarification_limit",
+      "name": "Two unclear clarification answers",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "Stuff",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "One question at a time, a simpler second question, then explicit clarification_limit with history",
+      "clarification_answers": ["Not sure", "Anything, I guess"]
+    }
+  ]
+}

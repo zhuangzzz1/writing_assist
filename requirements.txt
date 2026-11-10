@@ -1,6 +1,6 @@
 langgraph>=1.2.12,<2.0.0
 langgraph-checkpoint-sqlite>=2.0.0,<4.0.0
-streamlit>=1.30.0,<2.0.0
+streamlit>=1.66.0,<2.0.0
 pydantic>=2.10.0,<3.0.0
 python-dotenv>=1.0.0,<2.0.0
 requests>=2.31.0,<3.0.0
