@@ -603,3 +603,51 @@ The later schema `v3.2.1` default is covered by automated and targeted real-mode
 - `data/evidence/v3_improvement_browser_20261110.json`
 - `EDUCATOR_REVIEW_PROTOCOL.md`
 - `CHANGELOG.md`
+
+## 17. V3.4.0 Integrated Implementation Addendum
+
+### 17.1 Scope
+
+The `v3.4.0` prompt/schema release implements the validated prompt-review plan:
+
+- Optional structured framework name/component inputs support CER, RACE, RACES, MEAL, and explicit custom frameworks, with additive SQLite migration and restoration.
+- The Coordinator owns framework-neutral coverage. Present components require exact located references; issue components reference existing goal IDs. Support renders the handoff without adding issues.
+- Explicit genre is normalized deterministically, candidate order follows Coordinator issue order, vocabulary entries are plain strings, and no-source dependency is explicit.
+- Optional-language mechanics use a structured `obscures_meaning` judgment rather than description keywords.
+- Support source payloads are conditional, empty revision clarification history is omitted, and final original strengths/future possibilities pass through validated Coordinator findings.
+- Identical, nested, and transitively overlapping references share a union highlight with goal membership and textual explanations. This presentation behavior does not establish semantic duplication.
+- The acceptance fixture set adds final reflection to #7/#9/#15 and controlled 58-word/404-word informational fixtures #31/#32 with no candidate-count quota.
+- Evaluation databases are checkpointed and closed before byte/SHA-256 capture. Cumulative execution logs are deduplicated by `(thread_id, node, timestamp)`; service operations remain separate.
+
+### 17.2 Current Verification
+
+- **213 mocked automated checks passed**, including framework contracts, migration/restoration, overlap grouping, payload boundaries, final pass-through, fixtures, and stable evidence capture.
+- Chrome evidence is `data/evidence/v3_4_browser_verification.json`. It records structured RACES loading and complete coverage without Coordinator repair, a grounded revision/final loop with finish cancellation/confirmation, and overlap selection/deselection using preserved nested output in a copied database.
+- The controlled density fixtures support educator review but do not isolate every natural quality variable or justify length-only causation.
+- The integrated 32-scenario non-thinking acceptance evaluation, targeted #15 retest, and two additional density-pair repetitions completed. Mixed and negative findings are retained below.
+- Educator recruitment/review, actual screen-reader output, the full keyboard-only final loop, deployment, and production gates remain open.
+
+### 17.3 Integrated Acceptance Outcomes
+
+The primary artifact is `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`.
+
+- All 32 scenarios were attempted. #15 stopped before revision because two meaningful candidates were returned for a fixture requiring three deferred goals; no third goal was manufactured.
+- The run used 102 deduplicated model calls, three schema repairs, 270,101 total tokens, and 300.490 seconds of cumulative model latency. Repairs were Support exact-reference mismatches in #12/#18 and a Coordinator invalid reference in #32.
+- The closed database has SHA-256 `8c1c06be4da4d73a47b7cb1f2043899ddf9206c456dddb87dfdc7f7fdcfe50ed` and zero WAL bytes after close.
+- #4 returned complete RACES coverage with no repair, but its `Answer` and `Sum up` present judgments remain semantic review questions. Schema completeness is not proof of correct component assessment.
+- #7 reached final reflection with four improvement findings; #9 reached final reflection with three regression findings. These are synthetic model observations requiring full-text review, not proof of quality.
+- #24 returned two mechanics goals with `obscures_meaning=true` despite the fixture's non-obscuring intent, plus an elaboration goal. This demonstrates that the structured field does not guarantee the underlying judgment.
+- #32 fell back to generic clarification after the invalid Coordinator reference; this was not deliberate evidence of task ambiguity. The initial density pair is therefore not a clean short-versus-long comparison: #31 returned two candidates, while #32 produced no assessment feedback.
+- These mixed and negative outcomes are not a clean acceptance pass or evidence of pedagogical quality. Targeted repetitions and educator review remain separate evidence.
+
+### 17.4 Targeted and Density Repetitions
+
+- `data/evidence/v3_acceptance_scenario_15_evaluation_20261110T194738Z.json`: #15 again returned two candidates with no repair, so the three-deferred-goals operation remained unavailable. This is repeated evidence of a coverage limitation, not permission to manufacture a third issue.
+- Density artifacts:
+  - Full `194146Z`: #31 two candidates; #32 fallback after one Coordinator repair.
+  - `v3_acceptance_scenario_31_evaluation_20261110T194745Z.json` and `v3_acceptance_scenario_32_evaluation_20261110T194753Z.json`: two candidates each; #32 required one Coordinator repair.
+  - `v3_acceptance_scenario_31_evaluation_20261110T194803Z.json` and `v3_acceptance_scenario_32_evaluation_20261110T194813Z.json`: three candidates each with no repairs.
+
+Across the three observations, #31 produced 2/2/3 candidates and #32 produced fallback/2/3. This limited result shows run variability and does not support a simple claim that longer drafts receive proportionally more or fewer goals. All density artifacts are available for full-context educator review; no educator judgment has yet been recorded.
+
+The Section 16 artifacts remain historical evidence for their recorded versions. No pedagogical-effectiveness or learner-outcome claim follows from this technical addendum.

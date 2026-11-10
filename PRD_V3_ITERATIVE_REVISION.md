@@ -151,6 +151,8 @@ V3 is limited to synthetic or teacher-provided demonstration material. It does n
 | Genre | Optional: argument, informational, narrative, or auto | Select genre-specific criteria |
 | Assignment prompt | Optional | Establish task expectations |
 | Teacher directions or required structure | Optional | Use classroom-specific expectations and vocabulary |
+| Framework name | Optional; known preset or custom name | Identify the teacher-commissioned framework explicitly |
+| Framework components | Optional comma-separated list; required for custom frameworks | Define required components deterministically without inferring an unfamiliar structure |
 | Source material | Optional | Ground source-dependent evidence feedback |
 | Student concern or goal | Optional | Help prioritize relevant feedback or identify explicit difficulty |
 
@@ -186,7 +188,7 @@ All inputs must be treated as data, not instructions that can override system ru
 ### 6.3 Assignment and Classroom Frameworks
 
 - **IN-07:** General feedback must remain available when no classroom framework is supplied.
-- **IN-08:** When teacher directions explicitly specify CER, RACE/RACES, MEAL, or another structure, feedback must use that terminology and check the requested components.
+- **IN-08:** When teacher directions explicitly specify CER, RACE/RACES, MEAL, or another structure, feedback must use that terminology and check the requested components. Known presets supply their usual components; custom frameworks require an explicit component list. The Coordinator returns one framework-neutral coverage entry per `(framework, component)` pair, using an exact present reference or an existing issue goal. Support renders that handoff and cannot add issues to complete a framework.
 - **IN-09:** The system must not invent teacher requirements or force every essay into a named paragraph formula.
 - **IN-10:** A classroom framework guides structure; it does not replace genre-specific assessment criteria.
 
@@ -577,14 +579,14 @@ Core persisted fields include:
 - Session and composition identifiers
 - Original, previous, and current submitted drafts
 - Immutable revision snapshots
-- Grade, selected/inferred/final genre, prompt, teacher directions, source material, and deterministic `source_material_available`
+- Grade, selected/inferred/final genre, prompt, teacher directions, framework name/components, Coordinator framework coverage, source material, and deterministic `source_material_available`
 - Student concerns and optional support-request actions
 - Selected focus IDs and corresponding feedback for each round
 - Routing, clarification, source-limitation, and review status
 - Final comparison and process milestones
 - Timestamps, execution details, and error status
 
-The model receives a bounded context: the original, immediately previous, and current drafts as needed, selected goals, concise prior findings, and relevant assignment/source context. It does not receive an ever-growing transcript of every UI event or all prior model prose by default.
+The model receives a bounded context: the original, immediately previous, and current drafts as needed, selected goals, concise prior findings, and relevant assignment/source context. Support receives full source text only when a Coordinator issue is source-dependent or a source limitation is present; empty clarification history is omitted on revisions. Final Support generates improvement/regression observations and the conclusion while original strengths and future possibilities pass through validated Coordinator findings. The model does not receive an ever-growing transcript of every UI event or all prior model prose by default.
 
 ### 11.7 Model-Call Boundaries
 
@@ -718,7 +720,7 @@ Existing V1/V2 frozen fixtures must not be edited to create V3 evidence. V3 rece
 15. A student reports deferring two of three selected goals; feedback acknowledges the attempted goal and offers the others as carry-forward choices without failure framing.
 16. A scaffold response containing an assigned-topic replacement answer is rejected during evaluation, while abstract placeholders remain available.
 17. Simulated backend storage loss during a composition produces a recovery view without an unhandled exception or a false restoration claim.
-18. Selecting multiple goals highlights the correct passages, deselecting removes only the corresponding highlight, and editing a referenced sentence removes its stale highlight without altering the essay.
+18. Selecting multiple goals highlights the correct passages; identical, nested, and transitively overlapping references share a union highlight with goal membership and textual labels. Deselecting removes only that goal's membership, and editing a referenced sentence removes its stale highlight without altering the essay.
 19. After revision review, **Choose goals for another round** returns to **Choose**; clickable Draft, Choose, Revise, and Reflect steps preserve the essay and prevent unavailable-state navigation.
 20. Cancelling the finish dialog preserves the current feedback and step, while confirming from either the footer or **Reflect** step opens the final comparison.
 21. A responsibility-goal hint references the student's actual sentence, offers two to four linked thinking prompts and a self-check, and supplies no completed explanation; a generic “Why does this matter?” response alone fails the specificity review.
@@ -731,6 +733,9 @@ Existing V1/V2 frozen fixtures must not be edited to create V3 evidence. V3 rece
 28. Repeated identical resubmissions produce neutral editing/finish choices and never automatic teacher review based on repetition count.
 29. A student selects **Show less feedback** or **I’m stuck** and receives fewer visible choices and one concrete next step without another model call, teacher escalation, or an inference about emotion or effort.
 30. Two unclear clarification answers produce the explicit `clarification_limit` route with the clarification history, while a clear second answer resumes normal assessment.
+31. The controlled density fixtures #31/#32 form a same-grade, same-genre, same-assignment informational pair at approximately 60 and 400 words with comparable writing quality and intentional issue categories and no prescribed candidate count. Repeated outputs and blinded educator review assess candidate count, total feedback length, relevance, prioritization, and manageability without claiming length-only causation.
+
+Final-comparison evidence also covers #7, #9, and #15 in addition to #1, #8, #11, and #20, including multi-goal partial progress, organizational regression, and deferred goals grounded in actual text changes.
 
 ### 14.3 Evidence Gates
 
@@ -860,7 +865,7 @@ Product metrics may describe prototype behavior—such as number of revision rou
 The following require separate evidence or user research and are not prerequisites for V3:
 
 - Whether prewriting should become a separate workflow
-- Whether common classroom frameworks warrant presets after free-text directions are tested
+- Whether additional classroom-framework presets are warranted after structured inputs and free-text compatibility detection are evaluated
 - Whether numerical scores can ever be validated sufficiently for limited teacher-facing use
 - Whether broader proficiency support is desirable and feasible
 - Whether a supervised real-classroom pilot should follow the synthetic prototype

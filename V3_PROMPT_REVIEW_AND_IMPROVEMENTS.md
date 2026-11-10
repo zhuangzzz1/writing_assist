@@ -15,9 +15,9 @@ The improvement cycle moved V3 from a representative 6-scenario pair to full 30-
 The new evidence supports four conclusions:
 
 1. **The earlier model-mode quality claims do not survive repetition.** Candidate counts varied by run, the claim-ownership diagnostic appeared in both modes and neither consistently, and repairs occurred in both modes. Non-thinking's advantage is now properly framed as cost and latency, which is defensible.
-2. **Six of six measured repair categories are prompt or validation defects, not model failures.** Each is eliminable in prompt text or deterministic code without another model call.
+2. **Five measured repair categories have different causes.** Vocabulary shape and missing-source dependency support clearer contracts; explicit genre can be deterministic; the mechanics guard caught a model judgment; regression-field omission is a serialization trade-off, not evidence of hidden regression.
 3. **Prompt responsibility is split in a way that makes one requirement structurally unachievable.** RACES coverage is owned by the Support Agent, which is forbidden from adding issues. The observed #4 gap is a consequence of that design, not a reasoning failure.
-4. **Proportionality is inverted.** A 17-word draft receives three revision goals; a 411-word grade-7 essay receives one. Nothing in either prompt calibrates issue count to draft length or grade band.
+4. **Feedback density is inconclusive from the current fixtures.** Candidate counts vary across scenarios with different acceptance goals. A controlled short/long fixture pair and educator review are needed instead of candidate-per-word conclusions.
 
 Section 2 records the retractions. Sections 3–7 contain the findings. Section 8 lists what remains genuinely blocked on educator review.
 
@@ -38,19 +38,19 @@ The runtime decision to use explicit non-thinking is still supported by the accu
 
 ---
 
-## 3. Repair Categories: All Six Are Prompt or Validator Defects
+## 3. Repair Categories: Five Categories With Different Causes
 
-From `repair_patterns` in `data/evidence/v3_investigation_manifest_20261110.json`:
+From `repair_patterns` in `data/evidence/v3_investigation_manifest_20261110.json`; these deterministic labels are not root-cause proof:
 
-| Category | Count | Root cause | Fix |
+| Category | Count | Interpretation | Response |
 | --- | ---: | --- | --- |
-| omitted optional regression field | 2 | Contract ambiguity (see §4.7) | Judgment call — see §4.7 |
-| vocabulary option shape/type | 2 | Prompt permits objects; schema requires `list[str]` | Prompt text (§4.4) |
-| source-dependent finding without source | 2 | Prompt never states the no-source rule | Prompt text (§4.6) |
+| omitted optional regression field | 2 | Serialization choice, not regression-detection evidence | Judgment call — see §4.7 |
+| vocabulary option shape/type | 2 | Prompt permits meaning notes; schema requires `list[str]` | Prompt text (§4.4) |
+| source-dependent finding without source | 2 | Prompt does not explicitly require the false converse | Prompt text (§4.6) |
 | explicit genre correction mismatch | 1 | Enforceable in code, left to the model | Deterministic assignment (§4.5) |
-| non-obscuring mechanics guard | 1 | Keyword whitelist; see §4.2 | Structured field (§4.2) |
+| non-obscuring mechanics guard | 1 | Validator rejected a model judgment; keyword mechanism is fragile | Structured field plus review (§4.2) |
 
-No repair observed in this set required judgment the model could not have supplied with clearer instructions. The two full-run repairs in `v3_acceptance_evaluation_20261110T160932Z.json` both fall into the first row; the corrected run used schema `v3.2.0`, so the `v3.2.1` default has not itself been exercised by a full acceptance run.
+The two full-run repairs in `v3_acceptance_evaluation_20261110T160932Z.json` were one omitted regression field in #4 and one explicit-genre mismatch in #6, not two regression omissions. That run used schema `v3.2.0`; the `v3.2.1` default was covered by automated and targeted real-model checks rather than a full acceptance run. These historical observations do not establish repair frequency for later versions.
 
 ---
 
@@ -138,6 +138,8 @@ Three problems:
 
 **Recommendation:** Keep `regression` required and use a targeted single-field repair, or add a `regression_decided: bool` companion that must be present. This is a deliberate trade: two repair calls in exchange for making hidden-regression failures loud. The other defaulted fields (`source_location`, `clarification_choices`) carry no such risk and can stay optional.
 
+**Validated disposition:** Do not adopt this recommendation. Required field presence or a self-declared companion does not prove the model reviewed the draft for regressions. Retain the false default, record omissions diagnostically without repair, and strengthen actual regression/final-comparison evidence. The two historical omissions do not establish that exactly two future repairs would occur.
+
 ### 4.8 Both payloads carry context that is not needed
 
 Support's round payload includes the full `source_material` even when no issue is `source_dependent`, and the full `clarification_history` on every round rather than only when relevant. Neither causes a failure; both add prompt tokens to every revision review at a point where token cost is the deciding factor between the two modes.
@@ -146,7 +148,7 @@ Support's round payload includes the full `source_material` even when no issue i
 
 ---
 
-## 5. Proportionality Is Inverted
+## 5. Proportionality Requires Controlled Review
 
 Candidate count against draft length, from the non-thinking acceptance run:
 
@@ -157,28 +159,23 @@ Candidate count against draft length, from the non-thinking acceptance run:
 | 95–177 words | #1, #13, #21, #24, #25, #27 | 0–3 |
 | **411 words** | **#23** | **1** |
 
-Per-call cost is comparable across these (#23 ≈ 2,800 tokens/call; #15 ≈ 3,270 tokens/call), so the system spends roughly the same effort regardless of how much student text it is assessing. Marginal feedback per word of student writing is roughly 25× lower on the 411-word essay than on the 17-word draft.
+These scenarios do not isolate length: #7 and #15 intentionally exercise three-goal behavior, while #23 requests a small prioritized issue set. Candidate-per-word ratios and the previously stated 25× difference are not validated quality or workload measures. Per-call token totals also include instructions and generated feedback, so they do not measure assessment effort by draft length.
 
-Two causes:
+**Validated recommendation:** Do not add fixed length-based candidate quotas. Add a matched same-grade, same-genre, same-assignment pair at approximately 60 and 400 words, with comparable writing quality and intentional issue categories and no prescribed candidate count. Use repeated non-thinking outputs and blinded educator review to assess candidate count, total feedback length, relevance, prioritization, and manageability. Even this better-controlled pair does not prove that length alone caused a difference.
 
-1. **No length or grade calibration in either prompt.** "Grade-appropriate" is the only guidance, and it is not a quantity.
-2. **`issues` is flat at `max_length=5`.** The prompt says "identify one to five issues" with nothing that turns the 1–5 range into a function of draft size or grade band.
+**Related observation:** The manifest hint-step distribution is `[3,3]` in 12 scenarios, `[3,3,3]` in 7, `[3]` in 7, `[3,4,4]` in 1, `[4]` in 1, and no hints in 2. Nineteen scenarios have the two exact shapes previously named, not 27. Three-step hints dominate, but step count is not itself a quality measure.
 
-**Recommendation (calibration, not quota — a quota would violate the no-manufactured-issues rule):** Add to the Coordinator prompt: *For drafts under roughly 60 words, prefer one or two issues; a short draft rarely supports more. For drafts over roughly 250 words, sweep claim, evidence explanation, paragraph-level cohesion, and closure before concluding that a single issue is all that matters. A single issue on a long draft is acceptable only when the rest genuinely holds.*
-
-**Related observation:** 27 of 30 scenarios returned hint step counts of exactly `[3, 3]` or `[3, 3, 3]`. The "two to four linked steps" range (`agents/prompts.py:94`) is being used as a constant. If step count was meant to scale with passage complexity, that is not happening; if a constant three is intended, the range is decoration.
-
-**Fixture check needed:** #23's draft contains "Students should identify which claims came from the supplied passage, which came from observation, and which remain uncertain." That reads as instruction rather than student prose, and the model's single candidate references that sentence. Verify the fixture is not leaking task language into the draft.
+**Fixture check resolved:** #23's questioned sentence does not appear literally in its assignment or teacher directions and is relevant to its subject of evidence-based informational writing. Literal task-language leakage is not confirmed; naturalness as student prose remains a fixture-design judgment.
 
 ---
 
 ## 6. Coverage Gaps the Manifest Under-Reports
 
-### 6.1 Final comparison is exercised in 2 of 30 scenarios
+### 6.1 Final comparison is exercised in 4 of 30 scenarios
 
-Only #1 and #11 reached a final reflection. #7, #9, #12, #14, #15, #19, and #28 ran revision rounds with no final findings in the evidence. Final original-to-final reflection is success criterion #6 (PRD §15), and it is the mechanism that must never fabricate improvement. Two scenarios is thin coverage for the highest-risk output in the product.
+The full run reached final reflection in #1, #8, #11, and #20. Final original-to-final reflection is success criterion #6 (PRD §15), and it is the mechanism that must never fabricate improvement. Four scenarios still provide limited coverage for high-risk output, especially regressions and partial progress.
 
-**Recommendation:** Add final-comparison stages to at least #7, #9, and #15 — the three where the revision produced a regression, deferred goals, or a partial improvement. These are the cases where fabrication is most likely.
+**Recommendation:** Add final-comparison stages to at least #7, #9, and #15 — the three where the revision produced a regression, deferred goals, or a partial improvement. Preserve the existing four cases.
 
 ### 6.2 #24 returned `direct_response` with zero candidates
 
@@ -191,23 +188,23 @@ In #15:
 - goal 2 → `"Students would water plants. This would help everyone."`
 - goal 3 → `"This would help everyone."`
 
-Selecting both highlights overlapping text, and the split looks like one issue divided into two goals — close to the quota-filling the PRD prohibits. #14 and #18 show the same pattern.
+Selecting both highlights overlapping text, and the split looks like one issue divided into two goals — close to the quota-filling the PRD prohibits. #14 and #18 show the same pattern. Containment alone does not prove semantic duplication.
 
-**Recommendation:** Add a deterministic check that no candidate reference contains or is contained by another within a round, and route failures to repair. This is cheap, needs no prompt change, and removes an ambiguity that will surface as a confusing UI state.
+**Validated recommendation:** Group identical, nested, and transitively overlapping references into one union highlight with all goal IDs and an explicit feedback-panel explanation. Preserve each exact quote and remove the group when its last goal is deselected. Do not offset text or reject every nested reference as a manufactured issue; review semantic duplication separately.
 
 ---
 
-## 7. Efficiency Opportunities Requiring No Model Calls
+## 7. Efficiency Opportunities Requiring No Additional Runtime Model Calls
 
-| Opportunity | Saves | Effort |
+| Opportunity | Expected effect | Effort |
 | --- | --- | --- |
-| Prompt fixes in §4.4–§4.6 | ~5 repair calls per acceptance run | Prompt text only |
-| Deterministic `working_genre` (§4.5) | 1 repair category | Small code change |
-| Nested-reference check (§6.3) | Repairs currently undetected | Small code change |
-| Conditional payload fields (§4.8) | Prompt tokens on every revision round | Small code change |
-| Support final-mode pass-through | 2 of 4 output fields generated verbatim | Small code change |
+| Prompt fixes in §4.4–§4.6 | Fewer avoidable repairs; no numerical savings claim | Prompt text only |
+| Deterministic `working_genre` (§4.5) | Removes mismatch-only repair path | Small code change |
+| Nested-reference grouping (§6.3) | Defines existing UI behavior; no quality inference | UI code and tests |
+| Conditional payload fields (§4.8) | Potential prompt-token savings; measure quality and cost | Small code change |
+| Support final-mode pass-through | Avoids regenerating two verbatim fields | Small code change |
 
-On the last item: `agents/support_agent.py:224` and `:226` validate that `original_strengths` and `future_possibilities` are byte-identical to Coordinator input. Support is spending tokens regenerating text that must match exactly. Pass them through and let Support produce only `improvements`, `regressions`, and `conclusion`.
+At the time of the review, Support validated `original_strengths` and `future_possibilities` as byte-identical to Coordinator input. Passing them through avoids unnecessary output tokens, provided bounded-language validation moves to the Coordinator boundary. The integrated prompt/schema work should share one authorized acceptance evaluation rather than paying for a full run per substage.
 
 ---
 
@@ -215,29 +212,25 @@ On the last item: `agents/support_agent.py:224` and `:226` validate that `origin
 
 These cannot be resolved by prompt edits and require the educator gate (`EDUCATOR_REVIEW_PROTOCOL.md`):
 
-1. **Tone and density by grade.** Whether three goals on a 17-word draft is overwhelming, and whether one goal on a 411-word essay is too thin, are educator judgments.
+1. **Tone and density by grade.** Whether three goals on a 17-word draft is overwhelming, and whether one goal on a 411-word essay is too thin, are educator judgments informed by the new controlled fixture pair.
 2. **Hint specificity versus answer leakage.** Both PRD authorship checks (could the student paste it; does it name the target idea) require a human reading full context.
 3. **#24's zero-candidate outcome.** Whether "no revision needed" is the right call for that essay is a classroom question.
 4. **Feedback length.** Mean candidate prose is ~170–190 words per goal. Whether that is readable for a 10-year-old multilingual learner is not testable from tokens.
-5. **Actual screen-reader output and a keyboard-only final loop** remain untested per §16.7.
+5. **Actual screen-reader output and a keyboard-only final loop** remain separate open checks.
 
 ---
 
 ## 9. Recommended Sequence
 
-| Order | Action | Basis | Cost |
+| Order | Action | Basis | Evidence cost |
 | --- | --- | --- | --- |
-| 1 | Prompt fixes: vocabulary string shape, no-source rule, `student_concerns` priority | §4.4, §4.6, §4.3 | Prompt edit, no code |
-| 2 | Deterministic `working_genre` for explicit selection | §4.5 | Small code |
-| 3 | Replace keyword guard with `obscures_meaning` field | §4.2 | Schema + prompt |
-| 4 | Move RACES coverage to Coordinator `framework_coverage` | §4.1 | Schema + prompt |
-| 5 | Nested-reference validation check | §6.3 | Small code |
-| 6 | Length/grade calibration in Coordinator prompt | §5 | Prompt edit, needs educator read |
-| 7 | Add final comparison to #7, #9, #15 | §6.1 | Fixture + one run |
-| 8 | Educator gate | §8 | External |
-| 9 | Decide `regression` default | §4.7 | Judgment call |
+| 1 | Correct report counts, documentation drift, aggregation rules, and evidence capture | §§3–7 | No model calls |
+| 2 | Integrate Coordinator framework coverage, low-risk prompt contracts, explicit genre, and mechanics field | §§4.1–4.6 | Mocked tests during stages |
+| 3 | Add final cases #7/#9/#15 and controlled density fixtures #31/#32 | §§5–6 | One full non-thinking run plus repeated density checks |
+| 4 | Implement overlap grouping and measured payload/final pass-through optimizations | §§6.3–7 | Browser checks; targeted real checks only if needed |
+| 5 | Conduct educator and accessibility gates | §8 | External human review |
 
-Steps 1–5 are mechanical and independently testable. Step 6 changes behavior and should be reviewed by an educator before it is treated as an improvement. Step 9 is the only item here where I would recommend *deliberately accepting a worse repair count* in exchange for a louder failure mode.
+The optional `regression=False` default remains in place. Required booleans are not used as a substitute for regression-quality evidence. Full real-model evaluation is batched after integration rather than repeated for each prompt/schema substage.
 
 ---
 
@@ -245,5 +238,5 @@ Steps 1–5 are mechanical and independently testable. Step 6 changes behavior a
 
 - All evidence is synthetic. No learner-outcome, motivation, engagement, retention, usability, or educator-approval claim is supported by this review.
 - Findings in §4–§7 are code-and-artifact observations, not pedagogical judgments.
-- The 30 acceptance scenarios are model-level runs, not 30 browser walkthroughs.
-- `CLAUDE.md` currently states `DEEPSEEK_THINKING=true` is required and cites 128 checks. The current state is explicit non-thinking and 151 checks. That drift should be corrected so the repository contract matches the implementation.
+- Model-level scenario runs are not equivalent to complete browser walkthroughs. The current fixture set adds two controlled density scenarios to the original 30.
+- The earlier documentation drift is resolved: current `CLAUDE.md` specifies explicit non-thinking runtime and the current test count. Historical 128/151-check statements should not be reused as current status.

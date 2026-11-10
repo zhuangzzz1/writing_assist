@@ -117,16 +117,16 @@ def test_material_genre_ambiguity_has_one_question_and_nonforced_choices():
     assert result.values["issues"] == []
 
 
-def test_explicit_genre_correction_cannot_be_overridden_by_model():
+def test_explicit_genre_correction_is_normalized_without_model_repair():
     state = round_state("narrative")
-    invalid = coordinator_payload(state, working_genre="argument")
-    valid = coordinator_payload(state, working_genre="narrative")
-    client = FakeClient([invalid, valid])
+    conflicting = coordinator_payload(state, working_genre="argument")
+    client = FakeClient([conflicting])
 
     result = AssessmentCoordinator(client).run(state)
 
     assert result.values["working_genre"] == "narrative"
-    assert result.values["coordinator_repair_count"] == 1
+    assert result.values["coordinator_repair_count"] == 0
+    assert client.responses == []
 
 
 def test_source_present_mismatch_requires_a_specific_source_location():
@@ -455,11 +455,12 @@ def test_final_support_cannot_hide_a_coordinator_regression():
         ).run(state)
 
 
-def test_races_prompt_requires_all_teacher_directed_components_without_goal_quota():
-    for term in ("RACES", "Restate", "Answer", "Cite", "Explain", "Sum up"):
-        assert term in SUPPORT_ROUND_PROMPT
-    assert "One candidate may cover several components" in SUPPORT_ROUND_PROMPT
-    assert "do not create extra issues" in SUPPORT_ROUND_PROMPT
+def test_framework_prompt_assigns_coverage_to_coordinator_not_support():
+    assert "assess every listed component" in COORDINATOR_ROUND_PROMPT
+    assert "framework_coverage" in SUPPORT_ROUND_PROMPT
+    assert "one candidate may cover several components" in SUPPORT_ROUND_PROMPT
+    assert "Do not add components or issues" in SUPPORT_ROUND_PROMPT
+    assert "make the candidate set collectively name RACES" not in SUPPORT_ROUND_PROMPT
 
 
 def test_coordinator_prompt_distinguishes_author_position_from_student_claim():
@@ -488,7 +489,7 @@ def test_coordinator_prompt_covers_unique_goals_regressions_and_nonobscuring_mec
     assert "Every issue needs a unique goal_id" in COORDINATOR_ROUND_PROMPT
     assert "distinct new issue or regression needs a new goal_id" in COORDINATOR_ROUND_PROMPT
     assert "Do not ask clarification merely because" in COORDINATOR_ROUND_PROMPT
-    assert "non-obscuring article, tense, preposition" in COORDINATOR_ROUND_PROMPT
+    assert "For every language_conventions issue" in COORDINATOR_ROUND_PROMPT
     assert "use direct_response if no meaningful issue remains" in COORDINATOR_ROUND_PROMPT
 
 
@@ -583,3 +584,233 @@ def test_final_validation_uses_actual_drafts_not_a_spoofed_diff_flag():
 
     assert result.values["coordinator_repair_count"] == 1
     assert result.values["comparison_improvements"] == []
+
+
+def framework_state(framework="RACES"):
+    return make_review_state(
+        INITIAL_DRAFT,
+        "6th Grade",
+        genre_selection="argument",
+        framework_name=framework,
+        framework_components=[],
+    )
+
+
+def coverage_for(state, status="present", goal_id="goal_1"):
+    entries = []
+    for component in state["framework_components"]:
+        present = status == "present"
+        entries.append(
+            {
+                "framework": state["framework_name"],
+                "component": component,
+                "status": status,
+                "reference": DEFAULT_REFERENCE if present else "",
+                "paragraph_number": 2 if present else None,
+                "occurrence": 1 if present else None,
+                "goal_id": "" if present else goal_id,
+            }
+        )
+    return entries
+
+
+def test_all_present_framework_components_allow_direct_response():
+    state = framework_state()
+    payload = coordinator_payload(
+        state,
+        route="direct_response",
+        issues=[],
+        framework_coverage=coverage_for(state),
+    )
+
+    result = AssessmentCoordinator(FakeClient([payload])).run(state)
+
+    assert result.values["routing_decision"] == "direct_response"
+    assert len(result.values["framework_coverage"]) == 5
+    assert result.values["coordinator_repair_count"] == 0
+
+
+def test_multiple_framework_components_can_map_to_one_coordinator_issue():
+    state = framework_state()
+    payload = coordinator_payload(
+        state, framework_coverage=coverage_for(state, status="issue")
+    )
+
+    result = AssessmentCoordinator(FakeClient([payload])).run(state)
+
+    assert len(result.values["issues"]) == 1
+    assert len(result.values["framework_coverage"]) == 5
+    assert {item["goal_id"] for item in result.values["framework_coverage"]} == {
+        "goal_1"
+    }
+
+
+def test_missing_framework_component_triggers_bounded_repair():
+    state = framework_state()
+    valid_coverage = coverage_for(state, status="issue")
+    invalid = coordinator_payload(
+        state, framework_coverage=valid_coverage[:-1]
+    )
+    valid = coordinator_payload(state, framework_coverage=valid_coverage)
+
+    result = AssessmentCoordinator(FakeClient([invalid, valid])).run(state)
+
+    assert result.values["coordinator_repair_count"] == 1
+    assert len(result.values["framework_coverage"]) == 5
+
+
+def test_framework_issue_must_reference_an_existing_goal():
+    state = framework_state()
+    invalid = coordinator_payload(
+        state,
+        framework_coverage=coverage_for(state, status="issue", goal_id="missing"),
+    )
+    valid = coordinator_payload(
+        state, framework_coverage=coverage_for(state, status="issue")
+    )
+
+    result = AssessmentCoordinator(FakeClient([invalid, valid])).run(state)
+
+    assert result.values["coordinator_repair_count"] == 1
+
+
+def test_boundary_route_cannot_include_premature_framework_coverage():
+    state = framework_state()
+    invalid = coordinator_payload(
+        state,
+        route="ask_clarification",
+        issues=[],
+        framework_coverage=coverage_for(state),
+    )
+    valid = coordinator_payload(
+        state, route="ask_clarification", issues=[], framework_coverage=[]
+    )
+
+    result = AssessmentCoordinator(FakeClient([invalid, valid])).run(state)
+
+    assert result.values["coordinator_repair_count"] == 1
+    assert result.values["framework_coverage"] == []
+
+
+def test_framework_coverage_schema_supports_cer_without_new_fields():
+    state = framework_state("CER")
+    payload = coordinator_payload(
+        state,
+        route="direct_response",
+        issues=[],
+        framework_coverage=coverage_for(state),
+    )
+
+    result = AssessmentCoordinator(FakeClient([payload])).run(state)
+
+    assert [item["component"] for item in result.values["framework_coverage"]] == [
+        "Claim",
+        "Evidence",
+        "Reasoning",
+    ]
+
+
+def test_obscuring_language_judgment_does_not_depend_on_description_keywords():
+    state = round_state()
+    state["teacher_directions"] = "Grammar fixes are optional."
+    issue = issue_for(
+        state["writing"],
+        category="language_conventions",
+        description="The pronoun leaves the reader uncertain which action it describes.",
+        obscures_meaning=True,
+    )
+    payload = coordinator_payload(state, issues=[issue])
+
+    result = AssessmentCoordinator(FakeClient([payload])).run(state)
+
+    assert result.values["coordinator_repair_count"] == 0
+    assert result.values["issues"][0]["obscures_meaning"] is True
+
+
+def test_support_receives_framework_handoff_without_owning_coverage():
+    state = framework_state()
+    assessment = AssessmentCoordinator(
+        FakeClient(
+            [
+                coordinator_payload(
+                    state,
+                    framework_coverage=coverage_for(state, status="issue"),
+                )
+            ]
+        )
+    ).run(state)
+    state.update(assessment.values)
+    client = FakeClient([support_payload(state)])
+
+    InstructionalSupportAgent(client).run(state)
+
+    prompt = client.calls[0][0][1]["content"]
+    assert '"framework_coverage"' in prompt
+    assert '"component": "Restate"' in prompt
+
+
+def test_support_candidates_follow_coordinator_issue_order_deterministically():
+    state = support_state()
+    second_issue = issue_for(
+        state["writing"], "Our school should start a garden.", "goal_2"
+    )
+    state["issues"] = [second_issue, state["issues"][0]]
+    candidates = [candidate_for(issue) for issue in reversed(state["issues"])]
+
+    result = InstructionalSupportAgent(
+        FakeClient([support_payload(state, candidates=candidates)])
+    ).run(state)
+
+    assert [item["goal_id"] for item in result.values["revision_candidates"]] == [
+        "goal_2",
+        "goal_1",
+    ]
+
+
+def support_request_payload(client):
+    return json.loads(client.calls[0][0][1]["content"].split("\n", 1)[1])
+
+
+def test_support_source_payload_is_conditional_on_source_findings():
+    state = support_state(source="A supplied passage.")
+    client = FakeClient([support_payload(state)])
+    InstructionalSupportAgent(client).run(state)
+    assert "source_material" not in support_request_payload(client)
+
+    state["issues"][0]["source_dependent"] = True
+    state["issues"][0]["source_location"] = "paragraph 1"
+    client = FakeClient([support_payload(state)])
+    InstructionalSupportAgent(client).run(state)
+    assert support_request_payload(client)["source_material"] == "A supplied passage."
+
+
+def test_support_omits_empty_clarification_history_only_on_revision():
+    state = support_state(revision=True)
+    client = FakeClient([support_payload(state)])
+    InstructionalSupportAgent(client).run(state)
+    assert "clarification_history" not in support_request_payload(client)
+
+    state["clarification_history"] = [{"question": "Genre?", "answer": "Argument"}]
+    client = FakeClient([support_payload(state)])
+    InstructionalSupportAgent(client).run(state)
+    assert support_request_payload(client)["clarification_history"] == [
+        {"question": "Genre?", "answer": "Argument"}
+    ]
+
+
+def test_final_support_passes_through_verified_fields_without_regenerating_them():
+    state = final_state()
+    state["original_strengths"] = ["The original has a clear position."]
+    state["future_areas"] = ["Consider the reader's next question."]
+    client = FakeClient([final_support_payload(state)])
+
+    result = InstructionalSupportAgent(client).run(state)
+
+    assert "original_strengths" not in json.loads(result.raw_response)
+    assert "future_possibilities" not in json.loads(result.raw_response)
+    assert result.values["final_reflection"]["original_strengths"] == [
+        "The original has a clear position."
+    ]
+    assert result.values["final_reflection"]["future_possibilities"] == [
+        "Consider the reader's next question."
+    ]

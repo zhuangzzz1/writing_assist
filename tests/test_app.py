@@ -186,7 +186,7 @@ def test_scenario_loading_is_complete_editable_and_overwrite_protected(tmp_path,
     assert app.text_area(key="assignment_prompt_input").value == first.assignment_prompt
     assert app.text_area(key="teacher_directions_input").value == first.teacher_directions
     assert app.text_area(key="source_material_input").value == first.source_material
-    assert app.session_state.loaded_fixture_version == "v3.1.0"
+    assert app.session_state.loaded_fixture_version == "v3.4.0"
 
     app.text_area(key="writing_input").set_value("My active synthetic draft.")
     app.selectbox(key="practice_scenario").set_value("races_informational_pollination")
@@ -617,3 +617,48 @@ def test_failed_final_reflection_can_be_retried_after_session_restore(tmp_path, 
     assert not restored.exception
     assert restored.session_state.current_invocation.state["final_reflection"]["improvements"]
     assert storage.get_reflection(composition_id).status == "completed"
+
+
+def test_structured_framework_input_reaches_review_and_persistent_history(tmp_path, monkeypatch):
+    state = make_review_state(
+        INITIAL_DRAFT, "6th Grade", framework_name="CER", framework_components=[]
+    )
+    coverage = [
+        {
+            "framework": "CER",
+            "component": component,
+            "status": "issue",
+            "reference": "",
+            "paragraph_number": None,
+            "occurrence": None,
+            "goal_id": "goal_1",
+        }
+        for component in state["framework_components"]
+    ]
+    install_responses(monkeypatch, review_pair(state, framework_coverage=coverage))
+    app = configured_app(tmp_path, monkeypatch).run()
+    app.text_area(key="writing_input").set_value(INITIAL_DRAFT)
+    app.text_input(key="framework_name_input").set_value("CER")
+
+    app.button(key="analyze_writing").click().run()
+
+    assert not app.exception
+    composition_id = app.session_state.active_composition_id
+    saved = SQLiteStorage(str(tmp_path / "ui.db")).get_composition(composition_id)
+    assert saved.framework_name == "CER"
+    assert saved.framework_components == ["Claim", "Evidence", "Reasoning"]
+    assert app.session_state.current_invocation.state["framework_coverage"] == coverage
+
+
+def test_new_composition_clears_scenario_and_framework_metadata(tmp_path, monkeypatch):
+    app = configured_app(tmp_path, monkeypatch).run()
+    app.button(key="load_scenario").click().run()
+    assert app.session_state.loaded_scenario_id
+
+    app.button(key="new_composition").click().run()
+
+    assert app.session_state.loaded_scenario_id == ""
+    assert app.session_state.loaded_fixture_version == ""
+    assert app.session_state.writing_input == ""
+    assert app.session_state.framework_name_input == ""
+    assert app.session_state.framework_components_input == ""

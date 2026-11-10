@@ -4,6 +4,42 @@ Notable changes to the local V3 Iterative Revision Coach. Version labels below r
 
 For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V2 outcomes remain in `PRD.md`; V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag.
 
+## [V3.4.0] — 2026-11-10
+
+### Added
+
+- Added optional structured framework name/component inputs with CER, RACE, RACES, and MEAL presets, custom component lists, negation-aware compatibility detection, and additive SQLite persistence.
+- Added Coordinator-owned, framework-neutral `framework_coverage` entries with exact present-component references and issue-goal mappings.
+- Added final-comparison stages to #7, #9, and #15 and a controlled 58-word/404-word density pair as #31/#32.
+- Added deterministic grouping for identical, nested, and transitively overlapping goal references with explanatory feedback labels.
+- Added clean evaluation-database checkpoint/close and stable byte/SHA-256 metadata.
+
+### Changed
+
+- Updated the integrated prompt and schema versions to `v3.4.0`; practice and acceptance fixtures use `v3.4.0`.
+- Made explicit `working_genre` assignment deterministic without mismatch-only repairs.
+- Added draft-supported student-concern priority and deterministic Support candidate ordering.
+- Replaced mechanics-description keyword matching with the structured `obscures_meaning` judgment and expanded conservative teacher-policy recognition.
+- Clarified plain-string vocabulary entries and the no-source `source_dependent=false` rule.
+- Limited Support source payloads to source-dependent findings/limitations and omitted empty clarification history on revisions.
+- Passed final original strengths and future possibilities through validated Coordinator findings instead of regenerating them.
+- Batched prompt/schema evidence generation into one integrated acceptance evaluation rather than full runs for individual substages.
+
+### Fixed
+
+- Corrected the prompt review's repair-category count, full-run repair attribution, final-coverage count, hint distribution, proportionality claims, and nested-reference recommendation.
+- Preserved the optional regression-field default while requiring actual regression/final-comparison evidence rather than field-presence proxies.
+- Documented why live WAL-mode databases are not stable byte-level integrity artifacts and supplied reproducible deduplication arithmetic.
+
+### Verified
+
+- **213 automated checks passed** using mocked models and temporary databases before the real-model run.
+- Chrome verified structured RACES loading/coverage, revision/final confirmation, grouped overlap selection/deselection, and stale-reference removal in `data/evidence/v3_4_browser_verification.json`.
+- The acceptance fixture set contains 32 scenarios, including three additional final-comparison cases and the controlled density pair.
+- Completed the 32-scenario non-thinking run in `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`: 102 deduplicated calls, three repairs, 270,101 tokens, and 300.490 seconds of model latency. #15 returned only two goals; #24 exposed disputed mechanics judgments; #32 initially fell back after an invalid reference. This is mixed evidence, not a clean quality pass.
+- Completed targeted #15 and two density repetitions. #31 returned 2/2/3 candidates and #32 returned fallback/2/3, showing run variability rather than a length-density rule. See `V3_OUTCOMES_REPORT.md` Sections 17.3–17.4.
+- Educator review, actual screen-reader assessment, deployment, and other human/production gates remain open.
+
 ## [V3.3.0] — 2026-11-10
 
 ### Added

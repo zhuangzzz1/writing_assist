@@ -19,6 +19,8 @@ class PracticeScenario:
     draft: str
     assignment_prompt: str
     teacher_directions: str
+    framework_name: str
+    framework_components: tuple[str, ...]
     source_material: str
     student_concerns: str
     fixture_version: str
@@ -55,6 +57,8 @@ def load_scenarios() -> list[PracticeScenario]:
                 draft=item["draft"],
                 assignment_prompt=item["assignment_prompt"],
                 teacher_directions=item["teacher_directions"],
+                framework_name=item.get("framework_name", ""),
+                framework_components=tuple(item.get("framework_components", [])),
                 source_material=item["source_material"],
                 student_concerns=item["student_concerns"],
                 fixture_version=version,
@@ -90,6 +94,8 @@ def load_acceptance_scenarios() -> list[AcceptanceScenario]:
                 draft=value("draft"),
                 assignment_prompt=value("assignment_prompt"),
                 teacher_directions=value("teacher_directions"),
+                framework_name=value("framework_name"),
+                framework_components=tuple(value("framework_components") or ()),
                 source_material=value("source_material"),
                 student_concerns=value("student_concerns"),
                 fixture_version=data["fixture_version"],

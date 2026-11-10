@@ -162,5 +162,37 @@ def change_notification(
     }
 
 
+def group_overlapping_goals(
+    selected_goals: list[dict[str, Any]], text: str
+) -> list[list[dict[str, Any]]]:
+    located = []
+    for input_index, goal in enumerate(selected_goals):
+        location = locate_reference(
+            text,
+            goal["draft_reference"],
+            goal["paragraph_number"],
+            goal["occurrence"],
+        )
+        if location is not None:
+            located.append(
+                {"goal": goal, "location": location, "input_index": input_index}
+            )
+    located.sort(key=lambda item: (item["location"].start, item["location"].end))
+    groups: list[list[dict[str, Any]]] = []
+    group_ends: list[int] = []
+    for item in located:
+        location = item["location"]
+        if groups and location.start < group_ends[-1]:
+            groups[-1].append(item)
+            group_ends[-1] = max(group_ends[-1], location.end)
+        else:
+            groups.append([item])
+            group_ends.append(location.end)
+    return [
+        [item["goal"] for item in sorted(group, key=lambda item: item["input_index"])]
+        for group in groups
+    ]
+
+
 def selected_goal_ids(selected_goals: list[dict[str, Any]]) -> list[str]:
     return [str(goal.get("goal_id", "")) for goal in selected_goals]

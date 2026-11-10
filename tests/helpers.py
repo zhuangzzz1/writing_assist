@@ -22,8 +22,8 @@ class FakeClient:
             "model_name": self.model,
             "thinking_enabled": self.thinking,
             "reasoning_effort": self.reasoning_effort if self.thinking else "",
-            "prompt_version": "v3.3.0",
-            "schema_version": "v3.2.1",
+            "prompt_version": "v3.4.0",
+            "schema_version": "v3.4.0",
         }
 
     def chat_completion(self, messages, **kwargs):
@@ -191,7 +191,6 @@ def final_coordinator_payload(state, changed=True, **overrides):
 
 def final_support_payload(state, **overrides):
     payload = {
-        "original_strengths": state.get("original_strengths", []),
         "improvements": [
             {
                 "finding_id": item["finding_id"],
@@ -208,7 +207,6 @@ def final_support_payload(state, **overrides):
             }
             for item in state.get("comparison_regressions", [])
         ],
-        "future_possibilities": state.get("future_areas", []),
         "conclusion": "You made your own revision choices and gave your ideas more attention.",
     }
     payload.update(overrides)

@@ -1,5 +1,5 @@
 {
-  "fixture_version": "v3.2.1",
+  "fixture_version": "v3.4.0",
   "scenarios": [
     {
       "number": 1,
@@ -70,7 +70,8 @@
           "goal_selection": "three",
           "self_reports": {"all": "attempted"}
         }
-      ]
+      ],
+      "finish": true
     },
     {
       "number": 8,
@@ -116,7 +117,8 @@
           "goal_selection": "first",
           "self_reports": {"first": "attempted"}
         }
-      ]
+      ],
+      "finish": true
     },
     {
       "number": 10,
@@ -222,7 +224,8 @@
           "goal_selection": "three",
           "self_reports": {"first": "attempted", "others": "deferred"}
         }
-      ]
+      ],
+      "finish": true
     },
     {
       "number": 16,
@@ -410,6 +413,32 @@
       "student_concerns": "",
       "acceptance_focus": "One question at a time, a simpler second question, then explicit clarification_limit with history",
       "clarification_answers": ["Not sure", "Anything, I guess"]
+    },
+    {
+      "number": 31,
+      "scenario_id": "density_control_short_informational",
+      "name": "Controlled density: short informational draft",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "A class compost bin can help students learn about decomposition. Food scraps break down into soil. Students can observe changes each week. This helps them understand science. The class can also record how much waste it collects. This is useful for the school. Students should keep the same schedule and write clear notes. Composting is a good project.",
+      "assignment_prompt": "Explain how a class composting project can support science learning.",
+      "teacher_directions": "Organize by subtopic and explain how observations support conclusions.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare feedback density and prioritization with the matched long draft; no candidate count is prescribed"
+    },
+    {
+      "number": 32,
+      "scenario_id": "density_control_long_informational",
+      "name": "Controlled density: long informational draft",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "A class compost bin can help students learn about decomposition and waste. Food scraps break down into soil. Students can observe changes each week. This helps them understand science. A compost project also gives the class a shared topic for discussion. Students can bring what they notice to their informational writing. They can use their notes to explain what happened. Composting is a useful project for science learning.\n\nDecomposition happens gradually, and students can watch each stage. At first, fruit peels and vegetable pieces look familiar. Later, they become darker and softer. Students can describe these changes without saying exactly why they happened. Careful descriptions help readers picture the bin.\n\nA useful observation routine stays consistent. Students can check the bin on the same days and record the date, appearance, and smell. They should use the same categories in every entry. Otherwise, one student's notes may be difficult to compare with another's. A short table can organize the information. The table shows what changed. Students still need to explain what those changes mean for the process.\n\nThe class can also measure waste. Students might weigh the food scraps before adding them or count containers collected during lunch. This is useful for the school. A number by itself does not explain the result. Students should consider whether the menu, attendance, or collection routine changed. Then they can write a bounded explanation using their records.\n\nOrganization matters during the investigation. One group can collect scraps, another can weigh them, and a third can record observations. Students should keep the same schedule and write clear notes. If groups change the procedure without telling others, the records may not match. Shared directions make the results easier to compare. They also help students understand why a clear sequence matters in informational writing.\n\nComposting can connect science with writing. Students can select an observation, explain how it relates to decomposition, and describe the evidence in their notes. They can also identify questions that the class records cannot answer. This makes the writing more careful. A report should not claim that one bin proves what happens in every garden. It should explain what students observed and what remains uncertain.\n\nA class compost project therefore offers repeated opportunities to observe, measure, and explain. Students can return to the same bin and compare new notes with earlier entries. They can revise their explanations when the evidence changes. Composting is a good project for learning.",
+      "assignment_prompt": "Explain how a class composting project can support science learning.",
+      "teacher_directions": "Organize by subtopic and explain how observations support conclusions.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare feedback density and prioritization with the matched short draft; no candidate count is prescribed"
     }
   ]
 }

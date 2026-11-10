@@ -11,6 +11,7 @@ from agents.utils import (
     ensure_bounded_language,
     parse_json_object,
 )
+from langgraph_core.assignment import language_corrections_optional
 from langgraph_core.revision import (
     build_text_diff,
     reference_is_valid,
@@ -44,6 +45,7 @@ class IssueOutput(BaseModel):
     source_dependent: bool
     source_location: str = ""
     regression: bool = False
+    obscures_meaning: bool | None = None
 
 
 class GoalObservationOutput(BaseModel):
@@ -56,6 +58,32 @@ class GoalObservationOutput(BaseModel):
     carry_forward: bool
 
 
+class FrameworkCoverageOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    framework: str = Field(min_length=1, max_length=80)
+    component: str = Field(min_length=1, max_length=80)
+    status: Literal["present", "issue"]
+    reference: str = ""
+    paragraph_number: int | None = None
+    occurrence: int | None = None
+    goal_id: str = ""
+
+    @model_validator(mode="after")
+    def check_status_details(self):
+        if self.status == "present":
+            if not self.reference or not self.paragraph_number or not self.occurrence:
+                raise ValueError("Present components require an exact located reference.")
+            if self.goal_id:
+                raise ValueError("Present components cannot reference a revision issue.")
+        else:
+            if not self.goal_id:
+                raise ValueError("Issue components require a Coordinator goal ID.")
+            if self.reference or self.paragraph_number is not None or self.occurrence is not None:
+                raise ValueError("Issue components use the referenced issue's draft reference.")
+        return self
+
+
 class AssessmentOutput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -64,6 +92,9 @@ class AssessmentOutput(BaseModel):
     genre_basis: str
     strengths: list[str] = Field(max_length=3)
     issues: list[IssueOutput] = Field(max_length=5)
+    framework_coverage: list[FrameworkCoverageOutput] = Field(
+        default_factory=list, max_length=12
+    )
     source_limitations: list[str] = Field(max_length=3)
     selected_goal_observations: list[GoalObservationOutput] = Field(max_length=3)
     routing_decision: RoutingDecision
@@ -152,6 +183,8 @@ class AssessmentCoordinator:
             "genre_selection": state["genre_selection"],
             "assignment_prompt": state["assignment_prompt"],
             "teacher_directions": state["teacher_directions"],
+            "framework_name": state.get("framework_name", ""),
+            "framework_components": state.get("framework_components", []),
             "source_material_available": state["source_material_available"],
             "source_material": state["source_material"],
             "student_concerns": state["student_concerns"],
@@ -185,6 +218,8 @@ class AssessmentCoordinator:
             "working_genre": state.get("working_genre", ""),
             "assignment_prompt": state["assignment_prompt"],
             "teacher_directions": state["teacher_directions"],
+            "framework_name": state.get("framework_name", ""),
+            "framework_components": state.get("framework_components", []),
             "source_material_available": state["source_material_available"],
             "source_material": state["source_material"],
             "text_diff": state["text_diff"],
@@ -229,6 +264,7 @@ class AssessmentCoordinator:
             "genre_basis": "",
             "strengths": [],
             "issues": [],
+            "framework_coverage": [],
             "source_limitations": [],
             "selected_goal_observations": [],
             "routing_decision": "ask_clarification",
@@ -270,6 +306,7 @@ class AssessmentCoordinator:
             "genre_basis": "",
             "strengths": [],
             "issues": [],
+            "framework_coverage": [],
             "source_limitations": [],
             "selected_goal_observations": [],
             "routing_decision": "teacher_review",
@@ -290,29 +327,14 @@ class AssessmentCoordinator:
         if output.routing_decision in ("support_agent", "direct_response"):
             if not output.working_genre:
                 raise ValueError("Normal feedback requires a working genre.")
-        optional_language = "language corrections are optional" in state["teacher_directions"].lower()
-        if optional_language:
+        if language_corrections_optional(state["teacher_directions"]):
             for issue in output.issues:
-                description = issue.description.lower()
-                explicitly_nonobscuring = any(
-                    phrase in description
-                    for phrase in (
-                        "non-obscuring",
-                        "not obscure",
-                        "does not obscure",
-                        "do not obscure",
-                        "without obscuring",
-                    )
-                )
-                claims_obscured_meaning = any(
-                    phrase in description
-                    for phrase in ("obscur", "cannot understand", "unintelligible")
-                )
-                if issue.category == "language_conventions" and (
-                    explicitly_nonobscuring or not claims_obscured_meaning
+                if (
+                    issue.category == "language_conventions"
+                    and issue.obscures_meaning is not True
                 ):
                     raise ValueError(
-                        "Non-obscuring language mechanics cannot become a revision goal "
+                        "A language mechanics goal requires a true obscures_meaning judgment "
                         "when the teacher marks language corrections as optional."
                     )
         for issue in output.issues:
@@ -332,6 +354,30 @@ class AssessmentCoordinator:
                     raise ValueError("Source-dependent findings require a source location.")
             elif issue.source_location:
                 raise ValueError("A source location is only valid for source-dependent findings.")
+
+        coverage = output.framework_coverage
+        if output.routing_decision not in ("support_agent", "direct_response"):
+            if coverage:
+                raise ValueError("Boundary routes cannot contain framework assessment.")
+        elif state.get("framework_components"):
+            framework = state.get("framework_name", "")
+            expected = {(framework, component) for component in state["framework_components"]}
+            actual = [(item.framework, item.component) for item in coverage]
+            if len(actual) != len(expected) or set(actual) != expected:
+                raise ValueError("Every required framework component needs exactly one coverage entry.")
+            issue_ids = {issue.goal_id for issue in output.issues}
+            for item in coverage:
+                if item.status == "issue" and item.goal_id not in issue_ids:
+                    raise ValueError("Framework issue coverage must reference a Coordinator issue.")
+                if item.status == "present" and not reference_is_valid(
+                    state["writing"],
+                    item.reference,
+                    item.paragraph_number,
+                    item.occurrence,
+                ):
+                    raise ValueError("Present framework components require exact located references.")
+        elif coverage:
+            raise ValueError("Framework coverage requires an explicit framework requirement.")
 
         if state["revision_number"] > 0 and output.routing_decision in (
             "support_agent",
@@ -391,6 +437,15 @@ class AssessmentCoordinator:
             )
             if not (original_changed or final_changed):
                 raise ValueError("A regression reference must overlap an actual text change.")
+        ensure_bounded_language(
+            {
+                "original_strengths": output.original_strengths,
+                "improvements": [item.model_dump() for item in output.improvements],
+                "regressions": [item.model_dump() for item in output.regressions],
+                "future_areas": output.future_areas,
+            },
+            state["source_material_available"],
+        )
 
     @staticmethod
     def _normalize_round(values: dict[str, Any]) -> dict[str, Any]:
@@ -410,6 +465,8 @@ class AssessmentCoordinator:
 
     def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
         raw = parse_json_object(raw_response)
+        if state["genre_selection"] != "auto":
+            raw["working_genre"] = state["genre_selection"]
         safety_requested = raw.get("flag_teacher") is True or raw.get(
             "routing_decision"
         ) == "teacher_review"

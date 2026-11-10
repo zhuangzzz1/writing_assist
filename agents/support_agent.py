@@ -99,10 +99,8 @@ class FinalFindingOutput(BaseModel):
 class FinalSupportOutput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    original_strengths: list[str] = Field(max_length=3)
     improvements: list[FinalFindingOutput] = Field(max_length=5)
     regressions: list[FinalFindingOutput] = Field(max_length=3)
-    future_possibilities: list[str] = Field(max_length=3)
     conclusion: str = Field(min_length=1)
 
 
@@ -127,17 +125,22 @@ class InstructionalSupportAgent:
             "assignment_prompt": state["assignment_prompt"],
             "teacher_directions": state["teacher_directions"],
             "source_material_available": state["source_material_available"],
-            "source_material": state["source_material"],
             "student_concerns": state["student_concerns"],
-            "clarification_history": state["clarification_history"],
             "strengths_identified": state.get("strengths", []),
             "issues": state.get("issues", []),
+            "framework_coverage": state.get("framework_coverage", []),
             "source_limitations": state.get("source_limitations", []),
             "selected_goal_observations": state.get("selected_goal_observations", []),
             "goal_self_reports": state["goal_self_reports"],
             "coordinator_rationale": state.get("coordinator_reasoning", ""),
             "revision_number": state["revision_number"],
         }
+        if any(
+            issue.get("source_dependent") for issue in state.get("issues", [])
+        ) or state.get("source_limitations"):
+            payload["source_material"] = state["source_material"]
+        if state["revision_number"] == 0 or state["clarification_history"]:
+            payload["clarification_history"] = state["clarification_history"]
         if state["revision_number"] > 0:
             payload.update(
                 {
@@ -221,10 +224,6 @@ class InstructionalSupportAgent:
 
     @staticmethod
     def _validate_final(output: FinalSupportOutput, state: WritingAssistantState) -> None:
-        if output.original_strengths != state.get("original_strengths", []):
-            raise ValueError("Final original strengths must match the Coordinator findings.")
-        if output.future_possibilities != state.get("future_areas", []):
-            raise ValueError("Future possibilities must match the Coordinator findings.")
         for kind, expected_key in (
             ("improvements", "comparison_improvements"),
             ("regressions", "comparison_regressions"),
@@ -243,6 +242,10 @@ class InstructionalSupportAgent:
         output = RoundSupportOutput.model_validate(parse_json_object(raw_response))
         self._validate_round(output, state)
         values = output.model_dump()
+        issue_order = {
+            issue["goal_id"]: index for index, issue in enumerate(state.get("issues", []))
+        }
+        values["candidates"].sort(key=lambda candidate: issue_order[candidate["goal_id"]])
         return {
             "feedback_strengths": values["strengths"],
             "revision_candidates": values["candidates"],
@@ -254,7 +257,11 @@ class InstructionalSupportAgent:
     def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
         output = FinalSupportOutput.model_validate(parse_json_object(raw_response))
         self._validate_final(output, state)
-        reflection = output.model_dump()
+        reflection = {
+            "original_strengths": state.get("original_strengths", []),
+            **output.model_dump(),
+            "future_possibilities": state.get("future_areas", []),
+        }
         return {
             "final_reflection": reflection,
             "student_output": reflection["conclusion"],

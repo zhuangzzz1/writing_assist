@@ -1,6 +1,6 @@
 # Writing Assistant Multi-Agent System - Project Plan
 
-> **Current implementation note (2026-11-10):** V3 is now the active local application, implemented under `PRD_V3_ITERATIVE_REVISION.md`. The plan below preserves the historical V1→V2 assignment strategy and is not a description of current V3 behavior. Local V3 is not deployed; the historical public app remains V2 at commit `7d94b58`.
+> **Current implementation note (2026-11-10):** V3 is now the active local application, implemented under `PRD_V3_ITERATIVE_REVISION.md`. Prompt/schema `v3.4.0` adds structured framework requirements with Coordinator-owned coverage, deterministic explicit genre, grouped overlap highlights, and controlled density evidence. The plan below preserves the historical V1→V2 assignment strategy and is not a description of current V3 behavior. Local V3 is not deployed; the historical public app remains V2 at commit `7d94b58`.
 
 ## Overview
 

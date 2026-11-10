@@ -14,6 +14,8 @@ class CompositionRecord:
     genre_selection: str
     assignment_prompt: str
     teacher_directions: str
+    framework_name: str
+    framework_components: list[str]
     source_material: str
     source_material_available: bool
     student_concerns: str

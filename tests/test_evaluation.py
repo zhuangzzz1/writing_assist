@@ -1,10 +1,13 @@
 import json
+import sqlite3
 
 from langgraph_core.graph import create_writing_assistant_service
 from langgraph_core.revision import build_text_diff
 from langgraph_core.state import make_review_state
 from scripts.evaluate_v3 import (
     collect_states,
+    database_integrity,
+    finalize_database,
     repair_diagnostics_for_record,
     repair_diagnostics_for_state,
     run_scenario,
@@ -337,3 +340,23 @@ def test_repair_diagnostics_do_not_duplicate_resumed_thread_history():
 
     assert len(diagnostics) == 1
     assert diagnostics[0]["invalid_final_response"] == "invalid"
+
+
+def test_evaluation_database_is_checkpointed_closed_and_hashed(tmp_path):
+    database = str(tmp_path / "runner.db")
+    service = create_writing_assistant_service(FakeClient([]), database)
+
+    finalize_database(service)
+    integrity = database_integrity(database)
+
+    assert integrity["bytes"] > 0
+    assert len(integrity["sha256"]) == 64
+    assert integrity["wal_bytes_after_close"] == 0
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    try:
+        service.checkpointer.conn.execute("SELECT 1")
+    except sqlite3.ProgrammingError:
+        pass
+    else:
+        raise AssertionError("The evaluation checkpointer connection is still open.")

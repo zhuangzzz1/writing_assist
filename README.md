@@ -2,7 +2,7 @@
 
 A local synthetic-classroom prototype for grades 5–7. Two LangGraph agents provide genre-sensitive assessment and bounded revision support while the student preserves authorship: choose one to three goals, edit the complete draft, submit immutable revision snapshots, repeat or stop, and finish with a grounded original-to-final reflection.
 
-V3 supports argument, informational, and narrative writing; optional assignment/source context; correctable genre inference; exact goal highlights; pregenerated hints; neutral small-change handling; clarification and simulated teacher review; read-only history; session restoration/deletion; and opt-in developer observability. It does not assign grades, predict ELPAC/SBAC outcomes, write replacement responses, or claim that writing is ready to submit.
+V3 supports argument, informational, and narrative writing; optional assignment/source context; structured CER/RACE/RACES/MEAL or custom framework requirements; Coordinator-owned framework coverage; correctable genre inference; exact and overlap-grouped goal highlights; pregenerated hints; neutral small-change handling; clarification and simulated teacher review; read-only history; session restoration/deletion; and opt-in developer observability. It does not assign grades, predict ELPAC/SBAC outcomes, write replacement responses, or claim that writing is ready to submit.
 
 See `V3_OUTCOMES_REPORT.md` for baseline and improvement evidence, `V3_INVESTIGATION_EVIDENCE.md` for the consolidated evidence index, `CHANGELOG.md` for changes, and `EDUCATOR_REVIEW_PROTOCOL.md` for the pending educator gate.
 
@@ -31,7 +31,7 @@ The default database is `data/writing_assistant_v3.db`, which is git-ignored. Us
 pytest
 ```
 
-The current suite has **172 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 30-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
+The current suite has **213 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 32-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
 
 ## Real-model evaluation
 
@@ -42,7 +42,9 @@ python scripts/evaluate_v3.py --scenario-set core --modes nonthinking thinking
 python scripts/evaluate_v3.py --scenario-set acceptance --modes nonthinking
 ```
 
-The core comparison covers argument/source, source mismatch, missing source, RACES informational, narrative, human review, and a full garden revision/reflection loop. The acceptance set covers all 30 PRD scenarios. Outputs include structured responses, routes, errors, invalid final responses and validation errors for repairs, plus model/graph/service timing and token usage in git-ignored files under `data/`. The student runtime uses explicit non-thinking mode and never switches modes automatically.
+The core comparison covers argument/source, source mismatch, missing source, RACES informational, narrative, human review, and a full garden revision/reflection loop. The acceptance set covers all 30 PRD scenarios plus a controlled short/long density pair. Outputs include structured responses, routes, errors, invalid final responses and validation errors for repairs, deduplicated model/graph/service timing and token usage, and stable database hashes after checkpoint/close in git-ignored files under `data/`. The student runtime uses explicit non-thinking mode and never switches modes automatically.
+
+The current `v3.4.0` acceptance evidence is `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`, with targeted density artifacts and mixed findings documented in `V3_OUTCOMES_REPORT.md` Section 17. It is not a clean acceptance or pedagogical-quality claim.
 
 The earlier completed pair used prompt/schema `v3.1.0` and is stored at `data/evidence/v3_paired_evaluation_20261110T094344Z.json`. All six scenarios completed in each mode. Thinking used 17 calls, including two schema repairs, 68,407 total tokens (24,926 reasoning tokens), and 246.2 seconds of cumulative model latency. Non-thinking used 15 calls, no repairs, 36,340 total tokens, and 64.2 seconds. These results supported the 2026-11-10 non-thinking runtime decision; they are not a general quality or learner-outcome conclusion.
 

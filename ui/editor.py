@@ -78,14 +78,25 @@ export default function (component) {
   }
   function renderHighlights() {
     const text = editor.value
-    const ranges = goals.map(goal => locate(text, goal)).filter(Boolean).sort((a,b) => a.start - b.start)
+    const ranges = goals.map(goal => locate(text, goal)).filter(Boolean).sort((a,b) => a.start - b.start || a.end - b.end)
+    const groups = []
+    ranges.forEach(range => {
+      const group = groups[groups.length - 1]
+      if (group && range.start < group.end) {
+        group.end = Math.max(group.end, range.end)
+        group.goals.push(range.goal)
+      } else {
+        groups.push({start: range.start, end: range.end, goals: [range.goal]})
+      }
+    })
     let cursor = 0
     let html = ''
-    ranges.forEach(range => {
-      if (range.start < cursor) return
-      html += escapeHTML(text.slice(cursor, range.start))
-      html += `<mark class="goal-highlight" data-goal="${escapeHTML(range.goal.goal_id)}" aria-label="Selected goal reference">${escapeHTML(text.slice(range.start, range.end))}</mark>`
-      cursor = range.end
+    groups.forEach(group => {
+      const goalIds = group.goals.map(goal => goal.goal_id).join('|')
+      const label = group.goals.length > 1 ? `${group.goals.length} selected goals reference overlapping passages` : 'Selected goal reference'
+      html += escapeHTML(text.slice(cursor, group.start))
+      html += `<mark class="goal-highlight" data-goals="${escapeHTML(goalIds)}" aria-label="${escapeHTML(label)}">${escapeHTML(text.slice(group.start, group.end))}</mark>`
+      cursor = group.end
     })
     highlightContent.innerHTML = html + escapeHTML(text.slice(cursor)) + '\n'
     syncScroll()
@@ -95,7 +106,7 @@ export default function (component) {
     wordCount.textContent = `${trimmed ? trimmed.split(/\s+/).length : 0} words`
   }
   function scrollGoalIntoView(goal) {
-    const marker = highlightContent.querySelector(`[data-goal="${goal.goal_id}"]`)
+    const marker = Array.from(highlightContent.querySelectorAll('[data-goals]')).find(element => element.dataset.goals.split('|').includes(goal.goal_id))
     if (!marker) return
     editor.scrollTo({top: Math.max(0, marker.offsetTop - editor.clientHeight * .3), behavior: 'smooth'})
   }

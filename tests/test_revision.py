@@ -1,6 +1,7 @@
 from langgraph_core.revision import (
     build_text_diff,
     change_notification,
+    group_overlapping_goals,
     locate_reference,
     reference_is_valid,
     reference_overlaps_change,
@@ -91,3 +92,46 @@ def test_reference_grounding_requires_overlap_on_the_correct_side_of_the_diff():
     assert reference_overlaps_change(before, after, "An old explanation.", "before")
     assert not reference_overlaps_change(before, after, "An unchanged claim.", "after")
     assert not reference_overlaps_change(before, after, "A clearer explanation.", "before")
+
+
+def overlap_goal(goal_id, reference):
+    return {
+        "goal_id": goal_id,
+        "title": goal_id,
+        "draft_reference": reference,
+        "paragraph_number": 1,
+        "occurrence": 1,
+    }
+
+
+def test_identical_and_nested_references_share_one_presentation_group():
+    text = "One two three four."
+    goals = [
+        overlap_goal("whole", "One two three"),
+        overlap_goal("nested", "One two"),
+        overlap_goal("identical", "One two"),
+        overlap_goal("separate", "four"),
+    ]
+
+    groups = group_overlapping_goals(goals, text)
+
+    assert [[goal["goal_id"] for goal in group] for group in groups] == [
+        ["whole", "nested", "identical"],
+        ["separate"],
+    ]
+
+
+def test_transitive_overlaps_form_one_group_and_stale_references_are_excluded():
+    text = "One two three four."
+    goals = [
+        overlap_goal("first", "One two"),
+        overlap_goal("second", "two three"),
+        overlap_goal("third", "three four"),
+        overlap_goal("stale", "missing passage"),
+    ]
+
+    groups = group_overlapping_goals(goals, text)
+
+    assert [[goal["goal_id"] for goal in group] for group in groups] == [
+        ["first", "second", "third"]
+    ]

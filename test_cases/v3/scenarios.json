@@ -1,5 +1,5 @@
 {
-  "fixture_version": "v3.1.0",
+  "fixture_version": "v3.4.0",
   "scenarios": [
     {
       "scenario_id": "garden_source_accurate",
@@ -42,6 +42,8 @@
       "draft": "Bees are important to gardens. Bees help plants grow. They visit many flowers in one day. Without bees, gardeners would have fewer vegetables.\n\nPeople can help bees by planting flowers. They can also avoid using harmful chemicals.",
       "assignment_prompt": "Explain how bees help garden plants reproduce and why that matters.",
       "teacher_directions": "Use RACES: Restate the question, Answer it, Cite the supplied text, Explain the connection, and Sum up.",
+      "framework_name": "RACES",
+      "framework_components": ["Restate", "Answer", "Cite", "Explain", "Sum up"],
       "source_material": "Paragraph 1: Pollen collects on a bee's body as it visits a flower. When the bee visits another flower of the same kind, some pollen can rub off. This transfer can help the plant form seeds and fruit.",
       "student_concerns": ""
     },

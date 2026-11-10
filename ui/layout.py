@@ -18,7 +18,12 @@ from agents.utils import (
     WritingAssistantError,
 )
 from langgraph_core.graph import InvocationResult, WritingAssistantService
-from langgraph_core.revision import build_text_diff, change_notification, locate_reference
+from langgraph_core.revision import (
+    build_text_diff,
+    change_notification,
+    group_overlapping_goals,
+    locate_reference,
+)
 from langgraph_core.state import GRADE_LEVELS, Genre, make_review_state
 from storage.interface import CompositionRecord, RoundRecord
 from ui.components import (
@@ -101,6 +106,8 @@ def _initialize_state() -> None:
         "genre_input": "auto",
         "assignment_prompt_input": "",
         "teacher_directions_input": "",
+        "framework_name_input": "",
+        "framework_components_input": "",
         "source_material_input": "",
         "student_concerns_input": "",
         "loaded_scenario_id": "",
@@ -148,6 +155,8 @@ def _new_blank_composition() -> None:
         "writing_input",
         "assignment_prompt_input",
         "teacher_directions_input",
+        "framework_name_input",
+        "framework_components_input",
         "source_material_input",
         "student_concerns_input",
     ):
@@ -266,6 +275,16 @@ def _start_review(service: WritingAssistantService, session_id: str) -> None:
             genre_selection=st.session_state.genre_input,
             assignment_prompt=st.session_state.assignment_prompt_input,
             teacher_directions=st.session_state.teacher_directions_input,
+            framework_name=st.session_state.framework_name_input,
+            framework_components=(
+                [
+                    component.strip()
+                    for component in st.session_state.framework_components_input.split(",")
+                    if component.strip()
+                ]
+                if st.session_state.framework_components_input.strip()
+                else None
+            ),
             source_material=st.session_state.source_material_input,
             student_concerns=st.session_state.student_concerns_input,
             scenario_id=st.session_state.loaded_scenario_id,
@@ -460,6 +479,8 @@ def _submit_revision(
             genre_selection=composition.genre_selection,
             assignment_prompt=composition.assignment_prompt,
             teacher_directions=composition.teacher_directions,
+            framework_name=composition.framework_name,
+            framework_components=composition.framework_components,
             source_material=composition.source_material,
             student_concerns=composition.student_concerns,
             scenario_id=composition.scenario_id,
@@ -513,6 +534,8 @@ def _correct_genre(service: WritingAssistantService, session_id: str, genre: Gen
             genre_selection=genre,
             assignment_prompt=composition.assignment_prompt,
             teacher_directions=composition.teacher_directions,
+            framework_name=composition.framework_name,
+            framework_components=composition.framework_components,
             source_material=composition.source_material,
             student_concerns=composition.student_concerns,
             scenario_id=composition.scenario_id,
@@ -573,6 +596,8 @@ def _finish(service: WritingAssistantService, session_id: str) -> None:
             genre_selection=composition.genre_selection,
             assignment_prompt=composition.assignment_prompt,
             teacher_directions=composition.teacher_directions,
+            framework_name=composition.framework_name,
+            framework_components=composition.framework_components,
             source_material=composition.source_material,
             student_concerns=composition.student_concerns,
             scenario_id=composition.scenario_id,
@@ -634,6 +659,8 @@ def _request_scenario() -> None:
                 "writing_input",
                 "assignment_prompt_input",
                 "teacher_directions_input",
+                "framework_name_input",
+                "framework_components_input",
                 "source_material_input",
                 "student_concerns_input",
             )
@@ -652,6 +679,10 @@ def _apply_scenario(scenario: PracticeScenario) -> None:
     st.session_state.genre_input = scenario.genre
     st.session_state.assignment_prompt_input = scenario.assignment_prompt
     st.session_state.teacher_directions_input = scenario.teacher_directions
+    st.session_state.framework_name_input = scenario.framework_name
+    st.session_state.framework_components_input = ", ".join(
+        scenario.framework_components
+    )
     st.session_state.source_material_input = scenario.source_material
     st.session_state.student_concerns_input = scenario.student_concerns
     st.session_state.loaded_scenario_id = scenario.scenario_id
@@ -721,6 +752,19 @@ def _render_draft(service: WritingAssistantService, session_id: str) -> None:
                 key="teacher_directions_input",
                 height=100,
                 placeholder="For example: Use RACES and explain your evidence.",
+            )
+            st.text_input(
+                "Framework name (optional)",
+                key="framework_name_input",
+                max_chars=80,
+                placeholder="For example: CER, RACES, MEAL, or a custom name",
+                help="Known frameworks supply their usual components automatically.",
+            )
+            st.text_input(
+                "Required components (optional, comma-separated)",
+                key="framework_components_input",
+                placeholder="For example: Restate, Answer, Cite, Explain, Sum up",
+                help="List components for a custom framework or override a known preset.",
             )
             st.text_area(
                 "Source material (optional)",
@@ -845,7 +889,24 @@ def _render_genre(service: WritingAssistantService, session_id: str, state: dict
         _correct_genre(service, session_id, correction)
 
 
-def _render_candidate(candidate: dict[str, Any], selectable: bool, round_id: str) -> None:
+def _overlap_labels(candidates: list[dict[str, Any]], text: str) -> dict[str, list[str]]:
+    labels = {}
+    for group in group_overlapping_goals(candidates, text):
+        if len(group) < 2:
+            continue
+        for goal in group:
+            labels[goal["goal_id"]] = [
+                other["title"] for other in group if other["goal_id"] != goal["goal_id"]
+            ]
+    return labels
+
+
+def _render_candidate(
+    candidate: dict[str, Any],
+    selectable: bool,
+    round_id: str,
+    overlap_titles: list[str] | None = None,
+) -> None:
     goal_id = candidate["goal_id"]
     if selectable:
         key = f"select_goal_{round_id}_{goal_id}"
@@ -863,6 +924,12 @@ def _render_candidate(candidate: dict[str, Any], selectable: bool, round_id: str
         f"Paragraph {candidate['paragraph_number']}, occurrence {candidate['occurrence']}: "
         f"“{candidate['draft_reference']}”"
     )
+    if overlap_titles:
+        st.caption(
+            "This goal references an overlapping passage with: "
+            + ", ".join(overlap_titles)
+            + ". Each goal keeps its exact reference above."
+        )
     st.markdown(f"**Try this:** {candidate['revision_action']}")
     with st.expander("Show a hint", expanded=False):
         st.markdown(format_hint(candidate["hint"]))
@@ -1013,15 +1080,27 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
                 candidates = state.get("revision_candidates", [])
                 if st.session_state.less_feedback:
                     candidates = candidates[:1]
+                overlap_labels = _overlap_labels(candidates, st.session_state.editor_text)
                 for candidate in candidates:
-                    _render_candidate(candidate, True, state["round_id"])
+                    _render_candidate(
+                        candidate,
+                        True,
+                        state["round_id"],
+                        overlap_labels.get(candidate["goal_id"]),
+                    )
             elif not review_active:
                 st.markdown("### Your selected goals")
                 candidates = _selected_candidates(state)
                 if st.session_state.less_feedback or st.session_state.stuck_requested:
                     candidates = candidates[:1]
+                overlap_labels = _overlap_labels(candidates, st.session_state.editor_text)
                 for candidate in candidates:
-                    _render_candidate(candidate, False, state["round_id"])
+                    _render_candidate(
+                        candidate,
+                        False,
+                        state["round_id"],
+                        overlap_labels.get(candidate["goal_id"]),
+                    )
                 if not st.session_state.less_feedback:
                     st.button("Show less feedback", key="show_less_feedback", on_click=lambda: st.session_state.update(less_feedback=True))
                 else:
@@ -1238,7 +1317,7 @@ def render_dashboard(service: WritingAssistantService, client: DeepSeekClient) -
     title_column.title("Writing Coach")
     title_column.caption("Your ideas. Your words. One revision at a time.")
     if new_column.button("New composition", key="new_composition", width="stretch"):
-        _clear_active()
+        _new_blank_composition()
         st.rerun()
     if history_column.button("History", key="history_button", width="stretch"):
         st.session_state.show_history = True

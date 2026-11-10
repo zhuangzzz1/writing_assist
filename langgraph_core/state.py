@@ -8,6 +8,7 @@ from agents.utils import (
     validate_context_input,
     validate_writing_input,
 )
+from langgraph_core.assignment import resolve_framework
 
 
 GradeLevel = Literal["5th Grade", "6th Grade", "7th Grade"]
@@ -54,6 +55,8 @@ class WritingAssistantState(TypedDict):
     genre_selection: GenreSelection
     assignment_prompt: str
     teacher_directions: str
+    framework_name: str
+    framework_components: list[str]
     source_material: str
     source_material_available: bool
     student_concerns: str
@@ -78,6 +81,7 @@ class WritingAssistantState(TypedDict):
     genre_basis: NotRequired[str]
     strengths: NotRequired[list[str]]
     issues: NotRequired[list[dict[str, Any]]]
+    framework_coverage: NotRequired[list[dict[str, Any]]]
     source_limitations: NotRequired[list[str]]
     routing_decision: NotRequired[RoutingDecision]
     flag_teacher: NotRequired[bool]
@@ -116,6 +120,8 @@ def make_review_state(
     genre_selection: GenreSelection = "auto",
     assignment_prompt: str = "",
     teacher_directions: str = "",
+    framework_name: str = "",
+    framework_components: list[str] | None = None,
     source_material: str = "",
     student_concerns: str = "",
     scenario_id: str = "",
@@ -155,6 +161,9 @@ def make_review_state(
     teacher_directions = validate_context_input(
         teacher_directions, "Teacher directions", MAX_DIRECTIONS_CHARS
     ).strip()
+    framework_name, framework_components = resolve_framework(
+        framework_name, framework_components, teacher_directions
+    )
     source_material = validate_context_input(
         source_material, "Source material", MAX_SOURCE_CHARS
     ).strip()
@@ -174,6 +183,8 @@ def make_review_state(
         "genre_selection": genre_selection,
         "assignment_prompt": assignment_prompt.strip(),
         "teacher_directions": teacher_directions.strip(),
+        "framework_name": framework_name,
+        "framework_components": framework_components,
         "source_material": source_material.strip(),
         "source_material_available": bool(source_material.strip()),
         "student_concerns": student_concerns.strip(),

@@ -209,3 +209,33 @@ def test_revision_cannot_move_past_an_existing_final_reflection(tmp_path):
 
     assert len(storage.list_snapshots("comp")) == 1
     assert storage.get_composition("comp").genre_selection == "auto"
+
+
+def test_framework_contract_survives_reopen(tmp_path):
+    storage = SQLiteStorage(str(tmp_path / "history.db"))
+    initial = state_for()
+    initial["framework_name"] = "CER"
+    initial["framework_components"] = ["Claim", "Evidence", "Reasoning"]
+
+    storage.create_composition("session", initial, "snapshot-0")
+    reopened = SQLiteStorage(storage.database_path)
+    composition = reopened.get_composition("comp")
+
+    assert composition.framework_name == "CER"
+    assert composition.framework_components == ["Claim", "Evidence", "Reasoning"]
+
+
+def test_existing_composition_database_receives_additive_framework_columns(tmp_path):
+    storage = SQLiteStorage(str(tmp_path / "history.db"))
+    initial = state_for()
+    storage.create_composition("session", initial, "snapshot-0")
+    with sqlite3.connect(storage.database_path) as connection:
+        connection.execute("ALTER TABLE compositions DROP COLUMN framework_name")
+        connection.execute("ALTER TABLE compositions DROP COLUMN framework_components_json")
+
+    reopened = SQLiteStorage(storage.database_path)
+    composition = reopened.get_composition("comp")
+
+    assert composition.framework_name == ""
+    assert composition.framework_components == []
+    assert reopened.list_snapshots("comp")[0].writing == INITIAL_DRAFT

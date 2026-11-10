@@ -15,7 +15,7 @@ def test_v3_scenarios_are_versioned_and_complete():
     data = json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
     scenarios = load_scenarios()
 
-    assert data["fixture_version"] == "v3.1.0"
+    assert data["fixture_version"] == "v3.4.0"
     assert len(scenarios) >= 6
     for scenario in scenarios:
         assert scenario.scenario_id
@@ -62,19 +62,42 @@ def test_historical_v2_fixtures_remain_separate_and_unmodified_in_location():
     assert SCENARIO_PATH.parent.name == "v3"
 
 
-def test_acceptance_fixture_set_contains_30_complete_versioned_scenarios():
+def test_acceptance_fixture_set_contains_32_complete_versioned_scenarios():
     scenarios = load_acceptance_scenarios()
 
-    assert [scenario.number for scenario in scenarios] == list(range(1, 31))
-    assert len({scenario.scenario_id for scenario in scenarios}) == 30
+    assert [scenario.number for scenario in scenarios] == list(range(1, 33))
+    assert len({scenario.scenario_id for scenario in scenarios}) == 32
     for scenario in scenarios:
-        assert scenario.fixture_version == "v3.2.1"
+        assert scenario.fixture_version == "v3.4.0"
         assert scenario.draft.strip()
         assert scenario.acceptance_focus
         assert scenario.grade_level in ("5th Grade", "6th Grade", "7th Grade")
         for revision in scenario.revisions:
             assert revision.draft.strip()
             assert revision.goal_selection in ("first", "three")
+
+
+def test_additional_final_reflection_scenarios_are_enabled():
+    assert all(get_acceptance_scenario(number).finish for number in (7, 9, 15))
+
+
+def test_density_pair_controls_context_and_does_not_prescribe_candidate_count():
+    short = get_acceptance_scenario(31)
+    long = get_acceptance_scenario(32)
+
+    assert 50 <= len(short.draft.split()) <= 70
+    assert 375 <= len(long.draft.split()) <= 450
+    for field in (
+        "grade_level",
+        "genre",
+        "assignment_prompt",
+        "teacher_directions",
+        "source_material",
+        "student_concerns",
+    ):
+        assert getattr(short, field) == getattr(long, field)
+    for scenario in (short, long):
+        assert "no candidate count is prescribed" in scenario.acceptance_focus.lower()
 
 
 def test_long_informational_fixture_exceeds_350_words_and_has_source():

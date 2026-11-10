@@ -30,6 +30,8 @@ class SQLiteStorage(CompositionStorage):
                     genre_selection TEXT NOT NULL,
                     assignment_prompt TEXT NOT NULL,
                     teacher_directions TEXT NOT NULL,
+                    framework_name TEXT NOT NULL DEFAULT '',
+                    framework_components_json TEXT NOT NULL DEFAULT '[]',
                     source_material TEXT NOT NULL,
                     source_material_available INTEGER NOT NULL,
                     student_concerns TEXT NOT NULL,
@@ -98,6 +100,18 @@ class SQLiteStorage(CompositionStorage):
                 );
                 """
             )
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(compositions)")
+            }
+            for name, definition in (
+                ("framework_name", "TEXT NOT NULL DEFAULT ''"),
+                ("framework_components_json", "TEXT NOT NULL DEFAULT '[]'"),
+            ):
+                if name not in columns:
+                    connection.execute(
+                        f"ALTER TABLE compositions ADD COLUMN {name} {definition}"
+                    )
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path, timeout=30)
@@ -129,11 +143,11 @@ class SQLiteStorage(CompositionStorage):
                 """
                 INSERT INTO compositions (
                     composition_id, session_id, status, grade_level, genre_selection,
-                    assignment_prompt, teacher_directions, source_material,
-                    source_material_available, student_concerns, scenario_id,
-                    fixture_version, revision_number, active_round_id,
-                    active_thread_id, created_at, updated_at
-                ) VALUES (?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+                    assignment_prompt, teacher_directions, framework_name,
+                    framework_components_json, source_material, source_material_available,
+                    student_concerns, scenario_id, fixture_version, revision_number,
+                    active_round_id, active_thread_id, created_at, updated_at
+                ) VALUES (?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
                 """,
                 (
                     state["composition_id"],
@@ -142,6 +156,8 @@ class SQLiteStorage(CompositionStorage):
                     state["genre_selection"],
                     state["assignment_prompt"],
                     state["teacher_directions"],
+                    state["framework_name"],
+                    self._json(state["framework_components"]),
                     state["source_material"],
                     state["source_material_available"],
                     state["student_concerns"],
@@ -527,6 +543,8 @@ class SQLiteStorage(CompositionStorage):
             genre_selection=row["genre_selection"],
             assignment_prompt=row["assignment_prompt"],
             teacher_directions=row["teacher_directions"],
+            framework_name=row["framework_name"],
+            framework_components=json.loads(row["framework_components_json"]),
             source_material=row["source_material"],
             source_material_available=bool(row["source_material_available"]),
             student_concerns=row["student_concerns"],

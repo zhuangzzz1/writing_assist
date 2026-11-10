@@ -10,16 +10,17 @@ V3 is a two-agent iterative writing coach for grades 5–7, built with LangGraph
 
 ## Current V3 Decisions
 
-- Keep two model-driven agents. The Coordinator owns assessment, genre, source limits, selected-goal observations, comparison findings, human-review flags, and routing. Support owns student-facing round feedback, bounded scaffolds, and final reflection.
+- Keep two model-driven agents. The Coordinator owns assessment, genre, source limits, framework coverage, selected-goal observations, comparison findings, human-review flags, and routing. Support owns student-facing round feedback, bounded scaffolds, and final reflection language without adding framework issues.
 - Teacher review, clarification, direct response, diffs, milestones, and lifecycle operations are deterministic. Do not add a comparison agent or audience-specific agents without a separate architecture decision.
 - Every nonempty draft goes to the Coordinator. Empty drafts are rejected locally. Explicit length limits reject oversized input without truncation.
-- Genre selection is `auto`, `argument`, `informational`, or `narrative`. Explicit student correction triggers a new assessment of the latest submitted snapshot, not a new revision snapshot or clarification confirmation.
+- Genre selection is `auto`, `argument`, `informational`, or `narrative`. Explicit selections are normalized deterministically; correction reassesses the latest submitted snapshot without a new revision snapshot or clarification confirmation.
+- Optional framework name/component inputs support CER, RACE, RACES, MEAL, and explicit custom lists. Coordinator returns one coverage entry per required component; present entries need exact located references and issue entries need existing goal IDs.
 - V3 has no affect field or check-in. **Show less feedback** and **I’m stuck** only reveal pregenerated presentation content; they make no model call and never infer emotion, effort, or teacher review.
-- Source availability is deterministic. Source-dependent findings require locations; no-source accuracy claims and invented source content are invalid.
+- Source availability is deterministic. Source-dependent findings require locations; no-source accuracy claims and invented source content are invalid. Support receives full source text only for source-dependent findings or limitations.
 - Every candidate reference must be an exact current-draft substring with correct paragraph/occurrence metadata. Support must preserve Coordinator references and source limitations exactly.
-- Hints contain a passage reference, two to four linked steps, and a self-check. Optional sentence starters use `____` and leave all substance to the student. V3 does not generate optional practice exercises in round feedback.
+- Hints contain a passage reference, two to four linked steps, and a self-check. Vocabulary entries are plain strings. Optional sentence starters use `____` and leave all substance to the student. V3 does not generate optional practice exercises in round feedback.
 - Revision observations cover every selected goal and use descriptive statuses, not scores or attempt assumptions. Optional attempted/deferred self-reports are stored with the revision snapshot.
-- Final reflection uses deterministic original/latest-submitted diffs and Coordinator finding IDs. Support cannot omit regressions, add improvements, or change verified references.
+- Final reflection uses deterministic original/latest-submitted diffs and Coordinator finding IDs. Support cannot omit regressions, add improvements, or change verified references. Original strengths and future possibilities pass through validated Coordinator findings.
 - Each agent invocation permits one bounded repair. Coordinator failure after repair falls back to safe clarification; Support/final failure produces no partial feedback. API and thinking-mode failures propagate rather than silently switching modes.
 
 ## Architecture
@@ -61,7 +62,7 @@ pytest
 streamlit run app.py
 ```
 
-No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 172 checks. Browser and real-model evidence are separate from unit tests.
+No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 213 checks. Current prompt/schema are `v3.4.0`/`v3.4.0`; the completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
 
 For authorized billable evaluation:
 
@@ -70,7 +71,7 @@ python scripts/evaluate_v3.py --scenario-set core --modes nonthinking thinking
 python scripts/evaluate_v3.py --scenario-set acceptance --modes nonthinking
 ```
 
-The runner writes git-ignored databases and a JSON summary under `data/`, including invalid final responses and validation errors for repair diagnosis. It never stores raw hidden reasoning and never switches modes automatically. Inspect actual outputs before making quality claims. The earlier completed `v3.1.0` evidence is `data/evidence/v3_paired_evaluation_20261110T094344Z.json`: all six scenarios completed per mode; thinking used 17 calls/two repairs/68,407 tokens/246.2 seconds of model latency, while non-thinking used 15 calls/no repairs/36,340 tokens/64.2 seconds. This limited result supported the 2026-11-10 non-thinking runtime decision, not a general pedagogical-quality claim. Current improvement evidence is `V3_OUTCOMES_REPORT.md` Section 16, with acceptance set `data/evidence/v3_acceptance_evaluation_20261110T160932Z.json`, targeted #7/#24 corrections, and paired cores `data/evidence/v3_core_evaluation_20261110T161430Z.json` and `data/evidence/v3_core_evaluation_20261110T162342Z.json`.
+The runner writes git-ignored databases and a JSON summary under `data/`, including invalid final responses and validation errors for repair diagnosis, deduplicated execution metrics, and stable database hashes after checkpoint/close. It never stores raw hidden reasoning and never switches modes automatically. Inspect actual outputs before making quality claims. The earlier completed `v3.1.0` evidence is `data/evidence/v3_paired_evaluation_20261110T094344Z.json`: all six scenarios completed per mode; thinking used 17 calls/two repairs/68,407 tokens/246.2 seconds of model latency, while non-thinking used 15 calls/no repairs/36,340 tokens/64.2 seconds. This limited result supported the 2026-11-10 non-thinking runtime decision, not a general pedagogical-quality claim. Historical improvement evidence is `V3_OUTCOMES_REPORT.md` Section 16, with acceptance set `data/evidence/v3_acceptance_evaluation_20261110T160932Z.json`, targeted #7/#24 corrections, and paired cores `data/evidence/v3_core_evaluation_20261110T161430Z.json` and `data/evidence/v3_core_evaluation_20261110T162342Z.json`.
 
 ## Model Configuration
 
@@ -85,7 +86,7 @@ The runner writes git-ignored databases and a JSON summary under `data/`, includ
 - Retry uses the existing round/reflection and never creates a duplicate snapshot.
 - Session IDs filter history but are not authentication. Missing/corrupt storage produces a safe recovery view and preserves any runtime editor text for copying.
 - Keep the initial editor constrained and the desktop workspace 60/40. Marked grid rows must override Streamlit child column widths to 100% to avoid applying percentages twice.
-- The CCv2 editor keeps text synchronized with Session State, highlights exact selected references, recalculates on edits, and drops stale highlights rather than relocating them.
+- The CCv2 editor keeps text synchronized with Session State, highlights exact selected references, groups identical/nested/transitive overlaps with textual goal labels, recalculates on edits, and drops stale highlights rather than relocating them.
 - Step navigation and dialog cancellation preserve the editor and existing feedback. The final comparison uses submitted snapshots, never unsubmitted editor text.
 
 ## Safety, Privacy, and Evidence

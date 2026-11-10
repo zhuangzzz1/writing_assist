@@ -27,25 +27,27 @@ No raw hidden reasoning is included. The manifest contains final structured resp
 | Student runtime | Explicit non-thinking |
 | Non-thinking temperature | 0 |
 | Thinking comparator | Explicit controlled evaluation; temperature omitted |
-| Prompt version | `v3.3.0` |
-| Schema version | `v3.2.1` |
-| Acceptance fixture | `v3.2.1` |
-| Student presets fixture | `v3.1.0` |
+| Prompt version | `v3.4.0` |
+| Schema version | `v3.4.0` |
+| Acceptance fixture | `v3.4.0` |
+| Student presets fixture | `v3.4.0` |
 | Deployment | None; local only |
 
 ## 3. Evidence Map
 
 | Material | Primary paths |
 | --- | --- |
-| Consolidated investigation manifest | `data/evidence/v3_investigation_manifest_20261110.json` |
+| Current 32-scenario non-thinking run and mixed outcomes | `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`; `V3_OUTCOMES_REPORT.md` Section 17 |
+| Current Chrome verification | `data/evidence/v3_4_browser_verification.json` |
+| Historical consolidated investigation manifest | `data/evidence/v3_investigation_manifest_20261110.json` |
 | Original matched baseline | `data/evidence/v3_paired_evaluation_20261110T094344Z.json` |
 | New paired core 1 | `data/evidence/v3_core_evaluation_20261110T161430Z.json` |
 | New paired core 2 | `data/evidence/v3_core_evaluation_20261110T162342Z.json` |
-| Corrected 30-scenario run | `data/evidence/v3_acceptance_evaluation_20261110T160932Z.json` |
+| Corrected historical 30-scenario run | `data/evidence/v3_acceptance_evaluation_20261110T160932Z.json` |
 | Three-goal targeted correction | `data/evidence/v3_acceptance_scenario_07_evaluation_20261110T162320Z.json` |
 | Non-obscuring-mechanics targeted correction | `data/evidence/v3_acceptance_scenario_24_evaluation_20261110T162337Z.json` |
-| Browser/timing/accessibility evidence | `data/evidence/v3_improvement_browser_20261110.json` |
-| Baseline outcomes and improvement addendum | `V3_OUTCOMES_REPORT.md` |
+| Historical browser/timing/accessibility evidence | `data/evidence/v3_improvement_browser_20261110.json` |
+| Baseline outcomes and improvement addenda | `V3_OUTCOMES_REPORT.md` |
 | Change history | `CHANGELOG.md` |
 | Prepared educator gate | `EDUCATOR_REVIEW_PROTOCOL.md` |
 
@@ -149,6 +151,7 @@ The original evidence JSON remains necessary when full model prompts, structured
 
 - Every artifact entry includes byte size and a SHA-256 hash of its contents at manifest generation.
 - SQLite entries list available WAL/SHM sidecars separately. Use SQLite with available WAL state when inspecting a database.
+- A live WAL-mode database is not a stable byte-level integrity artifact: checkpointing can change the `.db` hash and remove sidecars during clean close without corruption. Checkpoint and close or create an immutable backup before stable hashing, or freeze a consistent database/WAL set. The current evaluator records database bytes and SHA-256 after checkpoint/close.
 - The manifest does not include its own hash in `artifacts`.
 - Manifest size: **228,967 bytes**.
 - Manifest SHA-256: `ffdb78e3ed878e773b67b17f9551d300a2e1cde9332c90a17bda376a882fc917`.

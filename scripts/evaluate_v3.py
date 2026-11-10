@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import sys
 import uuid
@@ -49,6 +50,8 @@ def scenario_state(scenario: AcceptanceScenario) -> tuple[dict[str, Any], str]:
         genre_selection=scenario.genre,
         assignment_prompt=scenario.assignment_prompt,
         teacher_directions=scenario.teacher_directions,
+        framework_name=scenario.framework_name,
+        framework_components=list(scenario.framework_components),
         source_material=scenario.source_material,
         student_concerns=scenario.student_concerns,
         scenario_id=scenario.scenario_id,
@@ -200,6 +203,8 @@ def run_revision(
         genre_selection=composition.genre_selection,
         assignment_prompt=composition.assignment_prompt,
         teacher_directions=composition.teacher_directions,
+        framework_name=composition.framework_name,
+        framework_components=composition.framework_components,
         source_material=composition.source_material,
         student_concerns=composition.student_concerns,
         scenario_id=scenario.scenario_id,
@@ -248,6 +253,8 @@ def run_final(
         genre_selection=composition.genre_selection,
         assignment_prompt=composition.assignment_prompt,
         teacher_directions=composition.teacher_directions,
+        framework_name=composition.framework_name,
+        framework_components=composition.framework_components,
         source_material=composition.source_material,
         student_concerns=composition.student_concerns,
         scenario_id=scenario.scenario_id,
@@ -302,6 +309,8 @@ def run_genre_correction(
         genre_selection=scenario.genre_correction,
         assignment_prompt=composition.assignment_prompt,
         teacher_directions=composition.teacher_directions,
+        framework_name=composition.framework_name,
+        framework_components=composition.framework_components,
         source_material=composition.source_material,
         student_concerns=composition.student_concerns,
         scenario_id=scenario.scenario_id,
@@ -623,6 +632,22 @@ def summarize(
     }
 
 
+def finalize_database(service: WritingAssistantService) -> None:
+    connection = service.checkpointer.conn
+    connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    connection.close()
+
+
+def database_integrity(database: str) -> dict[str, Any]:
+    path = Path(database)
+    wal = Path(str(path) + "-wal")
+    return {
+        "bytes": path.stat().st_size,
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "wal_bytes_after_close": wal.stat().st_size if wal.exists() else 0,
+    }
+
+
 def run_mode(
     mode: str,
     output_root: Path,
@@ -676,6 +701,7 @@ def run_mode(
                 }
             )
     summary = summarize(mode, client, records, scenario_set)
+    finalize_database(service)
     return {"summary": summary, "records": records}, str(database)
 
 
@@ -688,8 +714,15 @@ def main() -> int:
     args = parser.parse_args()
     if any(mode not in ("thinking", "nonthinking") for mode in args.modes):
         parser.error("Modes must be thinking or nonthinking.")
-    if args.scenario_number is not None and not 1 <= args.scenario_number <= 30:
-        parser.error("Scenario number must be between 1 and 30.")
+    scenario_count = len(load_acceptance_scenarios())
+    if args.scenario_number is not None and not 1 <= args.scenario_number <= scenario_count:
+        parser.error(f"Scenario number must be between 1 and {scenario_count}.")
+    if (
+        args.scenario_set == "core"
+        and args.scenario_number is not None
+        and args.scenario_number not in CORE_NUMBERS
+    ):
+        parser.error("A core scenario number must identify one of the core scenarios.")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = {
         "timestamp_utc": timestamp,
@@ -698,6 +731,7 @@ def main() -> int:
         "evaluation_type": "synthetic evaluation with final-response repair diagnostics; no educator or learner-outcome claims",
         "modes": {},
         "databases": {},
+        "database_integrity": {},
     }
     for mode in args.modes:
         result, database = run_mode(
@@ -709,6 +743,7 @@ def main() -> int:
         )
         output["modes"][mode] = result
         output["databases"][mode] = database
+        output["database_integrity"][mode] = database_integrity(database)
     scenario_label = f"scenario_{args.scenario_number:02d}_" if args.scenario_number else ""
     evidence_path = (
         args.output_root
