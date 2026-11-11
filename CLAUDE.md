@@ -62,7 +62,7 @@ pytest
 streamlit run app.py
 ```
 
-No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 214 checks. Current prompt/schema are `v3.4.0`/`v3.4.0`; the completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
+No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 214 checks. Current prompt/schema are `v3.4.0`/`v3.4.0` (runtime version constants); the Track A feedback-quality work in `FEEDBACK_QUALITY_IMPROVEMENT_PLAN.md` and `FEEDBACK_IMPLEMENTATION_V3_4_1.md` is implemented in the Support prompt and `HintOutput` schema without bumping the version constants. The completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
 
 For authorized billable evaluation:
 

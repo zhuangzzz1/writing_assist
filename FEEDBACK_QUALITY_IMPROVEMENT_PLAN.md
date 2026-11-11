@@ -121,9 +121,9 @@ Each principle is also tagged by **implementation track**:
 
 **Problem:** Generic phrases like "why that matters" or "why this helps" appear without reference to the student's specific claim. Students don't know what they're connecting to.
 
-**Fix:** Any phrase equivalent to "why this matters" in the revision_action must be completed with a prepositional phrase anchoring to the specific claim from the student's draft. Support should use the claim text from the Coordinator's assessment. This should be a prompt constraint: never output "why that matters" without a completing clause.
+**Fix:** Any phrase equivalent to "why this matters" in the revision_action must be completed with a prepositional phrase anchoring to the specific claim from the student's draft. Support agent receives the full draft via `state['writing']` and should extract the student's claim text directly from it. This should be a prompt constraint: never output "why that matters" without a completing clause that names the specific claim.
 
-**Track:** A
+**Track:** A (schema verified 2026-11-11: Support has access to full draft text via state)
 
 ---
 
@@ -180,9 +180,9 @@ The Step 0 sentence should explain the underlying writing move in plain terms, n
 
 **Problem:** Students receiving their most critical revision suggestion get the least structural support for executing it.
 
-**Fix:** Structural starters should be required (not optional) for rank-1 findings. The Coordinator's ranking logic or Support's output template should enforce this.
+**Fix:** Structural starters should be required (not optional) for rank-1 findings. Coordinator passes issues as an ordered list; Support knows rank implicitly from list position (index 0 = rank 1). Support prompt should enforce: the first candidate (rank 1) must use a non-empty sentence starter when the reasoning operation would benefit from scaffolding.
 
-**Track:** A/B (prompt constraint in Support; may need Coordinator to pass priority rank to Support)
+**Track:** A (schema verified 2026-11-11: rank is implicit from list order; no schema change needed)
 
 ---
 
@@ -353,6 +353,22 @@ One round-2 session showed re-presentation of the same goal card after Maya's su
 | 13 | Negative contrast phrasing (F5) | CONTRADICTED systemic | A | Low | Low |
 | 14 | Register fix ("again and again") (F9) | CONFIRMED scenario | A | Low | Low |
 | 15 | Tone bridge sentence | Preference | A | Low | Low |
+| 16 | Partial-progress acknowledgment (F14) | HYPOTHESIS | A | Low | Unknown |
+
+---
+
+## Schema Verification (2026-11-11)
+
+Checked against current codebase (`agents/assessment_coordinator.py`, `agents/support_agent.py`, `agents/prompts.py`, `langgraph_core/state.py`):
+
+**Track A confirmations (no schema change needed):**
+- **F8 (claim anchoring):** Support agent receives full `WritingAssistantState` including `writing` field. Can extract student claim directly from draft text. Prompt constraint only.
+- **F13 (rank-1 starters):** Coordinator returns issues as ordered list. Support knows rank implicitly from list position (index 0 = rank 1). No explicit rank field needed. Prompt constraint only.
+
+**Track B confirmations (schema addition required):**
+- **F7 (reasoning operation):** No `reasoning_operation` field in `IssueOutput`. Would add as: `reasoning_operation: Literal["causal", "sequential", "source_based", "concessive", "summary", "conditional"] | None`.
+- **F6 (finding severity):** No `finding_severity` field in `IssueOutput`. Would add as: `finding_severity: Literal["accuracy", "reasoning", "development"]`.
+- **F10 (concept substitution):** Would require new finding subtype, implemented as additional `category` value or separate boolean flag.
 
 ---
 
@@ -360,7 +376,13 @@ One round-2 session showed re-presentation of the same goal card after Maya's su
 
 ### Track A — Support prompt constraints (no schema changes)
 
-**Ship in order:** F11 (Step 0), F8 (claim anchoring), F12 (hint step ordering), F13 (require starters for rank-1), F7 (causal starter fix for responsibility findings).
+**Ship in order:** F11 (Step 0), F8 (claim anchoring), F12 (hint step ordering), F13 (require starters for rank-1).
+
+**Schema-verified implementation notes:**
+- F11: Add Step 0 concept restatement before procedural chain in hint generation
+- F8: Instruct Support to extract student claim from `state['writing']` and use it to complete "why X matters" phrases
+- F12: Reorder hint steps to place most concrete action first
+- F13: Require non-empty starter for first candidate in list (rank 1) when reasoning operation type suggests scaffolding would help
 
 Low risk. Validate each change against the 32-scenario non-thinking run (`V3_OUTCOMES_REPORT.md` Section 17). F11 is highest impact single change — 91% of hints are affected.
 
@@ -368,10 +390,25 @@ Low risk. Validate each change against the 32-scenario non-thinking run (`V3_OUT
 
 **Three additions in dependency order:**
 1. `finding_severity` field: `accuracy | reasoning | development` (enables F6, F13 ranking)
-2. `reasoning_operation` field: `causal | sequential | source_based | concessive | summary | conditional` (enables F7 starter alignment)
+   - Add to `IssueOutput` in `agents/assessment_coordinator.py`
+   - Update Coordinator prompt to classify each issue by severity
+   - Accuracy-tier findings rank first in Round 1 regardless of goal
+   
+2. `reasoning_operation` field: `causal | sequential | source_based | concessive | summary | conditional | None` (enables F7 starter alignment)
+   - Add to `IssueOutput` as optional field
+   - Update Coordinator prompt with reasoning operation classification guidance
+   - Support selects starter shape from this field
+   
 3. `concept_substitution` finding subtype (enables F10 — do this last, after pilot evidence)
+   - Implement as additional `category` enum value or separate boolean flag
+   - Requires pilot to validate detection reliability before schema commitment
 
-Regression test against acceptance set before shipping. The reasoning_operation label (item 2) is the most likely to affect existing scenarios — verify that scenarios where `When ____, ____.` is currently correct (some narrative findings in acceptance_05, acceptance_26) don't get reclassified incorrectly.
+**Critical regression risks:**
+- Reasoning_operation (item 2) most likely to affect existing scenarios
+- Before shipping: verify that scenarios where `When ____, ____.` is currently correct (some narrative findings in acceptance_05, acceptance_26) retain correct conditional/temporal classification
+- Severity ranking (item 1) may reorder existing suggestions — confirm reordering doesn't break scenarios where current order is pedagogically appropriate
+
+**Regression tolerance threshold:** No more than 10% of acceptance scenarios (3/32) show quality degradation after each schema addition. Zero tolerance for accuracy-tier regressions (fabricated content, source misrepresentation) being ranked below development-tier suggestions.
 
 ### Simulation Validation (2026-11-11)
 
@@ -379,24 +416,57 @@ Three student personas were run against the live app via Playwright automation (
 
 | Finding | Corpus status | Simulation verdict |
 |---|---|---|
-| F7: "When ____, ____." on causal move | CONFIRMED systemic | **CONFIRMED** — Jordan session, same mismatch as corpus |
-| F9: "again and again" register | CONFIRMED scenario-specific | **CONFIRMED** — appeared in Sam's session independently |
-| F11: No Step 0 concept restatement | CONFIRMED systemic | **CONFIRMED** — all three persona sessions, no hint opened with concept restatement |
-| F12: Hints front-load abstract steps | CONFIRMED systemic | **CONFIRMED** — Hint 1 step 1 sent Sam to "reread source paragraph"; stuck_step provided better first action |
-| Principle 9: Hint layering by confusion type | CONFIRMED systemic | **CONFIRMED** — Maya's warrant gap persisted through revision loop; Jordan's conditional starter misdirected; Sam's hint front-loaded the wrong step |
+| F7: "When ____, ____." on causal move | CONFIRMED systemic | **CONSISTENT** — Jordan session showed same mismatch as corpus |
+| F9: "again and again" register | CONFIRMED scenario-specific | **CONSISTENT** — appeared in Sam's session independently |
+| F11: No Step 0 concept restatement | CONFIRMED systemic | **CONSISTENT** — all three persona sessions, no hint opened with concept restatement |
+| F12: Hints front-load abstract steps | CONFIRMED systemic | **CONSISTENT** — Hint 1 step 1 sent Sam to "reread source paragraph"; stuck_step provided better first action |
+| Principle 9: Hint layering by confusion type | CONFIRMED systemic | **CONSISTENT** — Maya's warrant gap persisted through revision loop; Jordan's conditional starter misdirected; Sam's hint front-loaded the wrong step |
 
-**New finding from simulation (F14):** When a student makes a correct partial fix (surface error), Round 2 re-presents the same goal card with the same rationale and instruction. There is no acknowledgment that partial progress was made. For a student already confused about the core concept, identical-looking feedback in Round 2 may read as "you did it wrong" rather than "you're closer, now finish." The system correctly identifies the remaining gap, but the feedback framing doesn't distinguish partial success from no progress.
+**New observation from simulation (F14):** When a student makes a correct partial fix (surface error), Round 2 re-presents the same goal card with the same rationale and instruction. There is no acknowledgment that partial progress was made. For a student already confused about the core concept, identical-looking feedback in Round 2 may read as "you did it wrong" rather than "you're closer, now finish." The system correctly identifies the remaining gap, but the feedback framing doesn't distinguish partial success from no progress.
+
+**Note:** Simulation uses synthetic personas, not real 6th graders. Verdicts changed from "CONFIRMED" to "CONSISTENT WITH HYPOTHESIS" — simulation can validate that patterns appear in live outputs, but cannot confirm pedagogical impact without actual student data.
 
 ### Validation before schema changes
 
 Before committing to Track B schema work, the following hypotheses need evidence beyond model outputs:
 
-1. Does Step 0 (concept restatement) actually help students who clicked for conceptual confusion? — requires think-aloud or click-pattern data from real students
-2. Do generic model sentences help EL students or hurt lower-proficiency ones? — requires pilot with actual 6th graders, including EL students
-3. How often does concept substitution appear across natural student writing vs. synthetic test cases? — run the acceptance evaluator on a broader scenario set that includes more varied student errors
+1. **Step 0 concept restatement (F11):** Does it help students who clicked for conceptual confusion?
+   - **Pilot design:** Think-aloud sessions with 6 students (2 per grade 5/6/7, balanced EL/non-EL)
+   - **Task:** Give students a revision suggestion, then hints with/without Step 0 (randomized order)
+   - **Measure:** Which hint version leads to successful revision attempt; self-reported clarity ratings
+   - **Decision threshold:** If ≥4/6 students report Step 0 version clearer and make successful attempts with it, proceed with implementation
+
+2. **Model sentences for starters (F3):** Do generic model sentences help EL students or hurt lower-proficiency ones?
+   - **Pilot design:** 8 students (4 ELPAC 3-4, 4 ELPAC 1-2), grade 6
+   - **Task:** Revision with starter only vs. starter + generic model (different topic)
+   - **Measure:** Revision quality (blind-scored by ELA teacher); time-on-task; student preference
+   - **Decision threshold:** If both proficiency groups show ≥0.5 rubric point improvement with models, implement. If ELPAC 1-2 show worse outcomes, use models only for ELPAC 3+, or drop entirely.
+
+3. **Concept substitution detection (F10):** How often does it appear in natural student writing?
+   - **Before schema change:** Hand-code existing acceptance set (32 scenarios) for concept substitution instances
+   - **Measure:** How many issues involve word A used where concept B needed (vs. simple warrant gap)
+   - **Decision threshold:** If <5% of issues (≈3/68 candidates), not worth schema addition. If ≥10%, proceed with field addition and detection logic.
+
+4. **Reasoning operation classification (Track B item 2):** Can Coordinator reliably classify operations from current instructions?
+   - **Before schema change:** Add reasoning_operation to prompt (not schema), run against full acceptance set
+   - **Measure:** Manual review of 32 assessments — are operations classified correctly? Do conditional/temporal findings in narrative scenarios retain correct classification?
+   - **Decision threshold:** ≥90% correct classification (29/32), zero misclassifications that would select wrong starter for accuracy-tier findings
 
 ### Constraints
 
 - Hints are pregenerated and make no model call (per CLAUDE.md). All Principle 1 fixes must be pregeneration output format changes.
 - Model sentences must be generic — no student topic, genre, or source material (per CLAUDE.md).
 - Do not validate pedagogical effectiveness from model outputs alone. Mocked tests confirm structural compliance, not whether students learn from the feedback.
+
+### Token Cost Estimates (Track A)
+
+Based on current Support agent outputs averaging 800-1200 tokens per round:
+
+- **F11 (Step 0 addition):** +15-25 tokens per hint (2-4 hints per round) = +60-100 tokens/round
+- **F8 (claim anchoring):** +10-20 tokens per candidate (completing "why X matters") = +30-60 tokens/round  
+- **F12 (step reordering):** No net token change (reordering existing content)
+- **F13 (rank-1 starter requirement):** +5-10 tokens when rank-1 currently has empty starter (29% of rounds) = +1-3 tokens/round average
+
+**Total Track A increase:** +90-165 tokens per round (+8-14% over baseline)
+
+At current evaluation scale (32 scenarios × 3 rounds average = 96 rounds), Track A changes add ≈9-16K tokens total. At DeepSeek pricing, this is negligible cost increase. However, Step 0 addition (F11) increases response length for all hints, which may affect reading time — validate that added text improves clarity without overwhelming students.
