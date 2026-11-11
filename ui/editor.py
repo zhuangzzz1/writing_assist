@@ -16,16 +16,16 @@ _EDITOR = st.components.v2.component(
 """,
     css="""
 .editor-shell { width: 100%; }
-.editor-wrap { position: relative; height: 480px; background: #fff; }
-.editor-highlights { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; border: 1px solid transparent; border-radius: 10px; background: #fff; }
-.editor-highlights pre { margin: 0; color: #243042; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: normal; tab-size: 4; }
-#essay-editor { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 18px; resize: none; border: 1px solid #b8c5d6; border-radius: 10px; background: transparent; color: transparent; -webkit-text-fill-color: transparent; caret-color: #1f2937; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; line-height: 1.7; overflow: auto; scrollbar-width: none; }
+.editor-wrap { position: relative; height: clamp(360px, calc(100vh - 460px), 740px); background: #ffffff; }
+.editor-highlights { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; border: 1px solid transparent; border-radius: 8px; background: #ffffff; }
+.editor-highlights pre { margin: 0; color: #1a2638; font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 16px; line-height: 1.72; white-space: pre-wrap; overflow-wrap: break-word; tab-size: 4; }
+#essay-editor { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 16px 18px; resize: none; border: 1.5px solid #dde3f0; border-radius: 8px; background: transparent; color: transparent; -webkit-text-fill-color: transparent; caret-color: #1a2638; font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 16px; line-height: 1.72; overflow: auto; scrollbar-width: none; }
 #essay-editor::-webkit-scrollbar { display: none; }
-#essay-editor::selection { background: rgba(49,87,200,.25); }
-#essay-editor:focus-visible { outline: 3px solid rgba(49,87,200,.32); outline-offset: 2px; }
-.editor-highlights pre { padding: 18px; }
-.goal-highlight { padding: 1px 0; border-bottom: 2px solid #805600; border-radius: 2px; background: rgba(246,180,77,.52); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-.editor-status { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: #526174; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+#essay-editor::selection { background: rgba(47,84,192,.2); }
+#essay-editor:focus-visible { border-color: #2f54c0; outline: 3px solid rgba(47,84,192,.22); outline-offset: 2px; }
+.editor-highlights pre { padding: 16px 18px; }
+.goal-highlight { padding: 1px 0; border-bottom: 2px solid #9a6200; border-radius: 2px; background: rgba(248,196,70,.5); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.editor-status { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: #8fa0b8; font-family: 'Nunito', ui-sans-serif, system-ui, sans-serif; font-size: 11.5px; font-weight: 600; }
 """,
     js=r"""
 export default function (component) {
@@ -149,7 +149,7 @@ def goal_highlight_editor(
         data={"value": value, "goals": selected_goals},
         default={"value": value},
         on_value_change=sync_value,
-        height=530,
+        height="content",
     )
     value = result.value if result and result.value is not None else value
     st.session_state.editor_text = value

@@ -1,3 +1,4 @@
+import html
 import os
 import sqlite3
 import uuid
@@ -38,17 +39,293 @@ from ui.scenarios import PracticeScenario, get_scenario, load_scenarios
 
 
 STEPS = ("Draft", "Choose", "Revise", "Reflect")
+GOAL_SELF_REPORT_VALUES = ("", "attempted", "deferred")
+GOAL_SELF_REPORT_LABELS = {
+    "": "No answer",
+    "attempted": "I tried this",
+    "deferred": "I decided to skip this for now",
+}
 STAGE_CSS = """
 <style>
-.block-container { max-width: 1500px; padding-top: 1.4rem; }
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --v3-bg: #f2f5fb;
+  --v3-surface: #ffffff;
+  --v3-raised: #f8faff;
+  --v3-border: #dde3f0;
+  --v3-border-soft: #e8edf8;
+  --v3-ink: #1a2638;
+  --v3-muted: #5a6a82;
+  --v3-faint: #8fa0b8;
+  --v3-brand: #2f54c0;
+  --v3-brand-dark: #1e3d99;
+  --v3-brand-soft: #edf1ff;
+  --v3-brand-mid: #c7d4f8;
+  --v3-green: #1a6b4a;
+  --v3-green-soft: #e8f7f0;
+  --v3-green-mid: #a8d9c4;
+  --v3-amber: #9a6200;
+  --v3-amber-soft: #fdf4e3;
+  --v3-radius-sm: 8px;
+  --v3-radius-md: 12px;
+  --v3-radius-lg: 18px;
+  --v3-shadow-sm: 0 1px 3px rgba(30,50,90,.08), 0 1px 2px rgba(30,50,90,.05);
+  --v3-shadow-md: 0 4px 16px rgba(30,50,90,.10), 0 1px 3px rgba(30,50,90,.06);
+}
+
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+}
+[data-testid="stAppViewContainer"] { background: var(--v3-bg); }
 [data-testid="stSidebarHeader"] { display: none; }
-.v3-step-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-.v3-goal-strip { padding: 10px 14px; background: #f8faff; border-left: 4px solid #3157c8; color: #27364c; }
-.v3-source-note { padding: 10px 14px; background: #fff7df; border-left: 4px solid #805600; }
-.v3-workspace-footer { position: sticky; bottom: 0; background: white; padding: 8px 0; z-index: 5; }
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stToolbar"] { right: .5rem; }
+.block-container { max-width: min(96vw, 2000px); padding-top: 1rem; }
+
+/* ── Header ─────────────────────────────────────────────── */
+[data-testid="stHorizontalBlock"]:has(.v3-header-marker) { align-items: center; gap: .75rem; }
+[data-testid="stHorizontalBlock"]:has(.v3-header-marker) > [data-testid="stColumn"] { min-width: 0; }
+[data-testid="stColumn"]:has(.v3-header-marker) h1 {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'Nunito', sans-serif; font-size: 1.35rem; font-weight: 800;
+  color: var(--v3-ink); letter-spacing: -.01em; padding: 0; margin: 0;
+}
+[data-testid="stColumn"]:has(.v3-header-marker) h1::before {
+  content: "W"; display: grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--v3-brand); color: #fff;
+  font-size: 17px; font-weight: 800; letter-spacing: -.03em;
+  box-shadow: var(--v3-shadow-sm); flex-shrink: 0;
+}
+[data-testid="stColumn"]:has(.v3-header-marker) [data-testid="stCaptionContainer"] p {
+  font-size: .72rem; color: var(--v3-muted); margin-top: -.35rem;
+}
+
+/* ── Step pills ─────────────────────────────────────────── */
+[data-testid="stColumn"]:has(.v3-steps-marker) [data-testid="stHorizontalBlock"] {
+  gap: .3rem; align-items: center;
+}
+[data-testid="stColumn"]:has(.v3-steps-marker) [data-testid="stBaseButton-secondary"],
+[data-testid="stColumn"]:has(.v3-steps-marker) [data-testid="stBaseButton-primary"] {
+  border-radius: var(--v3-radius-sm); font-family: 'Nunito', sans-serif;
+  font-size: .8rem; font-weight: 800; padding: .35rem .5rem;
+  border: 1.5px solid var(--v3-border); background: var(--v3-surface);
+  color: var(--v3-muted); box-shadow: none;
+}
+[data-testid="stColumn"]:has(.v3-steps-marker) [data-testid="stBaseButton-primary"] {
+  background: var(--v3-brand); border-color: var(--v3-brand); color: #fff;
+  box-shadow: 0 0 0 3px var(--v3-brand-soft);
+}
+[data-testid="stColumn"]:has(.v3-steps-marker) [data-testid="stBaseButton-secondary"]:disabled {
+  opacity: .42; background: transparent;
+}
+/* completed-step green styling is injected dynamically per render */
+
+/* ── Cards (draft, goal, pane) ──────────────────────────── */
+[class*="st-key-v3_draft_card"] {
+  max-width: 760px; margin: 0 auto; padding: 24px 28px;
+  background: var(--v3-surface); border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-lg); box-shadow: var(--v3-shadow-md);
+}
+[class*="st-key-goalcard_"] {
+  margin-bottom: 10px; padding: 12px 14px;
+  border: 1.5px solid var(--v3-border); border-radius: var(--v3-radius-md);
+  background: var(--v3-surface);
+}
+[class*="st-key-goalcard_"]:has(.v3-goal-card-selected) {
+  border-color: var(--v3-brand-mid); background: var(--v3-brand-soft);
+}
+.v3-goal-card-marker, .v3-goal-card-selected,
+.v3-header-marker, .v3-steps-marker, .v3-feedback-marker, .v3-draft-card-marker,
+.v3-editor-panel-marker, .v3-feedback-panel-marker { display: none; }
+.v3-step-status {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── Draft card typography ──────────────────────────────── */
+[data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) h2,
+[data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) h3 {
+  font-family: 'Lora', Georgia, serif; font-weight: 600; color: var(--v3-ink);
+}
+[data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) h3 { font-size: 1.5rem; }
+
+/* ── Inputs ─────────────────────────────────────────────── */
+[data-testid="stTextInput"] div[role="group"],
+[data-testid="stSelectbox"] div[role="group"] {
+  border: 1.5px solid var(--v3-border) !important;
+  border-radius: var(--v3-radius-sm) !important;
+  background: var(--v3-bg) !important;
+  min-height: 38px;
+}
+[data-testid="stTextInput"] div[role="group"]:focus-within,
+[data-testid="stSelectbox"] div[role="group"]:focus-within {
+  border-color: var(--v3-brand) !important;
+  box-shadow: 0 0 0 3px var(--v3-brand-soft) !important;
+  background: var(--v3-surface) !important;
+}
+[data-testid="stTextInput"] input,
+[data-testid="stSelectbox"] input[role="combobox"] {
+  background: transparent !important;
+  color: var(--v3-ink) !important;
+  font-family: 'Nunito', sans-serif !important;
+  font-size: .875rem !important;
+  padding-left: 10px !important;
+}
+[data-testid="stSelectbox"] div[role="group"] button { color: var(--v3-muted); }
+[data-testid="stTextArea"] textarea {
+  border-radius: var(--v3-radius-sm) !important;
+  border: 1.5px solid var(--v3-border) !important;
+  background: var(--v3-bg) !important;
+  color: var(--v3-ink) !important;
+  font-family: 'Nunito', sans-serif;
+  font-size: .875rem;
+}
+[data-testid="stTextArea"] textarea:focus {
+  border-color: var(--v3-brand) !important;
+  box-shadow: 0 0 0 3px var(--v3-brand-soft) !important;
+}
+[data-testid="stTextArea"]:has(textarea[aria-label="Student draft"]) textarea {
+  font-family: 'Lora', Georgia, serif !important;
+  font-size: 1rem !important; line-height: 1.72 !important;
+  background: var(--v3-surface) !important;
+  height: clamp(280px, 42vh, 560px) !important;
+}
+label[data-testid="stWidgetLabel"] p {
+  font-family: 'Nunito', sans-serif; font-size: .78rem; font-weight: 800; color: var(--v3-ink);
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+[data-testid="stBaseButton-primary"] {
+  background: var(--v3-brand); border: 1.5px solid var(--v3-brand);
+  border-radius: var(--v3-radius-sm); font-family: 'Nunito', sans-serif;
+  font-weight: 800; font-size: .85rem; color: #fff; box-shadow: var(--v3-shadow-sm);
+}
+[data-testid="stBaseButton-primary"]:hover { background: var(--v3-brand-dark); border-color: var(--v3-brand-dark); }
+[data-testid="stBaseButton-secondary"] {
+  background: var(--v3-raised); border: 1.5px solid var(--v3-border);
+  border-radius: var(--v3-radius-sm); font-family: 'Nunito', sans-serif;
+  font-weight: 700; font-size: .82rem; color: var(--v3-muted);
+}
+[data-testid="stBaseButton-secondary"]:hover { background: var(--v3-border-soft); color: var(--v3-ink); }
+
+/* ── Expander ───────────────────────────────────────────── */
+[data-testid="stExpander"] details {
+  border: 1.5px solid var(--v3-border); border-radius: var(--v3-radius-sm);
+  background: var(--v3-raised);
+}
+[data-testid="stExpander"] summary { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .82rem; }
+
+/* ── Privacy note ───────────────────────────────────────── */
+.v3-privacy-note {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 14px 0 0; padding: 10px 12px;
+  background: var(--v3-raised); border: 1px solid var(--v3-border-soft);
+  border-radius: var(--v3-radius-sm);
+  color: var(--v3-muted); font-size: .78rem; line-height: 1.5;
+}
+.v3-privacy-note svg { flex-shrink: 0; margin-top: 1px; color: var(--v3-faint); }
+
+/* ── Feedback pane ──────────────────────────────────────── */
+[data-testid="stColumn"]:has(.v3-feedback-marker) [data-testid="stMarkdownContainer"] p,
+[data-testid="stColumn"]:has(.v3-feedback-marker) [data-testid="stMarkdownContainer"] li {
+  font-size: .95rem; line-height: 1.6;
+}
+[data-testid="stColumn"]:has(.v3-feedback-marker) [data-testid="stCaptionContainer"] p {
+  font-size: .78rem; line-height: 1.5; color: var(--v3-muted);
+}
+[data-testid="stColumn"]:has(.v3-feedback-marker) h3 {
+  font-family: 'Nunito', sans-serif; font-size: .78rem; font-weight: 800;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--v3-green);
+}
+[data-testid="stColumn"]:has(.v3-feedback-marker) h4 {
+  font-family: 'Nunito', sans-serif; font-size: .9rem; font-weight: 800; color: var(--v3-ink);
+}
+
+.v3-goal-strip {
+  margin: 0 0 10px; padding: 9px 12px;
+  background: var(--v3-brand-soft); border-left: 3px solid var(--v3-brand);
+  border-radius: 0 var(--v3-radius-sm) var(--v3-radius-sm) 0;
+  color: var(--v3-ink); font-size: .8rem; font-weight: 600;
+}
+.v3-goal-strip strong { color: var(--v3-brand); }
+.v3-source-note { padding: 10px 12px; border-left: 3px solid var(--v3-amber); background: var(--v3-amber-soft); border-radius: 0 var(--v3-radius-sm) var(--v3-radius-sm) 0; }
+
+.v3-goal-quote {
+  margin: 8px 0 10px; padding: 7px 10px;
+  border-left: 3px solid var(--v3-brand-mid);
+  background: var(--v3-raised); border-radius: 0 var(--v3-radius-sm) var(--v3-radius-sm) 0;
+  color: var(--v3-muted); font-family: 'Lora', Georgia, serif; font-style: italic;
+  font-size: .88rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+/* ── Workspace pane chrome ──────────────────────────────── */
+.v3-pane-title {
+  font-family: 'Nunito', sans-serif; font-size: .95rem; font-weight: 800;
+  color: var(--v3-ink); margin-bottom: 2px; display: flex; align-items: center; gap: 8px;
+}
+.v3-pane-sub { font-size: .72rem; color: var(--v3-muted); margin-bottom: 8px; }
+.v3-pane-title .v3-badge {
+  margin-left: auto; padding: 2px 9px; border-radius: 999px;
+  background: var(--v3-brand-soft); color: var(--v3-brand);
+  font-size: .68rem; font-weight: 800; letter-spacing: .01em; white-space: nowrap;
+}
+.v3-meta-strip { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+.v3-meta-chip {
+  padding: 2px 8px; border-radius: 5px; background: var(--v3-bg);
+  border: 1px solid var(--v3-border); color: var(--v3-muted);
+  font-size: .68rem; font-weight: 700;
+}
+.v3-editor-footer {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 6px 2px 0; color: var(--v3-faint); font-size: .7rem; font-weight: 600;
+}
+[class*="st-key-v3_editor_panel"] {
+  margin-top: 10px; padding: 12px 14px;
+  background: var(--v3-surface); border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-md); box-shadow: var(--v3-shadow-sm);
+}
+[class*="st-key-v3_feedback_panel"] {
+  overflow-y: auto; max-height: clamp(440px, calc(100vh - 380px), 780px);
+  padding-right: 4px; scrollbar-width: thin;
+  margin-top: 4px;
+}
+.v3-workspace-footer { position: sticky; bottom: 0; background: var(--v3-bg); padding: 8px 0; z-index: 5; }
+
+/* ── Snapshot panes (Reflect) ───────────────────────────── */
+.v3-snapshot-label {
+  font-family: 'Nunito', sans-serif; font-size: .7rem; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--v3-muted);
+  padding: 9px 16px; border-bottom: 1px solid var(--v3-border-soft);
+  background: var(--v3-raised); border-radius: var(--v3-radius-md) var(--v3-radius-md) 0 0;
+  margin-bottom: 0;
+}
+.v3-snapshot-pane {
+  box-sizing: border-box; height: clamp(280px, 40vh, 500px); padding: 16px 18px; overflow-y: auto;
+  border: 1px solid var(--v3-border); border-top: none;
+  border-radius: 0 0 var(--v3-radius-md) var(--v3-radius-md);
+  background: var(--v3-surface);
+  color: var(--v3-ink); font-family: 'Lora', Georgia, serif;
+  font-size: .9rem; line-height: 1.72; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.v3-snapshot-pane:focus-visible { outline: 3px solid var(--v3-brand-mid); outline-offset: 2px; }
+.v3-diff-row {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 16px; margin: 10px 0 14px;
+  background: var(--v3-surface); border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-md); color: var(--v3-muted); font-size: .8rem;
+}
+.v3-diff-row .v3-num { font-size: 1.25rem; font-weight: 800; color: var(--v3-brand); }
+
+/* ── Dialogs / alerts ───────────────────────────────────── */
+[data-testid="stAlert"] { border-radius: var(--v3-radius-sm); font-size: .82rem; }
+[data-testid="stDialog"] div[role="dialog"] { border-radius: var(--v3-radius-lg); }
+
+/* ── Layout grids ───────────────────────────────────────── */
 @media (min-width: 1000px) {
   [data-testid="stHorizontalBlock"]:has(.draft-layout-marker) {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 780px) minmax(0, 1fr);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, clamp(680px, 62vw, 1100px)) minmax(0, 1fr);
     align-items: start;
   }
   [data-testid="stHorizontalBlock"]:has(.draft-layout-marker) > [data-testid="stColumn"],
@@ -60,8 +337,8 @@ STAGE_CSS = """
     align-items: start;
   }
 }
-@media (min-width: 1280px) {
-  [data-testid="stHorizontalBlock"]:has(.draft-layout-marker) { max-width: 1400px; margin: auto; }
+@media (max-width: 999px) {
+  .block-container { padding-left: 1rem; padding-right: 1rem; }
 }
 </style>
 """
@@ -69,6 +346,10 @@ STAGE_CSS = """
 
 def _debug_enabled() -> bool:
     return os.getenv("ENABLE_DEBUG_MODE", "false").strip().lower() == "true"
+
+
+def _evaluation_controls_enabled() -> bool:
+    return os.getenv("SHOW_EVALUATION_CONTROLS", "false").strip().lower() == "true"
 
 
 def _small_change_threshold() -> int:
@@ -451,15 +732,8 @@ def _submit_revision(
         return
     revision_number = composition.revision_number + 1
     reports = {
-        goal["goal_id"]: {
-            "No answer": "",
-            "I tried this goal": "attempted",
-            "I intentionally deferred this goal": "deferred",
-        }.get(
-            st.session_state.get(
-                f"goal_report_{composition_id}_{revision_number}_{goal['goal_id']}",
-                "No answer",
-            ),
+        goal["goal_id"]: st.session_state.get(
+            f"goal_report_{composition_id}_{revision_number}_{goal['goal_id']}",
             "",
         )
         for goal in selected
@@ -716,88 +990,97 @@ def _render_draft(service: WritingAssistantService, session_id: str) -> None:
     _, center, _ = st.columns([1, 3, 1])
     with center:
         st.markdown('<div class="draft-layout-marker"></div>', unsafe_allow_html=True)
-        st.subheader("Start with your draft")
-        st.caption("Only your grade and draft are required. Your ideas and words stay yours.")
-        _render_scenario_loader()
-        if st.session_state.loaded_scenario_id:
-            st.caption(
-                f"Loaded synthetic scenario: {st.session_state.loaded_scenario_id} "
-                f"({st.session_state.loaded_fixture_version})"
-            )
-        active_id = st.session_state.active_composition_id
-        if active_id:
-            st.info("This is your current working text. Return to Revise to use your selected goals.")
-        st.selectbox("Grade level", GRADE_LEVELS, key="grade_level")
-        st.text_area(
-            "Student draft",
-            key="writing_input",
-            height=330,
-            max_chars=MAX_DRAFT_CHARS,
-            placeholder="Paste a synthetic draft here…",
-        )
-        if active_id:
-            st.session_state.editor_text = st.session_state.writing_input
-            st.session_state[_editor_key(active_id)] = {"value": st.session_state.writing_input}
-        with st.expander("Add assignment details", expanded=False):
-            st.selectbox(
-                "Genre",
+        with st.container(key="v3_draft_card"):
+            st.markdown('<span class="v3-draft-card-marker"></span>', unsafe_allow_html=True)
+            st.subheader("Start with your draft")
+            st.caption("Only your grade and draft are required. Your ideas and words stay yours.")
+            _render_scenario_loader()
+            if st.session_state.loaded_scenario_id:
+                st.caption(
+                    f"Loaded synthetic scenario: {st.session_state.loaded_scenario_id} "
+                    f"({st.session_state.loaded_fixture_version})"
+                )
+            active_id = st.session_state.active_composition_id
+            if active_id:
+                st.info("This is your current working text. Return to Revise to use your selected goals.")
+            grade_column, genre_column = st.columns(2)
+            grade_column.selectbox("Grade level", GRADE_LEVELS, key="grade_level")
+            genre_column.selectbox(
+                "Writing type (optional)",
                 list(GENRE_LABELS),
                 format_func=GENRE_LABELS.get,
                 key="genre_input",
-                help="Auto-detect is a correctable working inference, not a fact about your intent.",
-            )
-            st.text_area("Assignment prompt (optional)", key="assignment_prompt_input", height=100)
-            st.text_area(
-                "Teacher directions or required structure (optional)",
-                key="teacher_directions_input",
-                height=100,
-                placeholder="For example: Use RACES and explain your evidence.",
-            )
-            st.text_input(
-                "Framework name (optional)",
-                key="framework_name_input",
-                max_chars=80,
-                placeholder="For example: CER, RACES, MEAL, or a custom name",
-                help="Known frameworks supply their usual components automatically.",
-            )
-            st.text_input(
-                "Required components (optional, comma-separated)",
-                key="framework_components_input",
-                placeholder="For example: Restate, Answer, Cite, Explain, Sum up",
-                help="List components for a custom framework or override a known preset.",
+                help="Choose a type if you know it. Auto-detect makes a working guess that you can correct later.",
             )
             st.text_area(
-                "Source material (optional)",
-                key="source_material_input",
-                height=150,
-                max_chars=MAX_SOURCE_CHARS,
-                placeholder="Paste the supplied synthetic passage if the task depends on it.",
+                "Student draft",
+                key="writing_input",
+                height=330,
+                max_chars=MAX_DRAFT_CHARS,
+                placeholder="Paste a synthetic draft here…",
             )
-            st.text_area(
-                "Student concern or goal (optional)",
-                key="student_concerns_input",
-                height=90,
-                placeholder="What would you like help with?",
+            if active_id:
+                st.session_state.editor_text = st.session_state.writing_input
+                st.session_state[_editor_key(active_id)] = {"value": st.session_state.writing_input}
+            with st.expander("Add details from my teacher (optional)", expanded=False):
+                st.caption("Add information from your teacher or tell me what you want help with.")
+                st.text_area("Assignment question (optional)", key="assignment_prompt_input", height=100)
+                st.text_area(
+                    "My teacher's directions or required structure (optional)",
+                    key="teacher_directions_input",
+                    height=100,
+                    placeholder="For example: Use RACES and explain your evidence.",
+                )
+                st.text_input(
+                    "Writing structure my teacher asked for (optional)",
+                    key="framework_name_input",
+                    max_chars=80,
+                    placeholder="For example: CER, RACES, MEAL, or another structure",
+                    help="If your teacher named a structure, enter its name. Known structures supply their usual parts automatically.",
+                )
+                st.text_input(
+                    "Parts my structure must include (optional, comma-separated)",
+                    key="framework_components_input",
+                    placeholder="For example: Restate, Answer, Cite, Explain, Sum up",
+                    help="List the parts for a custom structure or replace the usual parts of a known structure.",
+                )
+                st.text_area(
+                    "Passage or source my assignment uses (optional)",
+                    key="source_material_input",
+                    height=150,
+                    max_chars=MAX_SOURCE_CHARS,
+                    placeholder="Paste the supplied synthetic passage if the task depends on it.",
+                )
+                st.text_area(
+                    "What I want help with (optional)",
+                    key="student_concerns_input",
+                    height=90,
+                    placeholder="What would you like help with?",
+                )
+            st.markdown(
+                '<div class="v3-privacy-note" role="note" aria-label="Privacy and AI service notice">'
+                '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" '
+                'xmlns="http://www.w3.org/2000/svg"><path d="M8 1.5a3 3 0 0 0-3 3v1.25H4.5a1 1 0 0 0-1 '
+                '1v5.5a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-5.5a1 1 0 0 0-1-1H11V4.5a3 3 0 0 0-3-3Zm-1.5 '
+                '3a1.5 1.5 0 0 1 3 0v1.25h-3V4.5Z" fill="currentColor"/></svg>'
+                "<span>Do not submit writing containing real names, schools, or personal information. "
+                "This is a demo system — your input is sent to an external AI service.</span>"
+                "</div>",
+                unsafe_allow_html=True,
             )
-        st.warning(
-            "Do not submit writing containing real names, schools, or personal information. "
-            "This is a demo system — your input is sent to an external AI service."
-        )
-        if st.button(
-            "Get writing feedback", key="analyze_writing", type="primary", width="stretch"
-        ):
-            _start_review(service, session_id)
+            if st.button(
+                "Get writing feedback", key="analyze_writing", type="primary", width="stretch"
+            ):
+                _start_review(service, session_id)
 
 
 def _render_steps(service: WritingAssistantService) -> None:
     state = _current_state(service)
-    active = bool(st.session_state.active_composition_id)
+    active_id = st.session_state.active_composition_id
+    active = bool(active_id)
     route = state.get("routing_decision")
-    reflection = (
-        service.storage.get_reflection(st.session_state.active_composition_id)
-        if active
-        else None
-    )
+    reflection = service.storage.get_reflection(active_id) if active else None
+    snapshots = service.storage.list_snapshots(active_id) if active else []
     final_complete = bool(reflection and reflection.status == "completed")
     final_failed = bool(reflection and reflection.status == "failed")
     normal_review = (
@@ -813,15 +1096,36 @@ def _render_steps(service: WritingAssistantService) -> None:
         "Revise": normal_review and has_candidates and (has_selection or state.get("revision_number", 0) > 0),
         "Reflect": normal_review or final_complete or final_failed,
     }
+    completed = {
+        "Draft": bool(snapshots),
+        "Choose": has_selection or any(snapshot.selected_goals for snapshot in snapshots),
+        "Revise": len(snapshots) > 1,
+        "Reflect": final_complete,
+    }
+    # Inject green styling for completed steps via key-based CSS — no extra DOM element needed.
+    completed_css_rules = "".join(
+        f'.st-key-step_{step} [data-testid="stBaseButton-secondary"] {{'
+        f' color: var(--v3-green); background: var(--v3-green-soft); border-color: var(--v3-green-mid); }}'
+        for step in STEPS if completed[step]
+    )
+    if completed_css_rules:
+        st.markdown(f"<style>{completed_css_rules}</style>", unsafe_allow_html=True)
     columns = st.columns(4)
     for index, (step, column) in enumerate(zip(STEPS, columns), start=1):
         current = st.session_state.current_step == step and not st.session_state.show_history
+        labels = []
+        if completed[step]:
+            labels.append("completed")
+        if current:
+            labels.append("current step")
+        help_text = f"{step}: {', '.join(labels)}" if labels else f"Go to {step} step"
         if column.button(
-            f"{index} {step}",
+            f"{'✓' if completed[step] else index} {step}",
             key=f"step_{step}",
             type="primary" if current else "secondary",
             disabled=not available[step],
-            width="stretch",
+            help=help_text,
+            width="content",
         ):
             if step == "Reflect" and not final_complete:
                 _request_finish()
@@ -831,9 +1135,10 @@ def _render_steps(service: WritingAssistantService) -> None:
                 if step == "Revise" and state.get("revision_number", 0) > 0:
                     st.session_state.round_review_active = True
                 st.rerun()
+    completed_labels = ", ".join(step for step in STEPS if completed[step]) or "none yet"
     st.markdown(
         f'<span class="v3-step-status" aria-current="step">Current step: '
-        f'{st.session_state.current_step}</span>',
+        f'{st.session_state.current_step}. Completed steps: {completed_labels}.</span>',
         unsafe_allow_html=True,
     )
 
@@ -908,34 +1213,42 @@ def _render_candidate(
     overlap_titles: list[str] | None = None,
 ) -> None:
     goal_id = candidate["goal_id"]
-    if selectable:
-        key = f"select_goal_{round_id}_{goal_id}"
-        st.session_state.setdefault(key, goal_id in st.session_state.selected_goal_ids)
-        st.checkbox(
-            candidate["title"],
-            key=key,
-            on_change=_toggle_goal,
-            args=(goal_id, round_id),
+    selected = not selectable or goal_id in st.session_state.selected_goal_ids
+    card_class = "v3-goal-card v3-goal-card-selected" if selected else "v3-goal-card"
+    with st.container(key=f"goalcard_{round_id}_{goal_id}"):
+        st.markdown(f'<span class="{card_class}" hidden></span>', unsafe_allow_html=True)
+        if selectable:
+            key = f"select_goal_{round_id}_{goal_id}"
+            st.session_state.setdefault(key, goal_id in st.session_state.selected_goal_ids)
+            st.checkbox(
+                candidate["title"],
+                key=key,
+                on_change=_toggle_goal,
+                args=(goal_id, round_id),
+            )
+        else:
+            st.markdown(f"**{candidate['title']}**")
+        st.markdown(candidate["why_it_matters"])
+        st.markdown(
+            f'<blockquote class="v3-goal-quote" aria-label="Passage from your draft">'
+            f'"{html.escape(candidate["draft_reference"])}"</blockquote>',
+            unsafe_allow_html=True,
         )
-    else:
-        st.markdown(f"**{candidate['title']}**")
-    st.markdown(candidate["why_it_matters"])
-    st.caption(
-        f"Paragraph {candidate['paragraph_number']}, occurrence {candidate['occurrence']}: "
-        f"“{candidate['draft_reference']}”"
-    )
-    if overlap_titles:
         st.caption(
-            "This goal references an overlapping passage with: "
-            + ", ".join(overlap_titles)
-            + ". Each goal keeps its exact reference above."
+            f"Paragraph {candidate['paragraph_number']}, matching passage "
+            f"{candidate['occurrence']}"
         )
-    st.markdown(f"**Try this:** {candidate['revision_action']}")
-    with st.expander("Show a hint", expanded=False):
-        st.markdown(format_hint(candidate["hint"]))
-    if st.session_state.stuck_requested:
-        st.info(f"One next step: {candidate['stuck_step']}")
-    st.divider()
+        if overlap_titles:
+            st.caption(
+                "This goal references an overlapping passage with: "
+                + ", ".join(overlap_titles)
+                + ". Each goal keeps its exact reference above."
+            )
+        st.markdown(f"**Try this:** {candidate['revision_action']}")
+        with st.expander("Show a hint", expanded=False):
+            st.markdown(format_hint(candidate["hint"]))
+        if st.session_state.stuck_requested:
+            st.info(f"One next step: {candidate['stuck_step']}")
 
 
 def _render_editor(state: dict[str, Any]) -> None:
@@ -949,12 +1262,18 @@ def _render_editor(state: dict[str, Any]) -> None:
         else _selected_candidates(state)
     )
     if selected:
-        st.info(
-            "**Selected revision goals:** "
-            + " · ".join(candidate["title"] for candidate in selected)
+        titles = " · ".join(
+            html.escape(candidate["title"]) for candidate in selected
+        )
+        st.markdown(
+            f'<div class="v3-goal-strip"><strong>Revision goals:</strong> {titles}</div>',
+            unsafe_allow_html=True,
         )
     else:
-        st.caption("Select one to three goals in the feedback panel.")
+        st.markdown(
+            '<div class="v3-goal-strip">Select 1–3 goals in the feedback panel.</div>',
+            unsafe_allow_html=True,
+        )
     value = goal_highlight_editor(
         composition_id=composition_id,
         initial_value=st.session_state.editor_text,
@@ -1022,6 +1341,22 @@ def _render_teacher(state: dict[str, Any]) -> None:
     st.caption("Normal writing feedback and revision choices are paused for this submission.")
 
 
+def _pane_title(title: str, subtitle: str, badge: str) -> None:
+    st.markdown(
+        f'<div class="v3-pane-title">{html.escape(title)}'
+        f'<span class="v3-badge">{html.escape(badge)}</span></div>'
+        f'<div class="v3-pane-sub">{html.escape(subtitle)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _meta_strip(chips: list[str]) -> None:
+    items = "".join(
+        f'<span class="v3-meta-chip">{html.escape(chip)}</span>' for chip in chips if chip
+    )
+    st.markdown(f'<div class="v3-meta-strip">{items}</div>', unsafe_allow_html=True)
+
+
 def _render_workspace(service: WritingAssistantService, session_id: str) -> None:
     state = _current_state(service)
     latest_round = _latest_completed_round(service)
@@ -1044,15 +1379,28 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
     left, right = st.columns([3, 2])
     with left:
         st.markdown('<div class="workspace-marker"></div>', unsafe_allow_html=True)
-        st.subheader("Your essay")
-        st.caption(
-            f"Grade: {state['grade_level']} · Revision {state.get('revision_number', 0)} · "
-            + ("Source attached" if state["source_material_available"] else "No source attached")
+        _pane_title(
+            "Your essay",
+            "Edit here while keeping your feedback in view.",
+            "Original draft" if not state.get("revision_number") else f"Revision {state['revision_number']}",
         )
-        with st.container(border=True, height=640):
+        _meta_strip(
+            [
+                state["grade_level"],
+                GENRE_LABELS.get(state.get("working_genre", ""), "Genre not set"),
+                "Source attached" if state["source_material_available"] else "No source attached",
+            ]
+        )
+        with st.container(key="v3_editor_panel"):
+            st.markdown('<span class="v3-editor-panel-marker"></span>', unsafe_allow_html=True)
             _render_editor(state)
     with right:
-        st.subheader("Feedback")
+        st.markdown('<span class="v3-feedback-marker"></span>', unsafe_allow_html=True)
+        _pane_title(
+            "Feedback",
+            "Choose what you want to improve.",
+            f"Review {state.get('revision_number', 0) + 1}",
+        )
         if state.get("routing_decision") == "direct_response":
             st.markdown(state.get("student_output", ""))
             render_goal_feedback(
@@ -1063,7 +1411,8 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
             _render_process(service)
             return
         review_active = st.session_state.round_review_active and state.get("revision_number", 0) > 0
-        with st.container(border=True, height=510):
+        with st.container(key="v3_feedback_panel"):
+            st.markdown('<span class="v3-feedback-panel-marker"></span>', unsafe_allow_html=True)
             if review_active:
                 st.success(f"Revision {state['revision_number']} snapshot saved and reviewed.")
                 render_goal_feedback(
@@ -1101,19 +1450,29 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
                         state["round_id"],
                         overlap_labels.get(candidate["goal_id"]),
                     )
+                _col1, _col2, _col3 = st.columns([1, 1, 2])
                 if not st.session_state.less_feedback:
-                    st.button("Show less feedback", key="show_less_feedback", on_click=lambda: st.session_state.update(less_feedback=True))
+                    if _col1.button("Show less", key="show_less_feedback"):
+                        st.session_state.less_feedback = True
+                        st.rerun()
                 else:
-                    st.button("Show all selected feedback", key="show_all_feedback", on_click=lambda: st.session_state.update(less_feedback=False, stuck_requested=False))
+                    if _col1.button("Show all", key="show_all_feedback"):
+                        st.session_state.less_feedback = False
+                        st.session_state.stuck_requested = False
+                        st.rerun()
                 if not st.session_state.stuck_requested:
-                    st.button("I’m stuck", key="im_stuck", on_click=lambda: st.session_state.update(stuck_requested=True, less_feedback=True))
+                    if _col2.button("I’m stuck", key="im_stuck"):
+                        st.session_state.stuck_requested = True
+                        st.session_state.less_feedback = True
+                        st.rerun()
                 st.markdown("### Optional goal self-report")
-                st.caption("Share what you tried or intentionally deferred. Skipping this makes no attempt assumption.")
+                st.caption("Tell me what you tried or decided to skip. This is optional — skip it if you like.")
                 next_revision = state.get("revision_number", 0) + 1
                 for candidate in _selected_candidates(state):
                     st.selectbox(
                         candidate["title"],
-                        ["No answer", "I tried this goal", "I intentionally deferred this goal"],
+                        GOAL_SELF_REPORT_VALUES,
+                        format_func=GOAL_SELF_REPORT_LABELS.get,
                         key=f"goal_report_{st.session_state.active_composition_id}_{next_revision}_{candidate['goal_id']}",
                     )
             else:
@@ -1160,6 +1519,15 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
         _render_process(service)
 
 
+def _render_snapshot(label: str, writing: str) -> None:
+    st.markdown(
+        f'<div class="v3-snapshot-label">{html.escape(label)}</div>'
+        f'<div class="v3-snapshot-pane" role="region" aria-label="{html.escape(label)}" '
+        f'tabindex="0">{html.escape(writing)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def _render_reflection(service: WritingAssistantService, session_id: str) -> None:
     composition_id = st.session_state.active_composition_id
     reflection = service.storage.get_reflection(composition_id)
@@ -1179,16 +1547,17 @@ def _render_reflection(service: WritingAssistantService, session_id: str) -> Non
     original, final = snapshots[0], snapshots[-1]
     first, second = st.columns(2)
     with first:
-        st.subheader("Original submission")
-        st.text_area("Original submitted draft", original.writing, height=360, disabled=True, key=f"original_{composition_id}")
+        _render_snapshot("Original draft", original.writing)
     with second:
-        st.subheader("Latest submitted revision")
-        st.text_area("Final submitted draft", final.writing, height=360, disabled=True, key=f"final_{composition_id}")
+        _render_snapshot("Latest submitted revision", final.writing)
     diff = state.get("text_diff", {})
-    st.caption(
-        f"Deterministic comparison: {diff.get('added_words', 0)} words added and "
-        f"{diff.get('removed_words', 0)} words removed across the original/final diff. "
-        "These counts do not judge quality."
+    st.markdown(
+        f'<div class="v3-diff-row">'
+        f'<span><span class="v3-num">+{diff.get("added_words", 0)}</span> words added</span>'
+        f'<span><span class="v3-num">−{diff.get("removed_words", 0)}</span> words removed</span>'
+        f'<span>These counts are factual. They do not judge whether the changes were improvements.</span>'
+        f"</div>",
+        unsafe_allow_html=True,
     )
     with st.expander("See the deterministic text diff"):
         st.code(diff.get("unified_diff", "No text difference."), language="diff")
@@ -1228,7 +1597,8 @@ def _render_history(service: WritingAssistantService, session_id: str) -> None:
                 st.markdown("**Goals attached to this submission**")
                 for goal in snapshot.selected_goals:
                     report = snapshot.goal_self_reports.get(goal["goal_id"], "")
-                    suffix = f" — student self-report: {report}" if report else ""
+                    report_label = GOAL_SELF_REPORT_LABELS.get(report, report)
+                    suffix = f" — student self-report: {report_label}" if report else ""
                     st.markdown(f"- {goal['title']}{suffix}")
             st.caption(f"Saved at {snapshot.created_at}")
     if st.button("Open this composition", key="open_history_composition"):
@@ -1312,30 +1682,54 @@ def render_dashboard(service: WritingAssistantService, client: DeepSeekClient) -
         _render_recovery()
         return
 
+    evaluation_controls = _evaluation_controls_enabled()
+    if not evaluation_controls:
+        st.session_state.developer_controls_visible = False
+        st.session_state.agent_observability_visible = False
+    if not evaluation_controls or not _debug_enabled():
+        st.session_state.capture_debug = False
+
     st.markdown(STAGE_CSS, unsafe_allow_html=True)
-    title_column, new_column, history_column, developer_column, observability_column = st.columns([2.5, 0.9, 0.9, 1.4, 1.4])
+    if evaluation_controls:
+        (
+            title_column,
+            steps_column,
+            new_column,
+            history_column,
+            developer_column,
+            observability_column,
+        ) = st.columns([1.5, 3, 0.85, 0.85, 1.25, 1.25])
+    else:
+        title_column, steps_column, new_column, history_column = st.columns(
+            [1.6, 3.4, 0.9, 0.9]
+        )
+    title_column.markdown('<span class="v3-header-marker"></span>', unsafe_allow_html=True)
     title_column.title("Writing Coach")
-    title_column.caption("Your ideas. Your words. One revision at a time.")
+    title_column.caption("Your ideas. Your words.")
+    with steps_column:
+        st.markdown('<span class="v3-steps-marker"></span>', unsafe_allow_html=True)
+        _render_steps(service)
     if new_column.button("New composition", key="new_composition", width="stretch"):
         _new_blank_composition()
         st.rerun()
     if history_column.button("History", key="history_button", width="stretch"):
         st.session_state.show_history = True
         st.rerun()
-    if developer_column.button(
-        "Hide Developer Controls" if st.session_state.developer_controls_visible else "Show Developer Controls",
-        key="toggle_developer_controls",
-        width="stretch",
-    ):
-        st.session_state.developer_controls_visible = not st.session_state.developer_controls_visible
-        st.rerun()
-    if observability_column.button(
-        "Hide Agent Observability" if st.session_state.agent_observability_visible else "Show Agent Observability",
-        key="toggle_agent_observability",
-        width="stretch",
-    ):
-        st.session_state.agent_observability_visible = not st.session_state.agent_observability_visible
-        st.rerun()
+    if evaluation_controls:
+        if developer_column.button(
+            "Hide Developer Controls" if st.session_state.developer_controls_visible else "Show Developer Controls",
+            key="toggle_developer_controls",
+            width="stretch",
+        ):
+            st.session_state.developer_controls_visible = not st.session_state.developer_controls_visible
+            st.rerun()
+        if observability_column.button(
+            "Hide Agent Observability" if st.session_state.agent_observability_visible else "Show Agent Observability",
+            key="toggle_agent_observability",
+            width="stretch",
+        ):
+            st.session_state.agent_observability_visible = not st.session_state.agent_observability_visible
+            st.rerun()
 
     last_error = st.session_state.pop("last_error", None)
     if last_error is not None:
@@ -1361,7 +1755,6 @@ def render_dashboard(service: WritingAssistantService, client: DeepSeekClient) -
                 st.rerun()
             _render_history(service, session_id)
         else:
-            _render_steps(service)
             invocation = st.session_state.current_invocation
             if invocation and invocation.pending:
                 _render_clarification(service, session_id)

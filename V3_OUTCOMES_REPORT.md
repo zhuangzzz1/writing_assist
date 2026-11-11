@@ -621,7 +621,7 @@ The `v3.4.0` prompt/schema release implements the validated prompt-review plan:
 
 ### 17.2 Current Verification
 
-- **213 mocked automated checks passed**, including framework contracts, migration/restoration, overlap grouping, payload boundaries, final pass-through, fixtures, and stable evidence capture.
+- **214 mocked automated checks passed**, including framework contracts, migration/restoration, overlap grouping, payload boundaries, final pass-through, fixtures, stable evidence capture, and the revised student UI.
 - Chrome evidence is `data/evidence/v3_4_browser_verification.json`. It records structured RACES loading and complete coverage without Coordinator repair, a grounded revision/final loop with finish cancellation/confirmation, and overlap selection/deselection using preserved nested output in a copied database.
 - The controlled density fixtures support educator review but do not isolate every natural quality variable or justify length-only causation.
 - The integrated 32-scenario non-thinking acceptance evaluation, targeted #15 retest, and two additional density-pair repetitions completed. Mixed and negative findings are retained below.

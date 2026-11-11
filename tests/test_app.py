@@ -31,10 +31,11 @@ def stub_graphviz_frontend(monkeypatch):
     monkeypatch.setattr("ui.observability.st.graphviz_chart", lambda *args, **kwargs: None)
 
 
-def configured_app(tmp_path, monkeypatch, debug=False):
+def configured_app(tmp_path, monkeypatch, debug=False, evaluation=False):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
     monkeypatch.setenv("DEEPSEEK_THINKING", "false")
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "ui.db"))
+    monkeypatch.setenv("SHOW_EVALUATION_CONTROLS", str(evaluation).lower())
     monkeypatch.setenv("ENABLE_DEBUG_MODE", str(debug).lower())
     return AppTest.from_file(APP_PATH, default_timeout=20)
 
@@ -139,24 +140,49 @@ def set_editor(app, value):
     assert app.session_state.editor_text == value
 
 
-def test_student_default_ui_is_focused_and_developer_tools_are_independent(tmp_path, monkeypatch):
+def test_student_default_ui_and_evaluation_controls_are_independently_gated(tmp_path, monkeypatch):
     app = configured_app(tmp_path, monkeypatch).run()
 
     assert not app.exception
     assert app.title[0].value == "Writing Coach"
     assert app.text_area(key="writing_input").label == "Student draft"
     assert app.selectbox(key="grade_level").label == "Grade level"
+    assert app.text_input(key="framework_name_input").label == "Writing structure my teacher asked for (optional)"
+    assert app.text_area(key="student_concerns_input").label == "What I want help with (optional)"
     assert all(item.key != "affect_check_in" for item in app.selectbox)
+    assert all(item.key != "toggle_developer_controls" for item in app.button)
+    assert all(item.key != "toggle_agent_observability" for item in app.button)
+    assert all(item.key != "show_prompts" for item in app.checkbox)
+    layout_css = next(
+        item.value for item in app.markdown if ".block-container" in item.value and "<style>" in item.value
+    )
+    assert "max-width: min(96vw, 2000px)" in layout_css
+    assert "clamp(680px, 62vw, 1100px)" in layout_css
+    assert "height: clamp(280px, 42vh, 560px)" in layout_css
+    assert "clamp(440px, calc(100vh - 380px), 780px)" in layout_css
+    assert "height: clamp(280px, 40vh, 500px)" in layout_css
+    assert "--v3-brand: #2f54c0" in layout_css
+    assert "font-family: 'Lora', Georgia, serif" in layout_css
+    privacy = next(
+        item.value for item in app.markdown if "Do not submit writing containing real names" in item.value
+    )
+    assert 'class="v3-privacy-note"' in privacy
+    assert "This is a demo system — your input is sent to an external AI service." in privacy
+
+    monkeypatch.setenv("SHOW_EVALUATION_CONTROLS", "true")
+    app.run()
     assert app.button(key="toggle_developer_controls").label == "Show Developer Controls"
     assert app.button(key="toggle_agent_observability").label == "Show Agent Observability"
-    assert all(item.key != "show_prompts" for item in app.checkbox)
-    assert any("780px" in item.value for item in app.markdown)
-
     app.button(key="toggle_developer_controls").click().run()
     assert app.session_state.developer_controls_visible is True
     assert app.session_state.agent_observability_visible is False
     app.button(key="toggle_agent_observability").click().run()
     assert app.session_state.agent_observability_visible is True
+
+    monkeypatch.setenv("SHOW_EVALUATION_CONTROLS", "false")
+    app.run()
+    assert app.session_state.developer_controls_visible is False
+    assert app.session_state.agent_observability_visible is False
 
 
 def test_app_records_nonthinking_as_the_explicit_runtime_configuration(tmp_path, monkeypatch):
@@ -213,11 +239,18 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
 
     assert app.button(key="start_revising").disabled is True
     assert len(calls) == 2
+    assert any('class="v3-goal-quote"' in item.value for item in app.markdown)
     for index in range(1, 4):
         app.checkbox(key=goal_key(app, f"goal_{index}")).set_value(True).run()
     assert len(calls) == 2
     app.checkbox(key=goal_key(app, "goal_4")).set_value(True).run()
 
+    selected_cards = [
+        item.value
+        for item in app.markdown
+        if 'class="v3-goal-card v3-goal-card-selected"' in item.value
+    ]
+    assert len(selected_cards) == 3
     assert app.session_state.selected_goal_ids == ["goal_1", "goal_2", "goal_3"]
     assert app.checkbox(key=goal_key(app, "goal_4")).value is False
     assert app.session_state.selection_warning == "Choose no more than three goals."
@@ -235,7 +268,7 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
 
 
 def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkeypatch):
-    revised = INITIAL_DRAFT + "\n\nStudents practice noticing what others need."
+    revised = INITIAL_DRAFT + "\n\nStudents practice noticing what others need.<img src=x onerror=alert(1)>"
     responses = [
         *review_pair(make_review_state(INITIAL_DRAFT, "6th Grade")),
         *revision_pair(INITIAL_DRAFT, revised),
@@ -244,7 +277,10 @@ def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkey
     calls = install_responses(monkeypatch, responses)
     app = configured_app(tmp_path, monkeypatch).run()
     start_support(app)
+    assert app.button(key="step_Draft").label == "✓ Draft"
+    assert app.button(key="step_Choose").label == "2 Choose"
     enter_revision(app)
+    assert app.button(key="step_Choose").label == "✓ Choose"
     set_editor(app, revised)
     app.button(key="submit_revision").click().run()
     assert app.session_state.pending_revision_notice["needs_confirmation"] is True
@@ -253,6 +289,7 @@ def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkey
     assert not app.exception
     assert len(calls) == 4
     assert app.button(key="choose_next_round")
+    assert app.button(key="step_Revise").label == "✓ Revise"
     assert app.session_state.current_invocation.state["goal_feedback"][0]["status"] == "specific_improvement"
     storage = SQLiteStorage(str(tmp_path / "ui.db"))
     snapshots = storage.list_snapshots(app.session_state.active_composition_id)
@@ -269,11 +306,45 @@ def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkey
     app.button(key="confirm_finish").click().run()
 
     assert app.session_state.current_step == "Reflect"
+    assert app.button(key="step_Reflect").label == "✓ Reflect"
     assert len(calls) == 6
     reflection = app.session_state.current_invocation.state["final_reflection"]
     assert reflection["improvements"]
     assert reflection["future_possibilities"]
     assert "ready to submit" not in json.dumps(reflection).lower()
+    snapshot_panes = [
+        item.value for item in app.markdown if 'class="v3-snapshot-pane"' in item.value
+    ]
+    assert len(snapshot_panes) == 2
+    assert all('tabindex="0"' in pane for pane in snapshot_panes)
+    assert any("&lt;img src=x onerror=alert(1)&gt;" in pane for pane in snapshot_panes)
+    assert all("<img src=x" not in pane for pane in snapshot_panes)
+
+
+def test_plain_self_report_options_preserve_the_deferred_value(tmp_path, monkeypatch):
+    revised = INITIAL_DRAFT + "\n\nStudents explain how their actions help others."
+    install_responses(
+        monkeypatch,
+        [
+            *review_pair(make_review_state(INITIAL_DRAFT, "6th Grade")),
+            *revision_pair(INITIAL_DRAFT, revised, status="improvement_not_yet_evident"),
+        ],
+    )
+    app = configured_app(tmp_path, monkeypatch).run()
+    start_support(app)
+    enter_revision(app)
+    composition_id = app.session_state.active_composition_id
+    report_key = f"goal_report_{composition_id}_1_goal_1"
+    assert app.selectbox(key=report_key).value == ""
+    app.selectbox(key=report_key).set_value("deferred").run()
+    set_editor(app, revised)
+    app.button(key="submit_revision").click().run()
+    app.button(key="confirm_small_revision").click().run()
+
+    snapshots = SQLiteStorage(str(tmp_path / "ui.db")).list_snapshots(composition_id)
+    assert snapshots[-1].goal_self_reports == {"goal_1": "deferred"}
+    app.button(key="history_button").click().run()
+    assert any("I decided to skip this for now" in item.value for item in app.markdown)
 
 
 def test_unchanged_revision_confirmation_preserves_snapshot_until_confirmed(tmp_path, monkeypatch):
@@ -512,7 +583,7 @@ def test_debug_capture_and_display_are_separately_opt_in(tmp_path, monkeypatch):
     install_responses(
         monkeypatch, review_pair(make_review_state(INITIAL_DRAFT, "6th Grade"))
     )
-    app = configured_app(tmp_path, monkeypatch, debug=True).run()
+    app = configured_app(tmp_path, monkeypatch, debug=True, evaluation=True).run()
     app.button(key="toggle_developer_controls").click().run()
     app.button(key="toggle_agent_observability").click().run()
     app.checkbox(key="capture_debug").set_value(True)

@@ -11,7 +11,7 @@ The detailed product contract is `PRD_V3_ITERATIVE_REVISION.md`. `PRD.md` preser
 ## Current Repository Status
 
 - V3 is the active local application. The old V1/V2 runtime paths were intentionally replaced; V1 remains available at commit `4eaa0ad` under the annotated `v1` tag.
-- The current suite has **213 passing checks** using mocked model calls and temporary SQLite databases.
+- The current suite has **214 passing checks** using mocked model calls and temporary SQLite databases.
 - A real prompt/schema `v3.1.0` thinking-mode browser walkthrough at 1280px covered scenario loading, initial review, two-goal selection/deselection, exact highlights, stale-highlight removal, two titled revision observations, next-round navigation, finish cancellation/confirmation, and final reflection. Evidence is `data/evidence/v3_browser_verification_20261110.json`, with git-ignored captures in `data/evidence/v3_local_*` and browser database `data/v3_browser_verification.db`.
 - The completed prompt/schema `v3.1.0` paired evaluation is `data/evidence/v3_paired_evaluation_20261110T094344Z.json`. Six scenarios completed per mode with no scenario errors. Thinking used 17 calls/two repairs/68,407 tokens/246.2 seconds of cumulative model latency; non-thinking used 15 calls/no repairs/36,340 tokens/64.2 seconds. This limited sample shows higher thinking cost and no schema-reliability advantage, not a general pedagogical-quality conclusion.
 - Current prompt/schema are `v3.4.0`/`v3.4.0` with explicit non-thinking runtime. Historical improvement evidence includes the original 30-scenario set, targeted #7/#24 corrections, two additional paired cores, and `data/evidence/v3_improvement_browser_20261110.json`. The 32-scenario non-thinking run completed with mixed findings, including #15's two-goal limitation, disputed #24 mechanics judgments, and initial #32 fallback; see `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json` and `V3_OUTCOMES_REPORT.md` Section 17. Current Chrome evidence is `data/evidence/v3_4_browser_verification.json`. See `V3_OUTCOMES_REPORT.md`, `CHANGELOG.md`, and `V3_PROMPT_REVIEW_VALIDATION_AND_ACTION_PLAN.md`. The educator gate and actual screen-reader/full-keyboard final-loop checks remain open.
@@ -27,7 +27,7 @@ Do not claim pedagogical effectiveness, learner outcomes, educator approval, rub
 - `project_plan.md`: Historical assignment strategy with a current-implementation note.
 - `CLAUDE.md`: Detailed V3 coding guidance and historical evidence boundaries.
 - `test_cases/`: Four frozen V1/V2 fixtures at the root; do not edit them. `test_cases/v3/scenarios.json` contains student presets and `test_cases/v3/acceptance.json` contains the 32-scenario evaluation set.
-- `mockups/v3_iterative_revision.html`: Design reference only, not working behavior evidence.
+- `mockups/v3_iterative_revision.html`: Original design reference. `mockups/v3_redesign.html`: Redesign mockup produced during the UI/UX improvement pass; the implemented changes are in `ui/layout.py`. Neither is working behavior evidence.
 - `scripts/evaluate_v3.py`: Explicit, billable real-model evaluation runner with final-response repair diagnostics, deduplicated metrics, and stable database hashes after checkpoint/close.
 - `V3_INVESTIGATION_EVIDENCE.md`: Index for the historical consolidated evidence manifest and prioritized investigation leads; live WAL databases require stable capture before hashing.
 - `V3_PROMPT_REVIEW_VALIDATION_AND_ACTION_PLAN.md`: Validated prompt-review assessment and current improvement plan.
@@ -101,8 +101,8 @@ The authoritative schema is `langgraph_core/state.py`.
 - A snapshot is persisted before its model review. Snapshot updates are rejected by a database trigger; session deletion intentionally cascades all associated data.
 - Random session IDs filter history and support restoration but are not authentication or secure isolation.
 - Missing, reset, or corrupted storage produces a recovery view with copyable runtime editor text and no false restoration claim.
-- The student UI uses Draft, Choose, Revise, and Reflect steps; read-only History is separate. Developer controls and observability are independently hidden by default.
-- The desktop workspace is 60/40 with independently scrolling containers and visible actions. The custom Streamlit CCv2 editor synchronizes exact goal highlights with editing and scrolling without changing model-visible text. Identical, nested, and transitively overlapping references share a union highlight with goal membership and textual labels; this is not semantic duplication evidence.
+- The student UI uses header-based Draft, Choose, Revise, and Reflect steps with action-based completed states; read-only History is separate. Evaluator reveal controls require `SHOW_EVALUATION_CONTROLS=true`, and developer controls and observability then remain independently hidden until selected.
+- The desktop workspace is 60/40 with independently scrolling containers and visible actions. Page, editor, feedback, and reflection sizes use viewport-relative bounds rather than fixed desktop-only dimensions; minimum and maximum limits preserve readability. The custom Streamlit CCv2 editor synchronizes exact goal highlights with editing and scrolling without changing model-visible text. Identical, nested, and transitively overlapping references share a union highlight with goal membership and textual labels; this is not semantic duplication evidence.
 - Focus selection, hints, **Show less feedback**, **I’m stuck**, editing, and diff generation make no model calls.
 - Unchanged or small changes require neutral confirmation before snapshot/model work. Finish requires confirmation and compares only original and latest submitted snapshots.
 - Raw final prompt/response capture requires server-side `ENABLE_DEBUG_MODE=true` and separate opt-in for new reviews. Raw hidden reasoning is never an authorized field.
@@ -119,7 +119,7 @@ The authoritative schema is `langgraph_core/state.py`.
 
 ## Configuration and Deployment
 
-`.env.example` defines `DEEPSEEK_API_KEY`, `DEEPSEEK_API_BASE`, `DEEPSEEK_MODEL`, `DEEPSEEK_THINKING=false`, `DEEPSEEK_REASONING_EFFORT`, `DEEPSEEK_TIMEOUT_SECONDS`, `LOG_LEVEL`, `ENABLE_DEBUG_MODE`, `DATABASE_PATH`, and `SMALL_CHANGE_TOKEN_THRESHOLD`.
+`.env.example` defines `DEEPSEEK_API_KEY`, `DEEPSEEK_API_BASE`, `DEEPSEEK_MODEL`, `DEEPSEEK_THINKING=false`, `DEEPSEEK_REASONING_EFFORT`, `DEEPSEEK_TIMEOUT_SECONDS`, `LOG_LEVEL`, `SHOW_EVALUATION_CONTROLS`, `ENABLE_DEBUG_MODE`, `DATABASE_PATH`, and `SMALL_CHANGE_TOKEN_THRESHOLD`.
 
 The historical V2 deployment at `https://writingassist-zhuang.streamlit.app` is from commit `7d94b58`; it is not V3. Cloud SQLite durability ends when the filesystem is replaced. Reliable cross-restart persistence beyond this prototype requires a separate durable-storage decision.
 

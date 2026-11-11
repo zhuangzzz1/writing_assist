@@ -445,9 +445,9 @@ Treat these patterns as data-quality or support issues, not behavior problems. R
 
 ### 10.1 Student-Focused Default
 
-The initial interface prioritizes the draft and revision task. Grade level and student draft are prominent; optional assignment details are progressively disclosed. Curated synthetic practice scenarios are available without exposing developer controls or agent observability, which remain hidden by default and can be revealed independently for evaluation.
+The initial interface prioritizes the draft and revision task. Grade level and student draft are prominent; optional assignment details are progressively disclosed. Curated synthetic practice scenarios are available without exposing developer controls or agent observability. The student header omits evaluator reveal controls unless `SHOW_EVALUATION_CONTROLS=true`; when enabled, developer controls and agent observability remain independently hidden until selected. `ENABLE_DEBUG_MODE` separately governs raw prompt/response capture controls and does not replace the evaluator-display setting.
 
-The initial essay editor uses a constrained, centered width rather than filling the page. The desktop mockup uses approximately 60% of the viewport with a 780px maximum; implementation may adjust the exact width for readability without returning to a full-width editor.
+The initial essay editor uses a constrained, centered column that scales with viewport width and height, with minimum and maximum bounds for readability. It should use available desktop space without becoming an unbounded full-width editor.
 
 ### 10.2 Principal Views and Steps
 
@@ -481,7 +481,8 @@ The top-level steps are **Draft**, **Choose**, **Revise**, and **Reflect**. Roun
 ### 10.5 Clickable Steps, Next-Round Action, and Finish Confirmation
 
 - Available steps are keyboard-accessible buttons. Unavailable future steps are disabled rather than opening empty or invalid states.
-- Step navigation preserves the current essay and existing feedback. The current step is exposed visually and programmatically.
+- The four steps appear in the header. Step navigation preserves the current essay and existing feedback, and the current step is exposed visually and programmatically.
+- Completed steps reflect actual submitted snapshots, goal selections, and completed reflection rather than assuming every earlier numbered step is complete. Completion uses a textual marker as well as color.
 - After a revision review, the footer action changes from **Submit revision** to **Choose goals for another round**.
 - Selecting **Choose goals for another round** returns the indicator to **Choose**, displays revision candidates, and restores the **Submit revision** action for the next submitted draft.
 - **Finish and reflect** opens a confirmation dialog before final reflection. The dialog asks whether the student wants to stop revising and offers **Keep revising** and **Yes, finish and reflect**.

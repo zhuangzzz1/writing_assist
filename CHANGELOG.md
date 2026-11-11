@@ -4,6 +4,20 @@ Notable changes to the local V3 Iterative Revision Coach. Version labels below r
 
 For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V2 outcomes remain in `PRD.md`; V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag.
 
+## [Unreleased]
+
+### Changed
+
+- Simplified optional assignment and goal self-report language while preserving custom frameworks and stable internal self-report values.
+- Moved the four workflow steps into the header and added action-based completed states with textual markers.
+- Grouped revision candidates in native bordered containers with selected-state styling and escaped, visually distinct draft quotes.
+- Replaced the privacy alert styling with a readable neutral notice while retaining the complete synthetic-writing and external-AI-service warning.
+- Added readable feedback typography and escaped, keyboard-focusable original/final snapshot panes.
+- Added `SHOW_EVALUATION_CONTROLS` to omit evaluator reveal controls from the student header by default; developer controls and observability remain independently hidden when enabled, and raw debug capture remains separately controlled.
+- Made page widths, Draft input, editor/feedback panels, and reflection snapshots scale with the browser viewport using bounded widths, heights, and flex sizing rather than fixed desktop dimensions.
+- Applied Nunito+Lora paired typography, a `--v3-*` CSS token system with theme-aware light/dark palettes, responsive side gutters with safe-area support, keyed container targeting, and dynamic step-completion styling without layout-shifting DOM elements.
+- Restored Deploy button and theme switcher visibility in the Streamlit toolbar menu.
+
 ## [V3.4.0] — 2026-11-10
 
 ### Added

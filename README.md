@@ -31,7 +31,7 @@ The default database is `data/writing_assistant_v3.db`, which is git-ignored. Us
 pytest
 ```
 
-The current suite has **213 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 32-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
+The current suite has **214 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 32-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
 
 ## Real-model evaluation
 
@@ -54,7 +54,7 @@ A real browser walkthrough at 1280px verified the complete select–edit–revie
 
 ## Configuration
 
-`.env.example` documents the model, explicit thinking flag, reasoning-effort, timeout, database, debug, and neutral small-change threshold settings. Non-thinking runtime requests use temperature 0; controlled thinking requests omit temperature. Prompt/schema/fixture versions and authorized model metadata are recorded with reviews; raw hidden reasoning is never stored or shown. Final prompt/response capture requires both server-side `ENABLE_DEBUG_MODE=true` and separate opt-in for new reviews.
+`.env.example` documents the model, explicit thinking flag, reasoning-effort, timeout, database, evaluator-control display, debug, and neutral small-change threshold settings. The student header omits developer/observability reveal controls unless `SHOW_EVALUATION_CONTROLS=true`; each panel then remains independently hidden until selected. Non-thinking runtime requests use temperature 0, while controlled thinking requests omit temperature. Prompt/schema/fixture versions and authorized model metadata are recorded with reviews; raw hidden reasoning is never stored or shown. Final prompt/response capture requires evaluator controls, server-side `ENABLE_DEBUG_MODE=true`, and separate opt-in for new reviews.
 
 ## Historical V1/V2 record
 

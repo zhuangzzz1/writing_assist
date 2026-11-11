@@ -62,7 +62,7 @@ pytest
 streamlit run app.py
 ```
 
-No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 213 checks. Current prompt/schema are `v3.4.0`/`v3.4.0`; the completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
+No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 214 checks. Current prompt/schema are `v3.4.0`/`v3.4.0`; the completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
 
 For authorized billable evaluation:
 
@@ -85,9 +85,9 @@ The runner writes git-ignored databases and a JSON summary under `data/`, includ
 - Persist original and every revision snapshot before model review. Snapshot updates are prohibited by SQLite trigger; deletion intentionally cascades for **Delete my data**.
 - Retry uses the existing round/reflection and never creates a duplicate snapshot.
 - Session IDs filter history but are not authentication. Missing/corrupt storage produces a safe recovery view and preserves any runtime editor text for copying.
-- Keep the initial editor constrained and the desktop workspace 60/40. Marked grid rows must override Streamlit child column widths to 100% to avoid applying percentages twice.
+- Keep the initial editor constrained and the desktop workspace 60/40 while using bounded viewport-relative widths and heights. Marked grid rows must override Streamlit child column widths to 100% to avoid applying percentages twice. Responsive fixed-height containers must also override Streamlit's fixed flex-basis.
 - The CCv2 editor keeps text synchronized with Session State, highlights exact selected references, groups identical/nested/transitive overlaps with textual goal labels, recalculates on edits, and drops stale highlights rather than relocating them.
-- Step navigation and dialog cancellation preserve the editor and existing feedback. The final comparison uses submitted snapshots, never unsubmitted editor text.
+- Header step navigation and dialog cancellation preserve the editor and existing feedback. Completed steps reflect actual saved actions, not step order. Evaluator reveal controls require `SHOW_EVALUATION_CONTROLS=true`; each panel remains independently hidden until selected. The final comparison uses submitted snapshots, never unsubmitted editor text, and renders them as escaped keyboard-focusable read-only regions.
 
 ## Safety, Privacy, and Evidence
 
