@@ -212,7 +212,7 @@
       "name": "Two of three selected goals deferred",
       "grade_level": "6th Grade",
       "genre": "argument",
-      "draft": "Our school should allow a garden. A survey happened. Students would water plants. This would help everyone.",
+      "draft": "Our school should allow a community garden. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
       "assignment_prompt": "Argue whether our school should allow a garden.",
       "teacher_directions": "State a clear position, explain your evidence, and connect your reasons.",
       "source_material": "",
@@ -220,7 +220,7 @@
       "acceptance_focus": "Acknowledge one attempted goal and offer two neutral carry-forward choices",
       "revisions": [
         {
-          "draft": "Our school should allow a garden because it can teach shared responsibility. A survey happened. Students would water plants. This would help everyone.",
+          "draft": "Our school should allow a community garden because it would teach students to care for living things. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
           "goal_selection": "three",
           "self_reports": {"first": "attempted", "others": "deferred"}
         }
