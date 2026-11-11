@@ -36,7 +36,7 @@ export default function (component) {
   if (!editor || !highlightContent || !wordCount) return
 
   const nextValue = data.value ?? ''
-  if (editor.value !== nextValue) {
+  if (editor.value !== nextValue && document.activeElement !== editor) {
     const start = editor.selectionStart
     const end = editor.selectionEnd
     editor.value = nextValue
