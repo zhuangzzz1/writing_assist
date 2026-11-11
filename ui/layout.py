@@ -635,7 +635,6 @@ def _resume_review(service: WritingAssistantService, session_id: str) -> None:
         _action_failed(exc)
         return
     st.session_state.current_invocation = invocation
-    st.session_state.clarification_answer = ""
     if not invocation.pending:
         st.session_state.current_step = (
             "Revise" if invocation.state.get("revision_number", 0) else "Choose"
