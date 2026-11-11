@@ -36,7 +36,7 @@ class HintOutput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     passage_reference: str = Field(min_length=1)
-    steps: list[str] = Field(min_length=2, max_length=4)
+    steps: list[str] = Field(min_length=3, max_length=5)
     self_check: str = Field(min_length=1)
     vocabulary_options: list[str] = Field(max_length=4)
     sentence_starter: str
@@ -53,6 +53,11 @@ class HintOutput(BaseModel):
             raise ValueError("Vocabulary options cannot supply numeric evidence answers.")
         if any(not step for step in self.steps):
             raise ValueError("Hint steps cannot be empty.")
+        # Steps now require minimum 3 to account for Step 0 (concept restatement) + 2 procedural steps
+        if len(self.steps) < 3:
+            raise ValueError(
+                "Hints must include Step 0 (concept restatement) followed by at least 2 procedural steps."
+            )
         return self
 
 

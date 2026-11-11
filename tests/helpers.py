@@ -131,6 +131,7 @@ def candidate_for(issue, **overrides):
         "hint": {
             "passage_reference": issue["draft_reference"],
             "steps": [
+                "In an argument, stating evidence isn't enough — you need to explain why it matters.",
                 "Look at the action and the effect in this passage.",
                 "Explain one missing link using your own idea.",
             ],
