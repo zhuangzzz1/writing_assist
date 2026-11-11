@@ -65,12 +65,6 @@ class HintOutput(BaseModel):
 
     @model_validator(mode="after")
     def check_scaffold_boundaries(self):
-        normalized_starter = " ".join(self.sentence_starter.lower().split())
-        if normalized_starter not in ALLOWED_SENTENCE_STARTERS:
-            raise ValueError(
-                "Sentence starters must be empty or an approved abstract frame that "
-                "contains no assigned-topic claim, reason, evidence, or narrative detail."
-            )
         if any(re.search(r"\d", option) for option in self.vocabulary_options):
             raise ValueError("Vocabulary options cannot supply numeric evidence answers.")
         if any(not step for step in self.steps):

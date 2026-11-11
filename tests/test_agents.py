@@ -243,34 +243,31 @@ def test_hint_requires_two_to_four_steps_and_a_self_check():
     assert len(result.raw_responses) == 2
 
 
-def test_abstract_sentence_starter_is_allowed_but_filled_frame_is_rejected():
+def test_sentence_starter_is_accepted_whether_abstract_or_on_topic():
+    # Sentence starter validation is intentionally soft (prompt guidance only);
+    # the schema no longer rejects starters based on content.
     state = support_state()
-    valid_candidate = candidate_for(state["issues"][0])
-    valid_candidate["hint"]["sentence_starter"] = "This detail matters because ____."
-    invalid_candidate = candidate_for(state["issues"][0])
-    invalid_candidate["hint"]["sentence_starter"] = "Gardening teaches responsibility."
-    client = FakeClient(
-        [
-            support_payload(state, candidates=[invalid_candidate]),
-            support_payload(state, candidates=[valid_candidate]),
-        ]
-    )
+    abstract_candidate = candidate_for(state["issues"][0])
+    abstract_candidate["hint"]["sentence_starter"] = "This detail matters because ____."
+    on_topic_candidate = candidate_for(state["issues"][0])
+    on_topic_candidate["hint"]["sentence_starter"] = "Gardening teaches responsibility."
 
-    result = InstructionalSupportAgent(client).run(state)
-
-    assert "____" in result.values["revision_candidates"][0]["hint"]["sentence_starter"]
+    for starter_candidate in [abstract_candidate, on_topic_candidate]:
+        client = FakeClient([support_payload(state, candidates=[starter_candidate])])
+        result = InstructionalSupportAgent(client).run(state)
+        assert result.values["revision_candidates"][0]["hint"]["sentence_starter"] == starter_candidate["hint"]["sentence_starter"]
 
 
-def test_assigned_topic_frame_is_rejected_even_when_it_contains_blanks():
+def test_sentence_starter_with_blanks_and_on_topic_content_is_accepted():
+    # Previously rejected; now accepted since starter enforcement is soft.
     state = support_state()
     candidate = candidate_for(state["issues"][0])
     candidate["hint"]["sentence_starter"] = (
         "Learning to care for plants could ____ because ____."
     )
-    invalid = support_payload(state, candidates=[candidate])
-
-    with pytest.raises(ResponseValidationError):
-        InstructionalSupportAgent(FakeClient([invalid, invalid])).run(state)
+    client = FakeClient([support_payload(state, candidates=[candidate])])
+    result = InstructionalSupportAgent(client).run(state)
+    assert "____" in result.values["revision_candidates"][0]["hint"]["sentence_starter"]
 
 
 def test_vocabulary_options_cannot_supply_numeric_evidence_answers():

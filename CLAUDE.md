@@ -10,15 +10,16 @@ V3 is a two-agent iterative writing coach for grades 5–7, built with LangGraph
 
 ## Current V3 Decisions
 
-- Keep two model-driven agents. The Coordinator owns assessment, genre, source limits, framework coverage, selected-goal observations, comparison findings, human-review flags, and routing. Support owns student-facing round feedback, bounded scaffolds, and final reflection language without adding framework issues.
+- Keep two model-driven agents. The Coordinator owns assessment, genre, source limits, framework coverage, selected-goal observations, comparison findings, human-review flags, routing, **finding severity classification, and reasoning operation classification**. Support owns student-facing round feedback, bounded scaffolds, and final reflection language without adding framework issues.
 - Teacher review, clarification, direct response, diffs, milestones, and lifecycle operations are deterministic. Do not add a comparison agent or audience-specific agents without a separate architecture decision.
 - Every nonempty draft goes to the Coordinator. Empty drafts are rejected locally. Explicit length limits reject oversized input without truncation.
 - Genre selection is `auto`, `argument`, `informational`, or `narrative`. Explicit selections are normalized deterministically; correction reassesses the latest submitted snapshot without a new revision snapshot or clarification confirmation.
 - Optional framework name/component inputs support CER, RACE, RACES, MEAL, and explicit custom lists. Coordinator returns one coverage entry per required component; present entries need exact located references and issue entries need existing goal IDs.
 - V3 has no affect field or check-in. **Show less feedback** and **I’m stuck** only reveal pregenerated presentation content; they make no model call and never infer emotion, effort, or teacher review.
 - Source availability is deterministic. Source-dependent findings require locations; no-source accuracy claims and invented source content are invalid. Support receives full source text only for source-dependent findings or limitations.
+- **Every issue requires a `finding_severity` classification (accuracy | reasoning | development). Accuracy-tier findings rank first in Round 1. Issues that benefit from structural scaffolding receive a `reasoning_operation` classification (causal, sequential, source_based, concessive, summary, conditional, or none) to guide sentence starter selection.**
 - Every candidate reference must be an exact current-draft substring with correct paragraph/occurrence metadata. Support must preserve Coordinator references and source limitations exactly.
-- Hints contain a passage reference, two to four linked steps, and a self-check. Vocabulary entries are plain strings. Optional sentence starters use `____` and leave all substance to the student. V3 does not generate optional practice exercises in round feedback.
+- Hints contain a passage reference, two to four linked steps (including Step 0 concept restatement), and a self-check. Vocabulary entries are plain strings. Optional sentence starters use `____` and leave all substance to the student. Sentence starters are selected based on reasoning operation classification. V3 does not generate optional practice exercises in round feedback.
 - Revision observations cover every selected goal and use descriptive statuses, not scores or attempt assumptions. Optional attempted/deferred self-reports are stored with the revision snapshot.
 - Final reflection uses deterministic original/latest-submitted diffs and Coordinator finding IDs. Support cannot omit regressions, add improvements, or change verified references. Original strengths and future possibilities pass through validated Coordinator findings.
 - Each agent invocation permits one bounded repair. Coordinator failure after repair falls back to safe clarification; Support/final failure produces no partial feedback. API and thinking-mode failures propagate rather than silently switching modes.
@@ -62,7 +63,7 @@ pytest
 streamlit run app.py
 ```
 
-No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 214 checks. Current prompt/schema are `v3.4.0`/`v3.4.0` (runtime version constants); the Track A feedback-quality work in `FEEDBACK_QUALITY_IMPROVEMENT_PLAN.md` and `FEEDBACK_IMPLEMENTATION_V3_4_1.md` is implemented in the Support prompt and `HintOutput` schema without bumping the version constants. The completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
+No formatter, linter, or type-checker is configured. Run pytest after each implementation stage. The current suite has 219 checks. Current prompt/schema are `v3.5.0`/`v3.5.0` (runtime version constants). Track A feedback-quality improvements (`FEEDBACK_IMPLEMENTATION_V3_4_1.md`) and Track B severity/reasoning-operation schema additions (`FEEDBACK_IMPLEMENTATION_V3_5_0_TRACK_B.md`) are both implemented based on corpus analysis in `FEEDBACK_QUALITY_IMPROVEMENT_PLAN.md`. The completed 32-scenario non-thinking run and mixed findings are in `V3_OUTCOMES_REPORT.md` Section 17. Browser and real-model evidence are separate from unit tests.
 
 For authorized billable evaluation:
 
