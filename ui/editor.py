@@ -36,7 +36,12 @@ export default function (component) {
   if (!editor || !highlightContent || !wordCount) return
 
   const nextValue = data.value ?? ''
-  if (editor.value !== nextValue) editor.value = nextValue
+  if (editor.value !== nextValue) {
+    const start = editor.selectionStart
+    const end = editor.selectionEnd
+    editor.value = nextValue
+    editor.setSelectionRange(start, end)
+  }
   const goals = Array.isArray(data.goals) ? data.goals : []
   const selectedKey = goals.map(goal => goal.goal_id).join('|')
   const previousKey = editor.dataset.selectedKey || ''
