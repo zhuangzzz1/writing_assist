@@ -150,6 +150,9 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
   font-family: 'Lora', Georgia, serif; font-weight: 600; color: var(--v3-ink);
 }
 [data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) h3 { font-size: 1.5rem; }
+[data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) [data-testid="stCaptionContainer"] p {
+  color: var(--v3-ink) !important; opacity: 0.85 !important;
+}
 
 /* ── Inputs ─────────────────────────────────────────────── */
 [data-testid="stTextInput"] div[role="group"],
