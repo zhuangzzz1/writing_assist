@@ -56,7 +56,7 @@ STAGE_CSS = """
   --v3-border: #dde3f0;
   --v3-border-soft: #e8edf8;
   --v3-ink: #1a2638;
-  --v3-muted: #5a6a82;
+  --v3-muted: #3f4d5e;
   --v3-faint: #8fa0b8;
   --v3-brand: #2f54c0;
   --v3-brand-dark: #1e3d99;
@@ -994,12 +994,6 @@ def _render_draft(service: WritingAssistantService, session_id: str) -> None:
             st.markdown('<span class="v3-draft-card-marker"></span>', unsafe_allow_html=True)
             st.subheader("Start with your draft")
             st.caption("Only your grade and draft are required. Your ideas and words stay yours.")
-            _render_scenario_loader()
-            if st.session_state.loaded_scenario_id:
-                st.caption(
-                    f"Loaded synthetic scenario: {st.session_state.loaded_scenario_id} "
-                    f"({st.session_state.loaded_fixture_version})"
-                )
             active_id = st.session_state.active_composition_id
             if active_id:
                 st.info("This is your current working text. Return to Revise to use your selected goals.")
@@ -1017,7 +1011,7 @@ def _render_draft(service: WritingAssistantService, session_id: str) -> None:
                 key="writing_input",
                 height=330,
                 max_chars=MAX_DRAFT_CHARS,
-                placeholder="Paste a synthetic draft here…",
+                placeholder="Place your draft here…",
             )
             if active_id:
                 st.session_state.editor_text = st.session_state.writing_input
@@ -1072,6 +1066,12 @@ def _render_draft(service: WritingAssistantService, session_id: str) -> None:
                 "Get writing feedback", key="analyze_writing", type="primary", width="stretch"
             ):
                 _start_review(service, session_id)
+            _render_scenario_loader()
+            if st.session_state.loaded_scenario_id:
+                st.caption(
+                    f"Loaded synthetic scenario: {st.session_state.loaded_scenario_id} "
+                    f"({st.session_state.loaded_fixture_version})"
+                )
 
 
 def _render_steps(service: WritingAssistantService) -> None:
