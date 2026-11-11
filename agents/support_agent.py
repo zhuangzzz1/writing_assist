@@ -21,18 +21,36 @@ from langgraph_core.state import ObservationStatus, WritingAssistantState
 ALLOWED_SENTENCE_STARTERS = {
     "",
     "____",
+    # causal / explanatory
     "____ because ____.",
     "this detail matters because ____.",
     "this evidence matters because ____.",
-    "according to the passage, ____.",
-    "in sum, ____.",
-    "one concern is that ____; however, ____.",
-    "after ____, ____.",
-    "when ____, ____.",
-    "one reason is that ____.",
-    "one subtopic is ____.",
-    "for example, ____.",
     "this shows that ____.",
+    "this means that ____.",
+    "this suggests that ____.",
+    "as a result, ____.",
+    "therefore, ____.",
+    # source-based
+    "according to the passage, ____.",
+    # argument structure
+    "one reason is that ____.",
+    "another reason is that ____.",
+    "one concern is that ____; however, ____.",
+    "although ____, ____.",
+    "while ____, ____.",
+    # informational structure
+    "one subtopic is ____.",
+    "another subtopic is ____.",
+    "for example, ____.",
+    "for instance, ____.",
+    "in other words, ____.",
+    # sequential / narrative
+    "after ____, ____.",
+    "before ____, ____.",
+    "when ____, ____.",
+    # summary / conclusion
+    "in sum, ____.",
+    "in conclusion, ____.",
 }
 
 
