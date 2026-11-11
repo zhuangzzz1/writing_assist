@@ -176,6 +176,10 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
   font-size: .875rem !important;
   padding-left: 10px !important;
 }
+[data-testid="stTextInput"] input::placeholder {
+  color: var(--v3-muted) !important;
+  opacity: 1 !important;
+}
 [data-testid="stSelectbox"] div[role="group"] button { color: var(--v3-muted); }
 [data-testid="stTextArea"] textarea {
   border-radius: var(--v3-radius-sm) !important;
@@ -184,6 +188,10 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
   color: var(--v3-ink) !important;
   font-family: 'Nunito', sans-serif;
   font-size: .875rem;
+}
+[data-testid="stTextArea"] textarea::placeholder {
+  color: var(--v3-muted) !important;
+  opacity: 1 !important;
 }
 [data-testid="stTextArea"] textarea:focus {
   border-color: var(--v3-brand) !important;
@@ -218,7 +226,10 @@ label[data-testid="stWidgetLabel"] p {
   border: 1.5px solid var(--v3-border); border-radius: var(--v3-radius-sm);
   background: var(--v3-raised);
 }
-[data-testid="stExpander"] summary { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .82rem; }
+[data-testid="stExpander"] summary {
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .82rem;
+  color: var(--v3-ink) !important; opacity: 0.85 !important;
+}
 
 /* ── Privacy note ───────────────────────────────────────── */
 .v3-privacy-note {
