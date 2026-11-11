@@ -354,6 +354,20 @@ label[data-testid="stWidgetLabel"] p {
 @media (max-width: 999px) {
   .block-container { padding-left: 1rem; padding-right: 1rem; }
 }
+
+/* ── Dark theme overrides ───────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  [data-testid="stVerticalBlock"]:has(.v3-draft-card-marker) [data-testid="stCaptionContainer"] p {
+    color: #e0e0e0 !important; opacity: 0.95 !important;
+  }
+  [data-testid="stTextArea"] textarea::placeholder,
+  [data-testid="stTextInput"] input::placeholder {
+    color: #b0b0b0 !important;
+  }
+  [data-testid="stExpander"] summary {
+    color: #e0e0e0 !important; opacity: 0.95 !important;
+  }
+}
 </style>
 """
 
