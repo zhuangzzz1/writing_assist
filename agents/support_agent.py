@@ -29,6 +29,10 @@ ALLOWED_SENTENCE_STARTERS = {
     "one concern is that ____; however, ____.",
     "after ____, ____.",
     "when ____, ____.",
+    "one reason is that ____.",
+    "one subtopic is ____.",
+    "for example, ____.",
+    "this shows that ____.",
 }
 
 
