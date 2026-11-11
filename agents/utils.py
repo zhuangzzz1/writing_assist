@@ -9,8 +9,8 @@ import requests
 from dotenv import load_dotenv
 
 
-PROMPT_VERSION = "v3.4.0"
-SCHEMA_VERSION = "v3.4.0"
+PROMPT_VERSION = "v3.5.0"
+SCHEMA_VERSION = "v3.5.0"
 MAX_DRAFT_CHARS = 16_000
 MAX_SOURCE_CHARS = 16_000
 MAX_ASSIGNMENT_CHARS = 4_000

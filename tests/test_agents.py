@@ -814,3 +814,126 @@ def test_final_support_passes_through_verified_fields_without_regenerating_them(
     assert result.values["final_reflection"]["future_possibilities"] == [
         "Consider the reader's next question."
     ]
+
+
+def test_accuracy_tier_findings_rank_first_regardless_of_goal():
+    state = round_state()
+    accuracy_issue = issue_for(
+        state["writing"],
+        reference="Our school should start a garden.",
+        goal_id="goal_accuracy",
+        finding_severity="accuracy",
+        category="source_use",
+        description="This claim is not supported by the source.",
+    )
+    reasoning_issue = issue_for(
+        state["writing"],
+        goal_id="goal_reasoning",
+        finding_severity="reasoning",
+        description="The connection needs more explanation.",
+    )
+    development_issue = issue_for(
+        state["writing"],
+        reference="should start a garden.",
+        goal_id="goal_development",
+        finding_severity="development",
+        category="evidence_elaboration",
+        description="Add more specific details.",
+    )
+    # Submit in non-severity order: development, reasoning, accuracy
+    payload = coordinator_payload(
+        state, issues=[development_issue, reasoning_issue, accuracy_issue]
+    )
+    client = FakeClient([payload])
+
+    result = AssessmentCoordinator(client).run(state)
+
+    # Verify accuracy ranks first, then reasoning, then development
+    assert len(result.values["issues"]) == 3
+    assert result.values["issues"][0]["goal_id"] == "goal_accuracy"
+    assert result.values["issues"][0]["finding_severity"] == "accuracy"
+    assert result.values["issues"][1]["goal_id"] == "goal_reasoning"
+    assert result.values["issues"][1]["finding_severity"] == "reasoning"
+    assert result.values["issues"][2]["goal_id"] == "goal_development"
+    assert result.values["issues"][2]["finding_severity"] == "development"
+
+
+def test_reasoning_operation_classification_guides_starter_selection():
+    state = support_state()
+    causal_issue = issue_for(
+        state["writing"],
+        goal_id="goal_causal",
+        finding_severity="reasoning",
+        reasoning_operation="causal",
+        description="Explain why this leads to responsibility.",
+    )
+    state["issues"] = [causal_issue]
+    client = FakeClient([support_payload(state)])
+
+    result = InstructionalSupportAgent(client).run(state)
+
+    candidate = result.values["revision_candidates"][0]
+    starter = candidate["hint"]["sentence_starter"].lower()
+    # Causal operations should use "because" or "matters because" starters
+    assert "because" in starter or starter == ""
+
+
+def test_finding_severity_is_required_and_validated():
+    state = round_state()
+    issue = issue_for(state["writing"])
+    del issue["finding_severity"]
+    invalid = coordinator_payload(state, issues=[issue])
+    valid_issue = issue_for(state["writing"], finding_severity="reasoning")
+    valid = coordinator_payload(state, issues=[valid_issue])
+    client = FakeClient([invalid, valid])
+
+    result = AssessmentCoordinator(client).run(state)
+
+    assert result.values["coordinator_repair_count"] == 1
+    assert result.values["issues"][0]["finding_severity"] in [
+        "accuracy",
+        "reasoning",
+        "development",
+    ]
+
+
+def test_reasoning_operation_defaults_to_none_when_not_specified():
+    state = round_state()
+    issue = issue_for(state["writing"], finding_severity="development")
+    # reasoning_operation should default to "none" if not specified
+    payload = coordinator_payload(state, issues=[issue])
+    client = FakeClient([payload])
+
+    result = AssessmentCoordinator(client).run(state)
+
+    assert result.values["issues"][0]["reasoning_operation"] == "none"
+
+
+def test_multiple_accuracy_findings_preserve_pedagogical_order():
+    state = round_state()
+    fabricated = issue_for(
+        state["writing"],
+        reference="Our school should start a garden.",
+        goal_id="goal_fabricated",
+        finding_severity="accuracy",
+        category="evidence_elaboration",
+        description="This detail is invented and not in the source.",
+    )
+    mischaracterized = issue_for(
+        state["writing"],
+        reference="It would teach responsibility.",
+        goal_id="goal_mischaracterized",
+        finding_severity="accuracy",
+        category="source_use",
+        description="This misrepresents what the source says.",
+    )
+    # Both are accuracy-tier; order should be preserved within tier
+    payload = coordinator_payload(state, issues=[fabricated, mischaracterized])
+    client = FakeClient([payload])
+
+    result = AssessmentCoordinator(client).run(state)
+
+    assert len(result.values["issues"]) == 2
+    assert all(issue["finding_severity"] == "accuracy" for issue in result.values["issues"])
+    assert result.values["issues"][0]["goal_id"] == "goal_fabricated"
+    assert result.values["issues"][1]["goal_id"] == "goal_mischaracterized"

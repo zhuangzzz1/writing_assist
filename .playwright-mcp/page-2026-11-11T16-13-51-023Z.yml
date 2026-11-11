@@ -1,0 +1,86 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#stMain"
+  - generic [ref=f1e4]:
+    - banner [ref=f1e7]:
+      - generic [ref=f1e10]:
+        - button "Deploy" [ref=f1e12] [cursor=pointer]
+        - button "Main menu" [ref=f1e16] [cursor=pointer]
+    - main [ref=f1e5]:
+      - generic [ref=f1e20]:
+        - generic [ref=f1e22]:
+          - generic [ref=f1e24]:
+            - generic [ref=f1e25]:
+              - paragraph
+            - heading "Writing Coach" [level=1] [ref=f1e30]:
+              - text: W
+              - generic [ref=f1e32]:
+                - link "Link to heading":
+                  - /url: "#writing-coach"
+            - paragraph [ref=f1e37]: Your ideas. Your words.
+          - generic [ref=f1e39]:
+            - generic [ref=f1e40]:
+              - paragraph
+            - generic [ref=f1e1382]:
+              - button [ref=f1e1390] [cursor=pointer]:
+                - paragraph [ref=f1e1395]: 1 Draft
+              - button [disabled] [ref=f1e1403]:
+                - paragraph [ref=f1e1408]: 2 Choose
+              - button [disabled] [ref=f1e1416]:
+                - paragraph [ref=f1e1421]: 3 Revise
+              - button [disabled] [ref=f1e1429]:
+                - paragraph [ref=f1e1434]: 4 Reflect
+            - generic [ref=f1e1435]:
+              - paragraph:
+                - generic [ref=f1e1436]: "Current step: Draft. Completed steps: none yet."
+          - button [ref=f1e101] [cursor=pointer]:
+            - paragraph [ref=f1e106]: New composition
+          - button [ref=f1e111] [cursor=pointer]:
+            - paragraph [ref=f1e116]: History
+        - generic [ref=f1e1438]:
+          - generic [ref=f1e1439]:
+            - paragraph
+          - heading "Start with your draft" [level=3] [ref=f1e1444]:
+            - text: Start with your draft
+            - generic [ref=f1e1445]:
+              - link "Link to heading":
+                - /url: "#start-with-your-draft"
+          - paragraph [ref=f1e1450]: Only your grade and draft are required. Your ideas and words stay yours.
+          - generic [ref=f1e1452]:
+            - generic [ref=f1e1453]:
+              - paragraph [ref=f1e1456]: Load a practice scenario
+              - button "Help for Load a practice scenario" [ref=f1e1460] [cursor=pointer]
+            - group [ref=f1e1465]:
+              - combobox "Load a practice scenario" [ref=f1e1466]: Community garden argument with a source
+              - button "Open" [ref=f1e1467] [cursor=pointer]
+          - button [ref=f1e1473] [cursor=pointer]:
+            - paragraph [ref=f1e1478]: Load practice scenario
+          - generic [ref=f1e1480]:
+            - generic [ref=f1e1484]:
+              - paragraph [ref=f1e1488]: Grade level
+              - group [ref=f1e1490]:
+                - combobox "Grade level" [ref=f1e1491]: 6th Grade
+                - button "Open" [ref=f1e1492] [cursor=pointer]
+            - generic [ref=f1e1499]:
+              - generic [ref=f1e1500]:
+                - paragraph [ref=f1e1503]: Writing type (optional)
+                - button "Help for Writing type (optional)" [ref=f1e1507] [cursor=pointer]
+              - group [ref=f1e1512]:
+                - combobox "Writing type (optional)" [ref=f1e1513]: Auto-detect
+                - button "Open" [ref=f1e1514] [cursor=pointer]
+          - generic [ref=f1e1519]:
+            - paragraph [ref=f1e1523]: Student draft
+            - textbox "Student draft" [ref=f1e1525]:
+              - /placeholder: Paste a synthetic draft here…
+          - group [ref=f1e1528]:
+            - generic [ref=f1e1530] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f1e1532]: keyboard_arrow_right
+              - paragraph [ref=f1e1535]: Add details from my teacher (optional)
+          - note "Privacy and AI service notice" [ref=f1e1540]:
+            - generic [ref=f1e1543]: Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service.
+          - button [ref=f1e1546] [cursor=pointer]:
+            - paragraph [ref=f1e1551]: Get writing feedback
+        - group [ref=f1e238]:
+          - generic [ref=f1e240] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e242]: keyboard_arrow_right
+            - paragraph [ref=f1e245]: Session and data

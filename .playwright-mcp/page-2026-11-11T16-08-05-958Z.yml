@@ -1,0 +1,105 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#stMain"
+  - generic [ref=f1e4]:
+    - banner [ref=f1e7]:
+      - generic [ref=f1e10]:
+        - button "Deploy" [ref=f1e12] [cursor=pointer]
+        - button "Main menu" [ref=f1e16] [cursor=pointer]
+    - main [ref=f1e5]:
+      - generic [ref=f1e20]:
+        - generic [ref=f1e22]:
+          - generic [ref=f1e24]:
+            - generic [ref=f1e25]:
+              - paragraph
+            - heading "Writing Coach" [level=1] [ref=f1e30]:
+              - text: W
+              - generic [ref=f1e32]:
+                - link "Link to heading":
+                  - /url: "#writing-coach"
+            - paragraph [ref=f1e37]: Your ideas. Your words.
+          - generic [ref=f1e39]:
+            - generic [ref=f1e40]:
+              - paragraph
+            - generic [ref=f1e327]:
+              - button [ref=f1e335] [cursor=pointer]:
+                - paragraph [ref=f1e340]: ✓ Draft
+              - button [ref=f1e650] [cursor=pointer]:
+                - paragraph [ref=f1e655]: ✓ Choose
+              - button [ref=f1e790] [cursor=pointer]:
+                - paragraph [ref=f1e661]: ✓ Revise
+              - button [ref=f1e374] [cursor=pointer]:
+                - paragraph [ref=f1e379]: 4 Reflect
+            - generic [ref=f1e380]:
+              - paragraph:
+                - generic [ref=f1e381]: "Current step: Revise. Completed steps: Draft, Choose, Revise."
+          - button [ref=f1e101] [cursor=pointer]:
+            - paragraph [ref=f1e106]: New composition
+          - button [ref=f1e111] [cursor=pointer]:
+            - paragraph [ref=f1e116]: History
+        - generic [ref=f1e118]:
+          - generic [ref=f1e383]:
+            - generic [ref=f1e387]:
+              - generic [ref=f1e388]:
+                - text: Your essay
+                - generic [ref=f1e389]: Revision 1
+              - generic [ref=f1e390]: Edit here while keeping your feedback in view.
+            - generic [ref=f1e395]:
+              - generic [ref=f1e396]: 6th Grade
+              - generic [ref=f1e397]: Argument
+              - generic [ref=f1e398]: Source attached
+            - generic [ref=f1e400]:
+              - generic [ref=f1e401]:
+                - paragraph
+              - generic [ref=f1e406]:
+                - strong [ref=f1e662]: "Revision goals:"
+                - text: Connect the survey result to your claim
+              - generic [ref=f1e413]:
+                - generic [ref=f1e414]:
+                  - generic [aria-hidden]:
+                    - generic: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that most students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+                  - textbox "Editable essay draft" [ref=f1e415]: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that most students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+                - generic [ref=f1e416]:
+                  - generic [ref=f1e417]: Unsubmitted edits stay in this workspace.
+                  - generic [ref=f1e418]: 95 words
+              - paragraph [ref=f1e741]: A referenced passage changed, so its old highlight was removed. No unrelated text was highlighted.
+          - generic [ref=f1e120]:
+            - generic [ref=f1e419]:
+              - paragraph
+            - generic [ref=f1e423]:
+              - generic [ref=f1e424]:
+                - text: Feedback
+                - generic [ref=f1e425]: Review 2
+              - generic [ref=f1e426]: Choose what you want to improve.
+            - generic [ref=f1e428]:
+              - generic [ref=f1e429]:
+                - paragraph
+              - status [ref=f1e792]:
+                - paragraph [ref=f1e796]: Revision 1 snapshot saved and reviewed.
+              - paragraph [ref=f1e797]:
+                - strong [ref=f1e798]: "Goal: Connect the survey result to your claim"
+              - paragraph [ref=f1e799]:
+                - strong [ref=f1e800]: Improvement not yet evident in this revision
+              - paragraph [ref=f1e801]: The change from 'some' to 'most' makes the interpretation of the 62% figure more accurate, but the sentence still does not explain how student interest supports starting a garden.
+              - heading "What is already working" [level=3] [ref=f1e802]:
+                - text: What is already working
+                - generic [ref=f1e665]:
+                  - link "Link to heading":
+                    - /url: "#what-is-already-working"
+              - list [ref=f1e807]:
+                - listitem [ref=f1e808]: "Your opening paragraph states a clear claim and gives two reasons: fresh food and responsibility."
+              - list [ref=f1e813]:
+                - listitem [ref=f1e814]: You reported the survey statistic accurately and connected it to the fresh-food reason.
+              - list [ref=f1e815]:
+                - listitem [ref=f1e816]: Your conclusion restates the claim, which helps readers see your position clearly.
+              - paragraph [ref=f1e496]: New choices will appear here when you choose another round. You can also finish now.
+            - generic [ref=f1e711]:
+              - button [ref=f1e819] [cursor=pointer]:
+                - paragraph [ref=f1e824]: Choose goals for another round
+              - button [ref=f1e827] [cursor=pointer]:
+                - paragraph [ref=f1e832]: Finish and reflect
+            - paragraph [ref=f1e836]: "Process milestones: Draft submitted → Revision goals selected → Revision 1 submitted"
+        - group [ref=f1e238]:
+          - generic [ref=f1e240] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e242]: keyboard_arrow_right
+            - paragraph [ref=f1e245]: Session and data

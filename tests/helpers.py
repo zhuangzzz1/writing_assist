@@ -59,6 +59,8 @@ def issue_for(
     issue = {
         "goal_id": goal_id,
         "category": "evidence_elaboration",
+        "finding_severity": "reasoning",
+        "reasoning_operation": "none",
         "description": "The connection needs more explanation.",
         "draft_reference": reference,
         "paragraph_number": _paragraph_for(writing, reference),

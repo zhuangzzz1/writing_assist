@@ -1,0 +1,93 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#stMain"
+  - generic [ref=e4]:
+    - banner [ref=e7]:
+      - generic [ref=e10]:
+        - generic [ref=e309]:
+          - img "Running..." [ref=e310]
+          - button "Stop" [ref=e315] [cursor=pointer]
+        - button "Deploy" [ref=e12] [cursor=pointer]
+        - button "Main menu" [ref=e16] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e20]:
+        - generic [ref=e22]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - paragraph
+            - heading "Writing Coach" [level=1] [ref=e30]:
+              - text: W
+              - generic [ref=e32]:
+                - link "Link to heading":
+                  - /url: "#writing-coach"
+            - paragraph [ref=e37]: Your ideas. Your words.
+          - generic [ref=e39]:
+            - generic [ref=e40]:
+              - paragraph
+            - generic [ref=e42]:
+              - button [ref=e50] [cursor=pointer]:
+                - paragraph [ref=e55]: 1 Draft
+              - button [disabled] [ref=e63]:
+                - paragraph [ref=e68]: 2 Choose
+              - button [disabled] [ref=e76]:
+                - paragraph [ref=e81]: 3 Revise
+              - button [disabled] [ref=e89]:
+                - paragraph [ref=e94]: 4 Reflect
+            - generic [ref=e95]:
+              - paragraph:
+                - generic [ref=e96]: "Current step: Draft. Completed steps: none yet."
+          - button [ref=e101] [cursor=pointer]:
+            - paragraph [ref=e106]: New composition
+          - button [ref=e111] [cursor=pointer]:
+            - paragraph [ref=e116]: History
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - paragraph
+          - heading "Start with your draft" [level=3] [ref=e128]:
+            - text: Start with your draft
+            - generic [ref=e129]:
+              - link "Link to heading":
+                - /url: "#start-with-your-draft"
+          - paragraph [ref=e134]: Only your grade and draft are required. Your ideas and words stay yours.
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - paragraph [ref=e140]: Load a practice scenario
+              - button "Help for Load a practice scenario" [ref=e144] [cursor=pointer]
+            - group [ref=e149]:
+              - combobox "Load a practice scenario" [ref=e150]: Community garden argument with a source
+              - button "Open" [ref=e151] [cursor=pointer]
+          - button [ref=e157] [cursor=pointer]:
+            - paragraph [ref=e162]: Load practice scenario
+          - paragraph [ref=e250]: "Loaded synthetic scenario: garden_source_accurate (v3.4.0)"
+          - generic [ref=e252]:
+            - generic [ref=e256]:
+              - paragraph [ref=e260]: Grade level
+              - group [ref=e262]:
+                - combobox "Grade level" [ref=e263]: 6th Grade
+                - button "Open" [ref=e264] [cursor=pointer]
+            - generic [ref=e271]:
+              - generic [ref=e272]:
+                - paragraph [ref=e275]: Writing type (optional)
+                - button "Help for Writing type (optional)" [ref=e279] [cursor=pointer]
+              - group [ref=e284]:
+                - combobox "Writing type (optional)" [ref=e285]: Argument
+                - button "Open" [ref=e286] [cursor=pointer]
+          - generic [ref=e203]:
+            - paragraph [ref=e207]: Student draft
+            - textbox "Student draft" [ref=e209]:
+              - /placeholder: Paste a synthetic draft here…
+              - text: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+          - group [ref=e292]:
+            - generic [ref=e294] [cursor=pointer]:
+              - generic [aria-hidden] [ref=e296]: keyboard_arrow_right
+              - paragraph [ref=e299]: Add details from my teacher (optional)
+          - note "Privacy and AI service notice" [ref=e304]:
+            - generic [ref=e307]: Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service.
+          - button [active] [ref=e230] [cursor=pointer]:
+            - paragraph [ref=e235]: Get writing feedback
+          - group [ref=e318]:
+            - paragraph [ref=e325] [cursor=pointer]: Reviewing your draft and selected goals
+        - group [ref=e238]:
+          - generic [ref=e240] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e242]: keyboard_arrow_right
+            - paragraph [ref=e245]: Session and data

@@ -38,6 +38,16 @@ class IssueOutput(BaseModel):
         "language_conventions",
         "source_use",
     ]
+    finding_severity: Literal["accuracy", "reasoning", "development"]
+    reasoning_operation: Literal[
+        "causal",
+        "sequential",
+        "source_based",
+        "concessive",
+        "summary",
+        "conditional",
+        "none",
+    ] = "none"
     description: str = Field(min_length=1)
     draft_reference: str = Field(min_length=1)
     paragraph_number: int = Field(ge=1)
@@ -448,6 +458,12 @@ class AssessmentCoordinator:
         )
 
     @staticmethod
+    def _rank_by_severity(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Rank issues by severity tier, then preserve within-tier order."""
+        severity_order = {"accuracy": 0, "reasoning": 1, "development": 2}
+        return sorted(issues, key=lambda issue: severity_order[issue["finding_severity"]])
+
+    @staticmethod
     def _normalize_round(values: dict[str, Any]) -> dict[str, Any]:
         if values["flag_teacher"] or values["routing_decision"] == "teacher_review":
             values["routing_decision"] = "teacher_review"
@@ -477,7 +493,9 @@ class AssessmentCoordinator:
             if safety_requested:
                 return self._safety_fallback(raw)
             raise
-        return self._normalize_round(output.model_dump())
+        values = self._normalize_round(output.model_dump())
+        values["issues"] = self._rank_by_severity(values["issues"])
+        return values
 
     def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
         output = FinalAssessmentOutput.model_validate(parse_json_object(raw_response))

@@ -1,0 +1,165 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#stMain"
+  - generic [ref=f1e4]:
+    - banner [ref=f1e7]:
+      - generic [ref=f1e10]:
+        - button "Deploy" [ref=f1e12] [cursor=pointer]
+        - button "Main menu" [ref=f1e16] [cursor=pointer]
+    - main [ref=f1e5]:
+      - generic [ref=f1e20]:
+        - generic [ref=f1e22]:
+          - generic [ref=f1e24]:
+            - generic [ref=f1e25]:
+              - paragraph
+            - heading "Writing Coach" [level=1] [ref=f1e30]:
+              - text: W
+              - generic [ref=f1e32]:
+                - link "Link to heading":
+                  - /url: "#writing-coach"
+            - paragraph [ref=f1e37]: Your ideas. Your words.
+          - generic [ref=f1e39]:
+            - generic [ref=f1e40]:
+              - paragraph
+            - generic [ref=f1e327]:
+              - button [ref=f1e335] [cursor=pointer]:
+                - paragraph [ref=f1e340]: ✓ Draft
+              - button [ref=f1e348] [cursor=pointer]:
+                - paragraph [ref=f1e353]: 2 Choose
+              - button [disabled] [ref=f1e361]:
+                - paragraph [ref=f1e366]: 3 Revise
+              - button [ref=f1e374] [cursor=pointer]:
+                - paragraph [ref=f1e379]: 4 Reflect
+            - generic [ref=f1e380]:
+              - paragraph:
+                - generic [ref=f1e381]: "Current step: Choose. Completed steps: Draft."
+          - button [ref=f1e101] [cursor=pointer]:
+            - paragraph [ref=f1e106]: New composition
+          - button [ref=f1e111] [cursor=pointer]:
+            - paragraph [ref=f1e116]: History
+        - generic [ref=f1e118]:
+          - generic [ref=f1e383]:
+            - generic [ref=f1e387]:
+              - generic [ref=f1e388]:
+                - text: Your essay
+                - generic [ref=f1e389]: Original draft
+              - generic [ref=f1e390]: Edit here while keeping your feedback in view.
+            - generic [ref=f1e395]:
+              - generic [ref=f1e396]: 6th Grade
+              - generic [ref=f1e397]: Argument
+              - generic [ref=f1e398]: Source attached
+            - generic [ref=f1e400]:
+              - generic [ref=f1e401]:
+                - paragraph
+              - generic [ref=f1e402]: Select 1–3 goals in the feedback panel.
+              - generic [ref=f1e413]:
+                - generic [ref=f1e414]:
+                  - generic [aria-hidden]:
+                    - generic: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+                  - textbox "Editable essay draft" [ref=f1e415]: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+                - generic [ref=f1e416]:
+                  - generic [ref=f1e417]: Unsubmitted edits stay in this workspace.
+                  - generic [ref=f1e418]: 95 words
+          - generic [ref=f1e120]:
+            - generic [ref=f1e419]:
+              - paragraph
+            - generic [ref=f1e423]:
+              - generic [ref=f1e424]:
+                - text: Feedback
+                - generic [ref=f1e425]: Review 1
+              - generic [ref=f1e426]: Choose what you want to improve.
+            - generic [ref=f1e428]:
+              - generic [ref=f1e429]:
+                - paragraph
+              - heading "What is already working" [level=3] [ref=f1e435]:
+                - text: What is already working
+                - generic [ref=f1e436]:
+                  - link "Link to heading":
+                    - /url: "#what-is-already-working"
+              - list [ref=f1e441]:
+                - listitem [ref=f1e442]: "You state a clear claim right away: our school should start a community garden."
+              - list [ref=f1e447]:
+                - listitem [ref=f1e448]: You give two separate reasons — fresh food and teaching responsibility — so your argument has structure.
+              - list [ref=f1e453]:
+                - listitem [ref=f1e454]: You report the survey figure accurately as 62%, matching the supplied source.
+              - paragraph [ref=f1e459]:
+                - text: "Working genre:"
+                - strong [ref=f1e460]: Argument
+                - text: "· Basis: The assignment asks for an argument, the student selected argument, and the draft states a clear position ('Our school should start one') with two supporting reasons. · Confidence: high"
+              - generic [ref=f1e462]:
+                - paragraph [ref=f1e466]: Correct the working genre if needed
+                - group [ref=f1e468]:
+                  - combobox "Correct the working genre if needed" [ref=f1e469]: Argument
+                  - button "Open" [ref=f1e470] [cursor=pointer]
+              - button [disabled] [ref=f1e479]:
+                - paragraph [ref=f1e484]: Apply genre correction
+              - heading "Choose 1–3 revision goals" [level=3] [ref=f1e490]:
+                - text: Choose 1–3 revision goals
+                - generic [ref=f1e491]:
+                  - link "Link to heading":
+                    - /url: "#choose-1-3-revision-goals"
+              - paragraph [ref=f1e496]: You do not need to fix everything. Selection and hints do not make another AI call.
+              - generic [ref=f1e498]:
+                - generic [ref=f1e499]:
+                  - paragraph
+                - generic [ref=f1e502] [cursor=pointer]:
+                  - checkbox "Connect the survey result to your claim" [ref=f1e504]
+                  - paragraph [ref=f1e510]: Connect the survey result to your claim
+                - paragraph [ref=f1e515]: Right now the survey number is reported, but a reader may not see how it supports your claim. Explaining the link helps readers follow your thinking.
+                - blockquote "Passage from your draft" [ref=f1e520]: "\"This result shows that some students are interested in fresh food.\""
+                - paragraph [ref=f1e525]: Paragraph 2, matching passage 1
+                - paragraph [ref=f1e530]:
+                  - strong [ref=f1e531]: "Try this:"
+                  - text: After the sentence that reports the 62% result, add one or two sentences in your own words that explain what that result suggests about students and why that supports starting a garden.
+                - group [ref=f1e534]:
+                  - generic [ref=f1e536] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f1e622]: keyboard_arrow_down
+                    - paragraph [ref=f1e541]: Show a hint
+                  - generic [ref=f1e628]:
+                    - paragraph [ref=f1e629]:
+                      - strong [ref=f1e630]: "Look at:"
+                      - text: “This result shows that some students are interested in fresh food.”
+                    - list [ref=f1e631]:
+                      - listitem [ref=f1e632]:
+                        - paragraph [ref=f1e633]: Reread the source sentence about what the survey measured and what it did not measure.
+                      - listitem [ref=f1e634]:
+                        - paragraph [ref=f1e635]: "Look at your sentence: it says students are 'interested in fresh food.' Ask yourself what that interest has to do with your claim that the school should start a garden."
+                      - listitem [ref=f1e636]:
+                        - paragraph [ref=f1e637]: Write a sentence that links the survey result to your claim, using your own words rather than copying the source.
+                    - paragraph [ref=f1e638]:
+                      - strong [ref=f1e639]: "Check your revision:"
+                      - text: Does your new sentence explain how the survey result supports your claim, not just restate the number?
+                    - paragraph [ref=f1e640]:
+                      - strong [ref=f1e641]: "Vocabulary to evaluate:"
+                      - text: interest — a feeling of wanting to know or try something, suggests — hints at or points toward an idea, supports — helps show that a claim is reasonable, measured — recorded or counted in a survey. Choose only what matches your meaning.
+                    - paragraph [ref=f1e642]:
+                      - strong [ref=f1e643]: "Optional structural starter:"
+                      - code [ref=f1e644]: This evidence matters because ____.
+                      - text: Supply your own idea for every blank.
+              - generic [ref=f1e543]:
+                - generic [ref=f1e544]:
+                  - paragraph
+                - generic [ref=f1e547] [cursor=pointer]:
+                  - checkbox "Explain why the responsibility chores matter" [ref=f1e549]
+                  - paragraph [ref=f1e555]: Explain why the responsibility chores matter
+                - paragraph [ref=f1e560]: Your examples of watering and weeding are clear, but a reader may not see how they connect to your claim. Explaining the link makes your reason stronger.
+                - blockquote "Passage from your draft" [ref=f1e565]: "\"Students would water plants and pull weeds. They would learn that living things need care.\""
+                - paragraph [ref=f1e570]: Paragraph 3, matching passage 1
+                - paragraph [ref=f1e575]:
+                  - strong [ref=f1e576]: "Try this:"
+                  - text: After your examples of watering and weeding, add a sentence or two in your own words that explains how learning to care for living things connects to why the school should start a garden.
+                - group [ref=f1e579]:
+                  - generic [ref=f1e581] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f1e583]: keyboard_arrow_right
+                    - paragraph [ref=f1e586]: Show a hint
+            - paragraph [ref=f1e593]: 0 of 3 goals selected
+            - generic [ref=f1e595]:
+              - button [disabled] [ref=f1e600]:
+                - paragraph [ref=f1e605]: Start revising
+              - button [ref=f1e610] [cursor=pointer]:
+                - paragraph [ref=f1e615]: Finish and reflect
+            - paragraph [ref=f1e620]: "Process milestones: Draft submitted"
+        - group [ref=f1e238]:
+          - generic [ref=f1e240] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e242]: keyboard_arrow_right
+            - paragraph [ref=f1e245]: Session and data

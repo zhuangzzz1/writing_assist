@@ -1,0 +1,84 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#stMain"
+  - generic [ref=f1e4]:
+    - banner [ref=f1e7]:
+      - generic [ref=f1e10]:
+        - generic [ref=f1e222]:
+          - img "Running..." [ref=f1e223]
+          - button "Stop" [ref=f1e228] [cursor=pointer]
+        - button "Main menu" [ref=f1e12] [cursor=pointer]
+    - main [ref=f1e5]:
+      - generic [ref=f1e16]:
+        - generic [ref=f1e18]:
+          - generic [ref=f1e20]:
+            - generic [ref=f1e21]:
+              - paragraph
+            - heading "Writing Coach" [level=1] [ref=f1e26]:
+              - text: W
+              - generic [ref=f1e28]:
+                - link "Link to heading":
+                  - /url: "#writing-coach"
+            - paragraph [ref=f1e33]: Your ideas. Your words.
+          - generic [ref=f1e35]:
+            - generic [ref=f1e36]:
+              - paragraph
+            - generic [ref=f1e38]:
+              - button [ref=f1e46] [cursor=pointer]:
+                - paragraph [ref=f1e51]: 1 Draft
+              - button [disabled] [ref=f1e59]:
+                - paragraph [ref=f1e64]: 2 Choose
+              - button [disabled] [ref=f1e72]:
+                - paragraph [ref=f1e77]: 3 Revise
+              - button [disabled] [ref=f1e85]:
+                - paragraph [ref=f1e90]: 4 Reflect
+            - generic [ref=f1e91]:
+              - paragraph:
+                - generic [ref=f1e92]: "Current step: Draft. Completed steps: none yet."
+          - button [ref=f1e97] [cursor=pointer]:
+            - paragraph [ref=f1e102]: New composition
+          - button [ref=f1e107] [cursor=pointer]:
+            - paragraph [ref=f1e112]: History
+        - generic [ref=f1e118]:
+          - generic [ref=f1e119]:
+            - paragraph
+          - heading "Start with your draft" [level=3] [ref=f1e124]:
+            - text: Start with your draft
+            - generic [ref=f1e125]:
+              - link "Link to heading":
+                - /url: "#start-with-your-draft"
+          - paragraph [ref=f1e130]: Only your grade and draft are required. Your ideas and words stay yours.
+          - generic [ref=f1e132]:
+            - generic [ref=f1e133]:
+              - paragraph [ref=f1e136]: Load a practice scenario
+              - button "Help for Load a practice scenario" [ref=f1e140] [cursor=pointer]
+            - group [ref=f1e145]:
+              - combobox "Load a practice scenario" [ref=f1e146]: Community garden argument with a source
+              - button "Open" [ref=f1e147] [cursor=pointer]
+          - button [ref=f1e153] [cursor=pointer]:
+            - paragraph [ref=f1e158]: Load practice scenario
+          - paragraph [ref=f1e163]: "Loaded synthetic scenario: garden_source_accurate (v3.4.0)"
+          - generic [ref=f1e165]:
+            - paragraph [ref=f1e169]: Grade level
+            - group [ref=f1e171]:
+              - combobox "Grade level" [ref=f1e172]: 6th Grade
+              - button "Open" [ref=f1e173] [cursor=pointer]
+          - generic [ref=f1e178]:
+            - paragraph [ref=f1e182]: Student draft
+            - textbox "Student draft" [ref=f1e184]:
+              - /placeholder: Paste a synthetic draft here…
+              - text: Many students at our school want a community garden. Our school should start one because it would give students fresh food and teach responsibility. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food. Students could take home tomatoes and lettuce. A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens. In conclusion, our school should build a community garden.
+          - group [ref=f1e187]:
+            - generic [ref=f1e189] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f1e191]: keyboard_arrow_right
+              - paragraph [ref=f1e194]: Add details from my teacher (optional)
+          - note "Privacy and AI service notice" [ref=f1e199]:
+            - generic [ref=f1e202]: Do not submit writing containing real names, schools, or personal information. This is a demo system — your input is sent to an external AI service.
+          - button [active] [ref=f1e205] [cursor=pointer]:
+            - paragraph [ref=f1e210]: Get writing feedback
+          - group [ref=f1e231]:
+            - paragraph [ref=f1e238] [cursor=pointer]: Reviewing your draft and selected goals
+        - group [ref=f1e213]:
+          - generic [ref=f1e215] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f1e217]: keyboard_arrow_right
+            - paragraph [ref=f1e220]: Session and data

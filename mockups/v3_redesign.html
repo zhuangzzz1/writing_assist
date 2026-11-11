@@ -1,0 +1,1635 @@
+<title>Writing Coach</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* ─── Design tokens ─────────────────────────────────────────── */
+/* Layout: sticky header w/ inline step nav; full-height 60/40 workspace */
+:root {
+  --bg:          #f2f5fb;
+  --surface:     #ffffff;
+  --raised:      #f8faff;
+  --border:      #dde3f0;
+  --border-soft: #e8edf8;
+  --ink:         #1a2638;
+  --muted:       #5a6a82;
+  --faint:       #8fa0b8;
+
+  --brand:       #2f54c0;
+  --brand-dark:  #1e3d99;
+  --brand-soft:  #edf1ff;
+  --brand-mid:   #c7d4f8;
+
+  --green:       #1a6b4a;
+  --green-soft:  #e8f7f0;
+  --green-mid:   #a8d9c4;
+
+  --amber:       #9a6200;
+  --amber-soft:  #fdf4e3;
+  --amber-mid:   #f0c97a;
+
+  --red:         #b81c1c;
+  --red-soft:    #fef2f2;
+
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   18px;
+  --shadow-sm:   0 1px 3px rgba(30,50,90,.08), 0 1px 2px rgba(30,50,90,.05);
+  --shadow-md:   0 4px 16px rgba(30,50,90,.10), 0 1px 3px rgba(30,50,90,.06);
+  --shadow-lg:   0 12px 40px rgba(20,40,80,.14);
+
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:          #111827;
+    --surface:     #1f2937;
+    --raised:      #263040;
+    --border:      #2e3d52;
+    --border-soft: #283449;
+    --ink:         #e8edf8;
+    --muted:       #8fa0b8;
+    --faint:       #5a6a82;
+
+    --brand:       #5b7de8;
+    --brand-dark:  #7a96ef;
+    --brand-soft:  #1c2847;
+    --brand-mid:   #2d3f6a;
+
+    --green:       #3abf84;
+    --green-soft:  #0d2820;
+    --green-mid:   #1a5a3a;
+
+    --amber:       #d4960a;
+    --amber-soft:  #251c06;
+    --amber-mid:   #5a3d00;
+
+    --red:         #f87171;
+    --red-soft:    #2a1010;
+
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:          #111827;
+  --surface:     #1f2937;
+  --raised:      #263040;
+  --border:      #2e3d52;
+  --border-soft: #283449;
+  --ink:         #e8edf8;
+  --muted:       #8fa0b8;
+  --faint:       #5a6a82;
+  --brand:       #5b7de8;
+  --brand-dark:  #7a96ef;
+  --brand-soft:  #1c2847;
+  --brand-mid:   #2d3f6a;
+  --green:       #3abf84;
+  --green-soft:  #0d2820;
+  --green-mid:   #1a5a3a;
+  --amber:       #d4960a;
+  --amber-soft:  #251c06;
+  --amber-mid:   #5a3d00;
+  --red:         #f87171;
+  --red-soft:    #2a1010;
+  color-scheme: dark;
+}
+
+/* ─── Reset & base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  overflow: hidden;
+  padding-left: max(0px, env(safe-area-inset-left, 0px));
+  padding-right: max(0px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; border: none; background: none; }
+button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2.5px solid var(--brand);
+  outline-offset: 2px;
+}
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* ─── Header ─────────────────────────────────────────────────── */
+.app-header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 max(20px, env(safe-area-inset-left, 0px));
+  height: 64px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.brand-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: -2px;
+  white-space: nowrap;
+}
+
+/* ─── Step nav ───────────────────────────────────────────────── */
+.step-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+.step-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  background: none;
+}
+.step-btn:not(:disabled):hover { background: var(--raised); color: var(--ink); }
+.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.step-btn.active { color: var(--brand); }
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.step-btn.active .step-num {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.step-btn.done .step-num {
+  background: var(--green-soft);
+  border-color: var(--green-mid);
+  color: var(--green);
+}
+.step-btn.done { color: var(--green); }
+.step-connector {
+  width: 28px;
+  height: 1.5px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+.step-connector.done { background: var(--green-mid); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: none;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-ghost:hover { background: var(--raised); color: var(--ink); }
+.theme-toggle { font-size: 16px; padding: 6px 9px; }
+
+/* ─── Prototype banner ───────────────────────────────────────── */
+.proto-bar {
+  background: var(--amber-soft);
+  border-bottom: 1px solid var(--amber-mid);
+  color: var(--amber);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+  padding: 5px 16px;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Views ──────────────────────────────────────────────────── */
+.view {
+  height: calc(100vh - 64px - 32px);
+  overflow: hidden;
+}
+.view-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 36px max(20px, env(safe-area-inset-left, 0px)) 48px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ─── Draft screen ───────────────────────────────────────────── */
+.draft-card {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.draft-card-header {
+  padding: 24px 28px 0;
+}
+.draft-card-header h1 {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+  text-wrap: balance;
+}
+.draft-card-header p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.draft-card-body { padding: 0 28px; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
+}
+.field-select, .field-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field-select:focus, .field-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+  outline: none;
+  background: var(--surface);
+}
+
+.essay-label-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.word-count-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--faint);
+}
+.essay-textarea {
+  width: 100%;
+  padding: 16px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.72;
+  resize: none;
+  height: 300px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.essay-textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+  outline: none;
+}
+
+/* optional details disclosure */
+.details-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  width: 100%;
+  text-align: left;
+  transition: color 0.15s;
+}
+.details-toggle:hover { color: var(--brand); }
+.details-toggle .arrow { font-size: 10px; transition: transform 0.2s; }
+.details-toggle.open .arrow { transform: rotate(90deg); }
+.details-content {
+  padding-bottom: 14px;
+  display: grid;
+  gap: 12px;
+}
+.details-content textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  height: 76px;
+  transition: border-color 0.15s;
+}
+.details-content textarea:focus {
+  border-color: var(--brand);
+  outline: none;
+  background: var(--surface);
+}
+
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 14px 0 0;
+}
+.privacy-note svg { flex-shrink: 0; margin-top: 1px; color: var(--faint); }
+
+.draft-card-footer {
+  padding: 16px 28px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid var(--border-soft);
+  margin-top: 16px;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 800;
+  transition: background 0.15s, box-shadow 0.15s;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--brand-dark); box-shadow: var(--shadow-sm); }
+.btn-primary:disabled { opacity: 0.46; cursor: not-allowed; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1.5px solid var(--brand-mid);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--brand-mid); }
+.btn-soft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  background: var(--raised);
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-soft:hover { background: var(--border-soft); color: var(--ink); }
+.btn-danger-soft {
+  padding: 8px 13px;
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1.5px solid #f9a8a8;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ─── Workspace ──────────────────────────────────────────────── */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+  height: 100%;
+  padding: 16px max(16px, env(safe-area-inset-left, 0px)) 16px;
+}
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.pane-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+.pane-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.badge-blue { background: var(--brand-soft); color: var(--brand); }
+.badge-green { background: var(--green-soft); color: var(--green); }
+.badge-amber { background: var(--amber-soft); color: var(--amber); }
+
+/* Draft meta strip */
+.meta-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  background: var(--raised);
+}
+.meta-chip {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Goal strip */
+.goal-strip {
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--brand-soft);
+  flex-shrink: 0;
+}
+.goal-strip strong { color: var(--brand); }
+
+/* Essay editor */
+.editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 14px 16px;
+  display: flex;
+}
+.editor-highlights {
+  position: absolute;
+  inset: 14px 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+.editor-highlights pre {
+  margin: 0;
+  padding: 16px 18px;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.72;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: transparent;
+  border-radius: var(--radius-sm);
+}
+.hl { background: rgba(248,196,70,.55); border-bottom: 2px solid var(--amber); border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.editor-ta {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--ink);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.72;
+  resize: none;
+  overflow: auto;
+  scrollbar-width: none;
+  transition: border-color 0.15s;
+}
+.editor-ta:focus { border-color: var(--brand); outline: none; }
+.editor-ta::-webkit-scrollbar { display: none; }
+.editor-ta::selection { background: rgba(47,84,192,.2); }
+
+.editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px 10px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  color: var(--faint);
+  flex-shrink: 0;
+  background: var(--raised);
+}
+
+/* Feedback pane */
+.feedback-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.strength-card {
+  padding: 13px 15px;
+  border: 1px solid var(--green-mid);
+  border-radius: var(--radius-md);
+  background: var(--green-soft);
+}
+.strength-card h3 {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.strength-card p { font-size: 13.5px; color: var(--ink); line-height: 1.55; }
+
+.section-heading {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+}
+.section-note { font-size: 12px; color: var(--muted); margin: 3px 0 8px; }
+
+/* Goal card */
+.goal-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+.goal-card.selected {
+  border-color: var(--brand-mid);
+  background: var(--brand-soft);
+}
+.goal-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 8px;
+}
+.goal-checkbox {
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  margin-top: 2px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.goal-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.goal-card-body { padding: 0 14px 10px 41px; }
+.goal-why { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 7px; }
+.goal-quote {
+  padding: 7px 10px;
+  border-left: 3px solid var(--brand-mid);
+  background: var(--raised);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+.goal-action { font-size: 13px; color: var(--ink); line-height: 1.5; margin-bottom: 8px; }
+.goal-action strong { color: var(--brand); }
+
+.hint-toggle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.hint-toggle:hover { color: var(--brand-dark); }
+.hint-box {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #f7f9ea;
+  border: 1px solid #d8e4a0;
+  font-size: 12.5px;
+  color: #445218;
+  line-height: 1.55;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hint-box { background: #1a2206; border-color: #3a4a1a; color: #c8da8a; }
+}
+:root[data-theme="dark"] .hint-box { background: #1a2206; border-color: #3a4a1a; color: #c8da8a; }
+
+/* Secondary actions row */
+.secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+
+/* Self-report */
+.self-report-section { padding: 2px 0 6px; }
+.self-report-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.self-report-note { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+.self-report-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.self-report-goal-name { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.self-report-select {
+  padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  width: 100%;
+  appearance: none;
+}
+.self-report-select:focus { border-color: var(--brand); outline: none; }
+
+/* Feedback footer */
+.feedback-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--raised);
+  flex-shrink: 0;
+}
+.footer-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.footer-buttons { display: flex; gap: 8px; }
+.footer-buttons .btn-primary { flex: 1; justify-content: center; }
+
+/* ─── Reflect screen ─────────────────────────────────────────── */
+.reflect-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.snapshot-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.snapshot-label {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--raised);
+}
+.snapshot-text {
+  padding: 16px 18px;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14px;
+  line-height: 1.72;
+  color: var(--ink);
+  height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+}
+
+.diff-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+.diff-stat { text-align: center; }
+.diff-stat .num { display: block; font-size: 24px; font-weight: 800; color: var(--brand); line-height: 1; }
+.diff-stat .lbl { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+.diff-divider { width: 1px; height: 32px; background: var(--border); }
+.diff-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.reflection-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.reflection-card h3 { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
+.reflection-card ul { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.reflection-card li { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+.improvement-item { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--green-soft); border: 1px solid var(--green-mid); margin-bottom: 7px; }
+.improvement-item p { font-size: 13px; color: var(--green); line-height: 1.5; font-weight: 600; }
+.improvement-ref { font-size: 11.5px; color: var(--muted); margin-top: 4px; font-family: 'Lora', Georgia, serif; font-style: italic; }
+.conclusion-card { padding: 14px 16px; background: var(--brand-soft); border: 1px solid var(--brand-mid); border-radius: var(--radius-md); font-size: 14px; color: var(--brand); font-weight: 700; line-height: 1.55; }
+
+/* ─── Dialog ─────────────────────────────────────────────────── */
+dialog {
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0;
+  width: 440px;
+  max-width: calc(100vw - 40px);
+}
+dialog::backdrop { background: rgba(10,20,40,.52); backdrop-filter: blur(2px); }
+.dialog-body { padding: 28px; }
+.dialog-body h2 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+.dialog-body p { font-size: 14px; color: var(--muted); line-height: 1.55; margin-bottom: 7px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+/* ─── Scenario loader ────────────────────────────────────────── */
+.scenario-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+.scenario-label { font-size: 12.5px; color: var(--muted); }
+.scenario-label strong { color: var(--ink); }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .workspace { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+  .pane { height: 480px; }
+  .step-btn .step-label { display: none; }
+  .step-connector { width: 16px; }
+  .brand-sub { display: none; }
+  .draft-card { border-radius: var(--radius-md); }
+  .draft-card-header, .draft-card-body, .draft-card-footer { padding-left: 18px; padding-right: 18px; }
+}
+</style>
+
+<!-- App shell -->
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">W</div>
+    <div>
+      <div class="brand-name">Writing Coach</div>
+      <span class="brand-sub">Your ideas. Your words.</span>
+    </div>
+  </div>
+
+  <nav class="step-nav" aria-label="Revision steps" id="step-nav">
+    <button class="step-btn active" data-step="1" id="btn-draft" aria-label="Step 1: Draft">
+      <span class="step-num">1</span><span class="step-label">Draft</span>
+    </button>
+    <div class="step-connector" id="conn-1" aria-hidden="true"></div>
+    <button class="step-btn" data-step="2" id="btn-choose" disabled aria-label="Step 2: Choose">
+      <span class="step-num">2</span><span class="step-label">Choose</span>
+    </button>
+    <div class="step-connector" id="conn-2" aria-hidden="true"></div>
+    <button class="step-btn" data-step="3" id="btn-revise" disabled aria-label="Step 3: Revise">
+      <span class="step-num">3</span><span class="step-label">Revise</span>
+    </button>
+    <div class="step-connector" id="conn-3" aria-hidden="true"></div>
+    <button class="step-btn" data-step="4" id="btn-reflect" disabled aria-label="Step 4: Reflect">
+      <span class="step-num">4</span><span class="step-label">Reflect</span>
+    </button>
+  </nav>
+
+  <div class="header-actions">
+    <button class="btn-ghost" id="history-btn" hidden>History</button>
+    <button class="btn-ghost theme-toggle" id="theme-btn" aria-label="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<div class="proto-bar">Interactive mockup · Synthetic content · No AI calls or saved data</div>
+
+<main>
+  <!-- ── Draft screen ── -->
+  <div class="view" id="view-draft">
+    <div class="view-scroll">
+      <div class="draft-card">
+        <div class="draft-card-header">
+          <h1>Start with your draft</h1>
+          <p>Paste your essay or load a practice scenario. Your grade and draft are all you need to begin.</p>
+        </div>
+        <div class="draft-card-body">
+          <div class="scenario-row">
+            <span class="scenario-label"><strong>Practice:</strong> 6th-grade community garden argument</span>
+            <button class="btn-secondary" id="load-scenario-btn">Load scenario</button>
+          </div>
+          <div class="field-row">
+            <div>
+              <label class="field-label" for="grade-select">Grade level</label>
+              <select class="field-select" id="grade-select">
+                <option>5th Grade</option>
+                <option selected>6th Grade</option>
+                <option>7th Grade</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="genre-select">Writing type</label>
+              <select class="field-select" id="genre-select">
+                <option selected>Auto-detect</option>
+                <option>Argument</option>
+                <option>Informational</option>
+                <option>Narrative</option>
+              </select>
+            </div>
+          </div>
+          <div class="essay-label-row">
+            <label class="field-label" for="setup-essay">Your essay</label>
+            <span class="word-count-badge" id="setup-wc">0 words</span>
+          </div>
+          <textarea class="essay-textarea" id="setup-essay" spellcheck="true" placeholder="Paste your essay here…"></textarea>
+
+          <button class="details-toggle" id="details-toggle" aria-expanded="false">
+            <span class="arrow">▶</span> Add details from my teacher <span style="color:var(--faint);font-weight:600">(optional)</span>
+          </button>
+          <div class="details-content" id="details-content" hidden>
+            <div>
+              <label class="field-label" for="detail-prompt">Assignment question</label>
+              <textarea class="field-select" id="detail-prompt" placeholder="What did your teacher ask you to write about?" rows="2" style="height:60px"></textarea>
+            </div>
+            <div>
+              <label class="field-label" for="detail-directions">My teacher's directions</label>
+              <textarea class="field-select" id="detail-directions" placeholder="For example: Use RACES and explain your evidence." rows="2" style="height:60px"></textarea>
+            </div>
+            <div>
+              <label class="field-label" for="detail-structure">Writing structure my teacher asked for</label>
+              <input class="field-input" id="detail-structure" placeholder="For example: CER, RACES, MEAL, or another structure">
+            </div>
+            <div>
+              <label class="field-label" for="detail-source">Passage or source my assignment uses</label>
+              <textarea class="field-select" id="detail-source" placeholder="Paste the passage here if your task uses one." rows="2" style="height:68px"></textarea>
+            </div>
+            <div>
+              <label class="field-label" for="detail-help">What I want help with</label>
+              <input class="field-input" id="detail-help" placeholder="Anything specific you'd like feedback on?">
+            </div>
+          </div>
+
+          <div class="privacy-note">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1.5a3 3 0 0 0-3 3v1.25H4.5a1 1 0 0 0-1 1v5.5a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-5.5a1 1 0 0 0-1-1H11V4.5a3 3 0 0 0-3-3Zm-1.5 3a1.5 1.5 0 0 1 3 0v1.25h-3V4.5Z" fill="currentColor"/></svg>
+            Don't include real names, schools, or personal info. Your draft is sent to an AI service for feedback.
+          </div>
+        </div>
+        <div class="draft-card-footer">
+          <button class="btn-primary" id="get-feedback-btn" disabled>Get writing feedback →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Workspace (Choose / Revise) ── -->
+  <div class="view" id="view-workspace" hidden>
+    <div class="workspace">
+      <!-- Left: editor pane -->
+      <section class="pane" aria-labelledby="editor-title">
+        <div class="pane-header">
+          <div>
+            <div class="pane-title" id="editor-title">Your essay</div>
+            <div class="pane-sub">Edit here while keeping your feedback in view.</div>
+          </div>
+          <span class="badge badge-blue" id="draft-badge">Original draft</span>
+        </div>
+        <div class="meta-strip">
+          <span class="meta-chip">6th Grade</span>
+          <span class="meta-chip">Argument</span>
+          <span class="meta-chip">Source attached</span>
+        </div>
+        <div class="goal-strip" id="goal-strip">
+          <strong>Revision goals:</strong> Select 1–3 goals in the feedback panel.
+        </div>
+        <div class="editor-wrap">
+          <div class="editor-highlights" aria-hidden="true"><pre id="highlight-pre"></pre></div>
+          <label class="sr-only" for="essay-editor">Editable essay draft</label>
+          <textarea class="editor-ta" id="essay-editor" spellcheck="true"></textarea>
+        </div>
+        <div class="editor-footer">
+          <span id="editor-status">Unsubmitted edits stay here.</span>
+          <span id="editor-wc">0 words</span>
+        </div>
+      </section>
+
+      <!-- Right: feedback pane -->
+      <section class="pane" aria-labelledby="feedback-title">
+        <div class="pane-header">
+          <div>
+            <div class="pane-title" id="feedback-title">Feedback</div>
+            <div class="pane-sub" id="feedback-sub">Choose what to work on.</div>
+          </div>
+          <span class="badge badge-blue" id="round-badge">Review 1</span>
+        </div>
+
+        <div class="feedback-scroll" id="feedback-scroll">
+          <!-- Strengths -->
+          <div class="strength-card">
+            <h3>What is already working</h3>
+            <p>Your claim is easy to find, and you give three clear reasons. Your responsibility example gives readers something specific to picture.</p>
+          </div>
+
+          <!-- Goal list -->
+          <div id="goal-list">
+            <div class="section-heading">Choose 1–3 revision goals</div>
+            <p class="section-note">Pick what feels most useful. You do not need to fix everything.</p>
+
+            <div class="goal-card" id="card-evidence">
+              <div class="goal-card-head">
+                <input class="goal-checkbox" type="checkbox" id="goal-evidence" value="evidence">
+                <label class="goal-title" for="goal-evidence">Explain what your survey shows</label>
+              </div>
+              <div class="goal-card-body">
+                <p class="goal-why">Your evidence is there, but readers need one more sentence about what it actually proves — and what it doesn't yet prove.</p>
+                <div class="goal-quote">"This shows that the garden would make all students healthier."</div>
+                <p class="goal-action"><strong>Try this:</strong> Add one sentence explaining what your survey result does — and does not — tell us about health.</p>
+                <button class="hint-toggle" data-hint="hint-evidence">▶ Show a hint</button>
+                <div class="hint-box" id="hint-evidence" hidden>
+                  <strong>Look at:</strong> "This shows that the garden would make all students healthier."<br><br>
+                  1. What did 62% of students actually say?<br>
+                  2. What can a reader fairly conclude from that?<br>
+                  3. What would you need more information for?<br><br>
+                  <strong>Check your revision:</strong> Does your new sentence explain the evidence without claiming more than it proves?
+                </div>
+              </div>
+            </div>
+
+            <div class="goal-card" id="card-reasoning">
+              <div class="goal-card-head">
+                <input class="goal-checkbox" type="checkbox" id="goal-reasoning" value="reasoning">
+                <label class="goal-title" for="goal-reasoning">Connect responsibility to your claim</label>
+              </div>
+              <div class="goal-card-body">
+                <p class="goal-why">Your responsibility paragraph mentions "better citizens" but doesn't explain the connection. That link is the most interesting part of your argument.</p>
+                <div class="goal-quote">"This would help them become better citizens."</div>
+                <p class="goal-action"><strong>Try this:</strong> Explain how caring for plants connects to being a responsible community member. Use your own idea — don't just restate the claim.</p>
+                <button class="hint-toggle" data-hint="hint-reasoning">▶ Show a hint</button>
+                <div class="hint-box" id="hint-reasoning" hidden>
+                  <strong>Look at:</strong> "This would help them become better citizens."<br><br>
+                  1. What does "responsible" actually mean in your essay?<br>
+                  2. How does watering plants practice that kind of responsibility?<br>
+                  3. What would someone in your school community recognize as responsible?<br><br>
+                  <strong>Check your revision:</strong> Does your new sentence complete the idea from "responsible" to "community member" without just repeating your claim?
+                </div>
+              </div>
+            </div>
+
+            <div class="goal-card" id="card-style">
+              <div class="goal-card-head">
+                <input class="goal-checkbox" type="checkbox" id="goal-style" value="style">
+                <label class="goal-title" for="goal-style">Smooth the repeated wording</label>
+              </div>
+              <div class="goal-card-body">
+                <p class="goal-why">Two sentences in one paragraph start with "A garden" and repeat the same words. Combining them would make your writing flow better.</p>
+                <div class="goal-quote">"A garden also teaches responsibility. Students would water plants…"</div>
+                <p class="goal-action"><strong>Try this:</strong> Combine those two sentences into one without losing either idea.</p>
+                <button class="hint-toggle" data-hint="hint-style">▶ Show a hint</button>
+                <div class="hint-box" id="hint-style" hidden>
+                  <strong>Look at:</strong> "A garden also teaches responsibility. Students would water plants and pull weeds."<br><br>
+                  1. Read both sentences aloud. What do they both say?<br>
+                  2. Can you name the action (watering, weeding) and the result (responsibility) in a single sentence?<br>
+                  3. Try it — then read it aloud to check the flow.<br><br>
+                  <strong>Check your revision:</strong> Does the new sentence contain both the activity and what it teaches?
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary controls (shown in Revise step) -->
+          <div id="secondary-controls" hidden>
+            <div class="secondary-actions">
+              <button class="btn-soft" id="show-less-btn">Show less</button>
+              <button class="btn-soft" id="stuck-btn">I'm stuck</button>
+            </div>
+          </div>
+
+          <!-- Self-report (shown in Revise step) -->
+          <div class="self-report-section" id="self-report-section" hidden>
+            <div class="self-report-label">Optional goal self-report</div>
+            <div class="self-report-note">Tell me what you tried or decided to skip. This is optional — skip it if you like.</div>
+            <div id="self-report-rows"></div>
+          </div>
+
+          <!-- Round review result (shown after submission) -->
+          <div id="round-review" hidden>
+            <div class="improvement-item">
+              <p>Your survey sentence now explains what 62% actually means and what readers cannot yet conclude. Good revision.</p>
+              <div class="improvement-ref">"…the survey shows students are open to trying vegetables, though we cannot yet say this guarantees better health."</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="feedback-footer">
+          <div class="footer-status">
+            <span id="selection-count">0 of 3 goals selected</span>
+            <span id="round-label">Revision round 1</span>
+          </div>
+          <div class="footer-buttons" id="footer-choose">
+            <button class="btn-soft" id="finish-from-choose">Finish and reflect</button>
+            <button class="btn-primary" id="start-revising-btn" disabled>Start revising →</button>
+          </div>
+          <div class="footer-buttons" id="footer-revise" hidden>
+            <button class="btn-soft" id="finish-from-revise">Finish and reflect</button>
+            <button class="btn-primary" id="submit-revision-btn">Submit revision →</button>
+          </div>
+          <div class="footer-buttons" id="footer-after-review" hidden>
+            <button class="btn-soft" id="finish-from-review">Finish and reflect</button>
+            <button class="btn-primary" id="next-round-btn">Choose next goals →</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ── Reflect screen ── -->
+  <div class="view" id="view-reflect" hidden>
+    <div class="view-scroll">
+      <div style="max-width:900px;margin:0 auto;">
+        <div class="reflect-layout">
+          <div class="snapshot-card">
+            <div class="snapshot-label">Original draft</div>
+            <div class="snapshot-text" id="original-snapshot" tabindex="0"></div>
+          </div>
+          <div class="snapshot-card">
+            <div class="snapshot-label">Latest submitted revision</div>
+            <div class="snapshot-text" id="final-snapshot" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="diff-row">
+          <div class="diff-stat"><span class="num">+34</span><span class="lbl">words added</span></div>
+          <div class="diff-divider"></div>
+          <div class="diff-stat"><span class="num">−6</span><span class="lbl">words removed</span></div>
+          <div class="diff-divider"></div>
+          <div class="diff-note">These counts are factual. They say nothing about whether the changes were improvements — that's what your coach is about to explain.</div>
+        </div>
+
+        <div class="reflection-card">
+          <h3>Strengths in your original draft</h3>
+          <ul>
+            <li>Your claim is stated clearly in the first paragraph — readers know immediately what you are arguing.</li>
+            <li>You used a specific number (62%) rather than a vague phrase, which made your evidence more concrete.</li>
+          </ul>
+        </div>
+
+        <div class="reflection-card">
+          <h3>What changed</h3>
+          <div class="improvement-item">
+            <p>You explained what your survey result does and does not prove, which strengthens your argument.</p>
+            <div class="improvement-ref">Final draft: "…the survey shows students are open to trying vegetables, though we cannot yet say this guarantees better health."</div>
+          </div>
+          <div class="improvement-item">
+            <p>You connected watering plants to community responsibility with a specific example, making the paragraph more convincing.</p>
+            <div class="improvement-ref">Final draft: "Caring for plants that others can enjoy is itself a small act of community responsibility."</div>
+          </div>
+        </div>
+
+        <div class="reflection-card">
+          <h3>Possibilities for another day</h3>
+          <ul>
+            <li>Your conclusion repeats the claim but doesn't add a final thought — a "so what" sentence could make it land better.</li>
+            <li>The campus appearance paragraph is the shortest. You could develop one more detail there.</li>
+          </ul>
+        </div>
+
+        <div class="conclusion-card">
+          You started with a clear argument and made it stronger by explaining your evidence and connecting your reasoning. Those are real writing skills — keep them in your next essay.
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-bottom:4px;">
+          <button class="btn-soft" id="reflect-back-btn">Back to feedback</button>
+          <button class="btn-primary" id="new-composition-btn">New composition</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<dialog id="finish-dialog" aria-labelledby="finish-title">
+  <div class="dialog-body">
+    <h2 id="finish-title">Finish revising?</h2>
+    <p>Are you sure you don't want to revise anymore?</p>
+    <p>If there's still something you'd like to polish, choose <strong>Keep revising</strong>. Otherwise we'll compare your original and current drafts.</p>
+    <div class="dialog-actions">
+      <button class="btn-soft" id="cancel-finish">Keep revising</button>
+      <button class="btn-primary" id="confirm-finish">Yes, finish and reflect →</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- sr-only utility -->
+<style>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}</style>
+
+<script>
+/* ─── sample draft ─────────────────────────────────────────── */
+const SAMPLE_DRAFT = `Many students at our school want a community garden. Our school should start one because it would give students fresh food, teach responsibility, and make the campus nicer.
+
+A garden would give students fresh food. In the class survey, 62% of students said they would try vegetables from a school garden. This shows that the garden would make all students healthier. Students could take home tomatoes and lettuce.
+
+A garden also teaches responsibility. Students would water plants and pull weeds. They would learn that living things need care. This would help them become better citizens.
+
+Finally, the garden would make the campus nicer. Right now, the space behind the library is empty. It could be colorful and peaceful.
+
+In conclusion, our school should build a community garden. It would help everyone.`
+
+const REVISED_DRAFT = `Many students at our school want a community garden. Our school should start one because it would give students fresh food, teach responsibility, and make the campus nicer.
+
+A garden would give students fresh food. In the class survey, 62% of students said they would try vegetables from a school garden. This shows the survey shows students are open to trying vegetables, though we cannot yet say this guarantees better health. Students could take home tomatoes and lettuce.
+
+A garden also teaches responsibility. Students would water and weed plants they planted together. Caring for plants that others can enjoy is itself a small act of community responsibility. This would help them become better citizens.
+
+Finally, the garden would make the campus nicer. Right now, the space behind the library is empty. It could be colorful and peaceful.
+
+In conclusion, our school should build a community garden. It would help everyone.`
+
+/* ─── goal metadata ─────────────────────────────────────────── */
+const GOAL_REFS = {
+  evidence:  'This shows that the garden would make all students healthier.',
+  reasoning: 'This would help them become better citizens.',
+  style:     'A garden also teaches responsibility. Students would water plants'
+}
+const GOAL_NAMES = {
+  evidence:  'Explain what your survey shows',
+  reasoning: 'Connect responsibility to your claim',
+  style:     'Smooth the repeated wording'
+}
+
+/* ─── state ─────────────────────────────────────────────────── */
+let step = 'draft'           // 'draft' | 'choose' | 'revise' | 'review' | 'reflect'
+let draftLoaded = false
+let selectedGoals = new Set()
+let revisionCount = 0
+let showLess = false
+let isStuck = false
+
+/* ─── DOM refs ──────────────────────────────────────────────── */
+const $ = id => document.getElementById(id)
+const views = { draft: $('view-draft'), workspace: $('view-workspace'), reflect: $('view-reflect') }
+const stepBtns = { 1: $('btn-draft'), 2: $('btn-choose'), 3: $('btn-revise'), 4: $('btn-reflect') }
+const connectors = { 1: $('conn-1'), 2: $('conn-2'), 3: $('conn-3') }
+
+/* ─── theme ─────────────────────────────────────────────────── */
+let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+function applyTheme() {
+  document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
+  $('theme-btn').textContent = darkMode ? '☀️' : '🌙'
+}
+applyTheme()
+$('theme-btn').addEventListener('click', () => { darkMode = !darkMode; applyTheme() })
+
+/* ─── word count ────────────────────────────────────────────── */
+function wordCount(text) {
+  const t = text.trim()
+  return t ? t.split(/\s+/).length : 0
+}
+$('setup-essay').addEventListener('input', e => {
+  $('setup-wc').textContent = wordCount(e.target.value) + ' words'
+  $('get-feedback-btn').disabled = e.target.value.trim().length === 0
+})
+$('essay-editor').addEventListener('input', e => {
+  $('editor-wc').textContent = wordCount(e.target.value) + ' words'
+  renderHighlights()
+})
+
+/* ─── highlights ────────────────────────────────────────────── */
+function escHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))
+}
+function renderHighlights() {
+  const text = $('essay-editor').value
+  const ranges = []
+  selectedGoals.forEach(g => {
+    const ref = GOAL_REFS[g]
+    const idx = text.indexOf(ref)
+    if (idx >= 0) ranges.push({ start: idx, end: idx + ref.length })
+  })
+  ranges.sort((a, b) => a.start - b.start)
+  let html = '', cursor = 0
+  ranges.forEach(r => {
+    if (r.start < cursor) return
+    html += escHtml(text.slice(cursor, r.start))
+    html += `<span class="hl">${escHtml(text.slice(r.start, r.end))}</span>`
+    cursor = r.end
+  })
+  html += escHtml(text.slice(cursor))
+  $('highlight-pre').innerHTML = html + '\n'
+  syncHighlightScroll()
+}
+function syncHighlightScroll() {
+  const ed = $('essay-editor')
+  const pre = $('highlight-pre').parentElement
+  pre.style.transform = `translate(${-ed.scrollLeft}px, ${-ed.scrollTop}px)`
+}
+$('essay-editor').addEventListener('scroll', syncHighlightScroll)
+
+/* ─── goal strip update ─────────────────────────────────────── */
+function updateGoalStrip() {
+  const strip = $('goal-strip')
+  if (selectedGoals.size === 0) {
+    strip.innerHTML = '<strong>Revision goals:</strong> Select 1–3 goals in the feedback panel.'
+  } else {
+    const names = [...selectedGoals].map(g => GOAL_NAMES[g]).join(' · ')
+    strip.innerHTML = `<strong>Revision goals:</strong> ${escHtml(names)}`
+  }
+}
+
+/* ─── goal checkbox handling ─────────────────────────────────── */
+function updateSelectionUI() {
+  const count = selectedGoals.size
+  $('selection-count').textContent = `${count} of 3 goals selected`
+  $('start-revising-btn').disabled = count === 0
+  renderHighlights()
+  updateGoalStrip()
+  // update card selection state
+  document.querySelectorAll('.goal-card').forEach(card => {
+    const id = card.id.replace('card-', '')
+    card.classList.toggle('selected', selectedGoals.has(id))
+  })
+  // update self-report rows
+  if (step === 'revise') buildSelfReportRows()
+}
+
+document.querySelectorAll('.goal-checkbox').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const val = cb.value
+    if (cb.checked) {
+      if (selectedGoals.size >= 3) { cb.checked = false; return }
+      selectedGoals.add(val)
+    } else {
+      selectedGoals.delete(val)
+    }
+    updateSelectionUI()
+  })
+})
+
+/* ─── hint toggles ───────────────────────────────────────────── */
+document.querySelectorAll('.hint-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = $(btn.dataset.hint)
+    const open = !target.hidden
+    target.hidden = open
+    btn.textContent = (open ? '▶' : '▼') + btn.textContent.slice(1)
+  })
+})
+
+/* ─── details toggle ─────────────────────────────────────────── */
+$('details-toggle').addEventListener('click', function() {
+  const open = !$('details-content').hidden
+  $('details-content').hidden = open
+  this.classList.toggle('open', !open)
+  this.setAttribute('aria-expanded', String(!open))
+})
+
+/* ─── load scenario ──────────────────────────────────────────── */
+$('load-scenario-btn').addEventListener('click', () => {
+  $('setup-essay').value = SAMPLE_DRAFT
+  $('setup-wc').textContent = wordCount(SAMPLE_DRAFT) + ' words'
+  $('get-feedback-btn').disabled = false
+})
+
+/* ─── step nav wiring ─────────────────────────────────────────── */
+function goStep(target) {
+  if (target === 'draft')   showView('draft',   1)
+  if (target === 'choose')  { showView('workspace', 2); enterChooseMode() }
+  if (target === 'revise')  { showView('workspace', 3); enterReviseMode() }
+  if (target === 'reflect') openFinishDialog()
+}
+$('btn-draft').addEventListener('click',   () => goStep('draft'))
+$('btn-choose').addEventListener('click',  () => goStep('choose'))
+$('btn-revise').addEventListener('click',  () => goStep('revise'))
+$('btn-reflect').addEventListener('click', () => openFinishDialog())
+
+/* ─── show view ─────────────────────────────────────────────── */
+function showView(view, activeStep) {
+  Object.values(views).forEach(v => v.hidden = true)
+  if (view === 'workspace') views.workspace.hidden = false
+  else if (view === 'draft') views.draft.hidden = false
+  else if (view === 'reflect') views.reflect.hidden = false
+
+  // step button styles
+  Object.entries(stepBtns).forEach(([n, btn]) => {
+    btn.classList.remove('active', 'done')
+    const num = Number(n)
+    if (num < activeStep) {
+      btn.classList.add('done')
+      btn.querySelector('.step-num').textContent = '✓'
+    } else if (num === activeStep) {
+      btn.classList.add('active')
+      btn.querySelector('.step-num').textContent = n
+    } else {
+      btn.querySelector('.step-num').textContent = n
+    }
+  })
+  Object.entries(connectors).forEach(([n, c]) => {
+    c.classList.toggle('done', Number(n) < activeStep)
+  })
+}
+
+/* ─── draft → choose ────────────────────────────────────────── */
+$('get-feedback-btn').addEventListener('click', () => {
+  const text = $('setup-essay').value.trim()
+  if (!text) return
+  $('essay-editor').value = text
+  $('editor-wc').textContent = wordCount(text) + ' words'
+  draftLoaded = true
+  $('btn-choose').disabled = false
+  $('btn-revise').disabled = false
+  $('btn-reflect').disabled = false
+  $('history-btn').hidden = false
+  showView('workspace', 2)
+  enterChooseMode()
+  renderHighlights()
+})
+
+function enterChooseMode() {
+  step = 'choose'
+  $('feedback-sub').textContent = 'Choose what to work on.'
+  $('goal-list').hidden = false
+  $('secondary-controls').hidden = true
+  $('self-report-section').hidden = true
+  $('round-review').hidden = true
+  $('footer-choose').hidden = false
+  $('footer-revise').hidden = true
+  $('footer-after-review').hidden = true
+  $('draft-badge').textContent = revisionCount > 0 ? `Revision ${revisionCount}` : 'Original draft'
+  $('round-badge').textContent = `Review ${revisionCount + 1}`
+  updateSelectionUI()
+}
+
+/* ─── start revising ─────────────────────────────────────────── */
+$('start-revising-btn').addEventListener('click', () => {
+  showView('workspace', 3)
+  enterReviseMode()
+})
+function enterReviseMode() {
+  step = 'revise'
+  $('feedback-sub').textContent = 'Your selected goals.'
+  $('goal-list').hidden = false
+  $('secondary-controls').hidden = false
+  $('self-report-section').hidden = false
+  $('round-review').hidden = true
+  $('footer-choose').hidden = true
+  $('footer-revise').hidden = false
+  $('footer-after-review').hidden = true
+  buildSelfReportRows()
+  // hide unselected goal cards, show only selected
+  document.querySelectorAll('.goal-card').forEach(card => {
+    const id = card.id.replace('card-', '')
+    card.style.display = selectedGoals.has(id) ? '' : 'none'
+  })
+}
+
+/* ─── self-report rows ───────────────────────────────────────── */
+function buildSelfReportRows() {
+  const container = $('self-report-rows')
+  container.innerHTML = ''
+  selectedGoals.forEach(g => {
+    const div = document.createElement('div')
+    div.className = 'self-report-row'
+    div.innerHTML = `<div class="self-report-goal-name">${escHtml(GOAL_NAMES[g])}</div>
+      <select class="self-report-select" aria-label="Self-report for ${escHtml(GOAL_NAMES[g])}">
+        <option value="">No answer</option>
+        <option value="attempted">I tried this</option>
+        <option value="deferred">I decided to skip this for now</option>
+      </select>`
+    container.appendChild(div)
+  })
+}
+
+/* ─── show less / stuck ──────────────────────────────────────── */
+$('show-less-btn').addEventListener('click', () => {
+  showLess = !showLess
+  $('show-less-btn').textContent = showLess ? 'Show all' : 'Show less'
+  let count = 0
+  document.querySelectorAll('.goal-card').forEach(card => {
+    const id = card.id.replace('card-', '')
+    if (!selectedGoals.has(id)) return
+    count++
+    card.hidden = showLess && count > 1
+  })
+})
+$('stuck-btn').addEventListener('click', () => {
+  isStuck = true
+  $('stuck-btn').hidden = true
+  document.querySelectorAll('.hint-box').forEach(h => { h.hidden = false })
+  document.querySelectorAll('.hint-toggle').forEach(b => { b.textContent = b.textContent.replace('▶', '▼') })
+})
+
+/* ─── submit revision ────────────────────────────────────────── */
+$('submit-revision-btn').addEventListener('click', () => {
+  revisionCount++
+  step = 'review'
+  $('essay-editor').value = REVISED_DRAFT
+  $('editor-wc').textContent = wordCount(REVISED_DRAFT) + ' words'
+  renderHighlights()
+  $('draft-badge').textContent = `Revision ${revisionCount}`
+  $('round-badge').textContent = `Review ${revisionCount}`
+  $('feedback-sub').textContent = 'Your revision results.'
+  $('goal-list').hidden = true
+  $('secondary-controls').hidden = true
+  $('self-report-section').hidden = true
+  $('round-review').hidden = false
+  $('footer-choose').hidden = true
+  $('footer-revise').hidden = true
+  $('footer-after-review').hidden = false
+  showView('workspace', 3)
+})
+
+/* ─── next round ─────────────────────────────────────────────── */
+$('next-round-btn').addEventListener('click', () => {
+  selectedGoals.clear()
+  document.querySelectorAll('.goal-checkbox').forEach(cb => { cb.checked = false })
+  document.querySelectorAll('.goal-card').forEach(card => { card.style.display = ''; card.hidden = false })
+  showLess = false
+  isStuck = false
+  $('show-less-btn').textContent = 'Show less'
+  $('stuck-btn').hidden = false
+  enterChooseMode()
+})
+
+/* ─── finish dialog ──────────────────────────────────────────── */
+function openFinishDialog() {
+  if (!draftLoaded) return
+  $('finish-dialog').showModal()
+}
+[$('finish-from-choose'), $('finish-from-revise'), $('finish-from-review')].forEach(btn => {
+  if (btn) btn.addEventListener('click', openFinishDialog)
+})
+$('cancel-finish').addEventListener('click', () => $('finish-dialog').close())
+$('confirm-finish').addEventListener('click', () => {
+  $('finish-dialog').close()
+  $('original-snapshot').textContent = SAMPLE_DRAFT
+  $('final-snapshot').textContent = revisionCount > 0 ? REVISED_DRAFT : $('essay-editor').value
+  showView('reflect', 4)
+  stepBtns[4].querySelector('.step-num').textContent = '✓'
+  stepBtns[4].classList.remove('active')
+  stepBtns[4].classList.add('done')
+})
+
+/* ─── reflect nav ────────────────────────────────────────────── */
+$('reflect-back-btn').addEventListener('click', () => {
+  showView('workspace', revisionCount > 0 ? 3 : 2)
+  if (step === 'review') {
+    $('goal-list').hidden = true
+    $('round-review').hidden = false
+    $('footer-after-review').hidden = false
+    $('footer-choose').hidden = true
+    $('footer-revise').hidden = true
+  } else {
+    enterChooseMode()
+  }
+})
+$('new-composition-btn').addEventListener('click', () => {
+  revisionCount = 0
+  selectedGoals.clear()
+  draftLoaded = false
+  step = 'draft'
+  $('setup-essay').value = ''
+  $('setup-wc').textContent = '0 words'
+  $('get-feedback-btn').disabled = true
+  $('btn-choose').disabled = true
+  $('btn-revise').disabled = true
+  $('btn-reflect').disabled = true
+  $('history-btn').hidden = true
+  document.querySelectorAll('.goal-checkbox').forEach(cb => { cb.checked = false })
+  document.querySelectorAll('.goal-card').forEach(c => { c.style.display = ''; c.hidden = false; c.classList.remove('selected') })
+  document.querySelectorAll('.hint-box').forEach(h => { h.hidden = true })
+  document.querySelectorAll('.step-num').forEach((n, i) => { n.textContent = i + 1 })
+  showView('draft', 1)
+})
+
+/* ─── keyboard dialog close ──────────────────────────────────── */
+$('finish-dialog').addEventListener('keydown', e => { if (e.key === 'Escape') $('finish-dialog').close() })
+</script>
