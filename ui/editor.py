@@ -35,20 +35,15 @@ export default function (component) {
   const wordCount = parentElement.querySelector('#word-count')
   if (!editor || !highlightContent || !wordCount) return
 
-  // Initialize typing state tracking
-  if (!editor._isTyping) {
-    editor._isTyping = false
-    editor._typingTimer = null
-  }
-
   const nextValue = data.value ?? ''
-  // Only sync from Streamlit when user is NOT actively typing
-  if (editor.value !== nextValue && !editor._isTyping) {
-    const start = editor.selectionStart
-    const end = editor.selectionEnd
+
+  // Only initialize editor value on first load. After that, editor is the source of truth.
+  if (!editor._initialized) {
     editor.value = nextValue
-    editor.setSelectionRange(start, end)
+    editor._initialized = true
   }
+  // Never overwrite editor.value from incoming data.value during the session
+  // We only push updates TO Streamlit, never pull them back
   const goals = Array.isArray(data.goals) ? data.goals : []
   const selectedKey = goals.map(goal => goal.goal_id).join('|')
   const previousKey = editor.dataset.selectedKey || ''
@@ -124,13 +119,6 @@ export default function (component) {
   }
 
   editor.oninput = () => {
-    // Mark as actively typing and reset the timer
-    editor._isTyping = true
-    clearTimeout(editor._typingTimer)
-    editor._typingTimer = setTimeout(() => {
-      editor._isTyping = false
-    }, 150) // Consider typing finished after 150ms of no input
-
     updateCount()
     renderHighlights()
     setStateValue('value', editor.value)
