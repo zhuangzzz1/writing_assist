@@ -35,11 +35,18 @@ export default function (component) {
   const wordCount = parentElement.querySelector('#word-count')
   if (!editor || !highlightContent || !wordCount) return
 
+  // Track the last value we sent to prevent race conditions
+  if (!editor._lastUserValue) {
+    editor._lastUserValue = editor.value
+  }
+
   const nextValue = data.value ?? ''
-  if (editor.value !== nextValue && document.activeElement !== editor) {
+  // Only sync from data if: (1) editor doesn't have focus, AND (2) the incoming value is different from what the user last typed
+  if (editor.value !== nextValue && document.activeElement !== editor && nextValue !== editor._lastUserValue) {
     const start = editor.selectionStart
     const end = editor.selectionEnd
     editor.value = nextValue
+    editor._lastUserValue = nextValue
     editor.setSelectionRange(start, end)
   }
   const goals = Array.isArray(data.goals) ? data.goals : []
@@ -117,6 +124,7 @@ export default function (component) {
   }
 
   editor.oninput = () => {
+    editor._lastUserValue = editor.value
     updateCount()
     renderHighlights()
     setStateValue('value', editor.value)
