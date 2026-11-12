@@ -1797,6 +1797,19 @@ def render_dashboard(service: WritingAssistantService, client: DeepSeekClient) -
         if st.session_state.agent_observability_visible:
             st.divider()
             render_observability(_current_state(service), options)
+
+        # Version footer
+        try:
+            version_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt")
+            if os.path.exists(version_path):
+                with open(version_path, "r") as f:
+                    version = f.read().strip()
+                st.markdown(
+                    f'<div style="text-align: center; color: #8fa0b8; font-size: 11px; margin-top: 24px; padding: 8px;">v{version}</div>',
+                    unsafe_allow_html=True
+                )
+        except Exception:
+            pass
     except (sqlite3.Error, StorageError, ValueError) as exc:
         _show_error(exc)
         _render_recovery()
