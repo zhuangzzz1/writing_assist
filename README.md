@@ -58,4 +58,4 @@ A real browser walkthrough at 1280px verified the complete select–edit–revie
 
 ## Historical V1/V2 record
 
-`PRD.md` remains the authoritative V1/V2 coursework and evidence record. V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag. The historical post-JeepyTA V2 deployment is at `https://writingassist-zhuang.streamlit.app` from commit `7d94b58`; this local V3 implementation is not deployed. The authoritative coursework submission remains `submission/Applied_Assignment_4_Concise_user_edited.md` and its visually verified PDF.
+`PRD.md` remains the authoritative V1/V2 coursework and evidence record. V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag. The historical post-JeepyTA V2 deployment was at `https://writingassist-zhuang.streamlit.app` from commit `7d94b58`; that URL now serves V3 from `main` for synthetic testing only. The commit shown in the page footer comes from `version.txt`. The authoritative coursework submission remains `submission/Applied_Assignment_4_Concise_user_edited.md` and its visually verified PDF.

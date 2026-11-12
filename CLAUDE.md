@@ -96,4 +96,4 @@ The UI warning is: "Do not submit writing containing real names, schools, or per
 
 Writing, assignment/source context, concerns, clarification answers, selected goals, self-reports, and diffs may be sent to DeepSeek and stored in SQLite. Session filtering is not secure multi-user isolation. Teacher handoff is simulated: no teacher is notified. Never invent crisis resources or diagnose students.
 
-Historical V1 evidence is at commit `4eaa0ad` under the `v1` tag. Historical V1/V2 outcomes are in `PRD.md` Sections 7.5–7.7; the old V2 public deployment is commit `7d94b58`. Local V3 is not deployed. Do not claim learner outcomes, educator approval, or pedagogical effectiveness from mocked tests or synthetic model outputs.
+Historical V1 evidence is at commit `4eaa0ad` under the `v1` tag. Historical V1/V2 outcomes are in `PRD.md` Sections 7.5–7.7; the old V2 public deployment is commit `7d94b58`. V3 is deployed at `https://writingassist-zhuang.streamlit.app/` for synthetic testing only. Do not claim learner outcomes, educator approval, or pedagogical effectiveness from mocked tests or synthetic model outputs.
