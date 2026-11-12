@@ -17,6 +17,8 @@ For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V
 - Made page widths, Draft input, editor/feedback panels, and reflection snapshots scale with the browser viewport using bounded widths, heights, and flex sizing rather than fixed desktop dimensions.
 - Applied Nunito+Lora paired typography, a `--v3-*` CSS token system with theme-aware light/dark palettes, responsive side gutters with safe-area support, keyed container targeting, and dynamic step-completion styling without layout-shifting DOM elements.
 - Restored Deploy button and theme switcher visibility in the Streamlit toolbar menu.
+- Fixed the Choose/Revise highlight editor dropping or scrambling characters during fast typing; the textarea now takes Session State only on first mount.
+- Added a small footer showing the commit recorded in `version.txt`.
 
 ## [V3.4.0] — 2026-11-10
 

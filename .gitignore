@@ -23,3 +23,6 @@ venv/
 # Logs and operating-system files
 *.log
 .DS_Store
+
+# Browser automation captures
+.playwright-mcp/

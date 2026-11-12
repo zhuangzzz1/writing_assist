@@ -31,7 +31,7 @@ The default database is `data/writing_assistant_v3.db`, which is git-ignored. Us
 pytest
 ```
 
-The current suite has **214 passing checks** using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 32-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
+The current suite has **219 checks** (as of 2026-11-11, `test_scenario_loading_is_complete_editable_and_overwrite_protected` fails with `StreamlitWidgetAlreadyInstantiatedError`) using mocked model responses and temporary SQLite databases. The versioned student presets are in `test_cases/v3/scenarios.json`; the 32-scenario evaluation set is `test_cases/v3/acceptance.json`. The four root V1/V2 fixtures remain frozen.
 
 ## Real-model evaluation
 
