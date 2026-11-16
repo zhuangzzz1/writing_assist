@@ -26,6 +26,11 @@ TeacherFlagCategory = Literal[
     "serious_discouragement",
     "clarification_limit",
 ]
+CoordinatorTeacherFlagCategory = Literal[
+    "none",
+    "concerning_content",
+    "serious_discouragement",
+]
 ObservationStatus = Literal[
     "specific_improvement",
     "improvement_not_yet_evident",
@@ -41,6 +46,25 @@ GOAL_SELF_REPORTS = ("", "attempted", "deferred")
 class ClarificationTurn(TypedDict):
     question: str
     answer: str
+
+
+class RevisionGoalHistory(TypedDict):
+    goal_id: str
+    draft_reference: str
+    paragraph_number: int
+    occurrence: int
+    status: ObservationStatus | Literal[""]
+    observation: str
+    evidence_reference: str
+    carry_forward: bool | None
+
+
+class RevisionHistoryEntry(TypedDict):
+    revision_number: int
+    snapshot_id: str
+    reviewed_round_id: str
+    reviewed_draft_sha256: str
+    selected_goals: list[RevisionGoalHistory]
 
 
 class WritingAssistantState(TypedDict):
@@ -64,6 +88,8 @@ class WritingAssistantState(TypedDict):
     fixture_version: str
     revision_number: int
     selected_goals: list[dict[str, Any]]
+    revision_history: list[RevisionHistoryEntry]
+    prior_findings: NotRequired[list[dict[str, Any]]]
     goal_self_reports: dict[str, str]
     text_diff: dict[str, Any]
     app_version: str
@@ -91,6 +117,8 @@ class WritingAssistantState(TypedDict):
     selected_goal_observations: NotRequired[list[dict[str, Any]]]
     coordinator_reasoning: NotRequired[str]
     coordinator_repair_count: NotRequired[int]
+    coordinator_reference_normalizations: NotRequired[list[dict[str, Any]]]
+    coordinator_framework_normalizations: NotRequired[list[dict[str, Any]]]
     clarification_question: NotRequired[str]
     clarification_choices: NotRequired[list[str]]
 
@@ -128,6 +156,7 @@ def make_review_state(
     fixture_version: str = "",
     revision_number: int = 0,
     selected_goals: list[dict[str, Any]] | None = None,
+    revision_history: list[RevisionHistoryEntry] | None = None,
     goal_self_reports: dict[str, str] | None = None,
     text_diff: dict[str, Any] | None = None,
     debug_enabled: bool = False,
@@ -192,6 +221,7 @@ def make_review_state(
         "fixture_version": fixture_version.strip(),
         "revision_number": revision_number,
         "selected_goals": list(selected_goals or []),
+        "revision_history": list(revision_history or []),
         "goal_self_reports": reports,
         "text_diff": dict(text_diff or {}),
         "app_version": "v3",

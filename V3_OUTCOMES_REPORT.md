@@ -8,7 +8,7 @@
 **Baseline scope:** Original analysis; later improvement outcomes require separate evidence  
 **Model evaluated:** `deepseek-flash`  
 **Evaluation scope:** Mocked automated checks, local browser verification, and representative real-model synthetic scenarios  
-**Release status:** Local implementation only; no V3 deployment, educator approval, or learner-outcome claim
+**Historical release status:** Local implementation only as of this 2026-11-10 baseline report; no deployment, educator approval, or learner-outcome claim. For current status, see `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` and `README.md`.
 
 ## 1. Executive Summary
 

@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -8,6 +8,12 @@ from langgraph_core.state import GenreSelection, GradeLevel
 
 SCENARIO_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "scenarios.json"
 ACCEPTANCE_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "acceptance.json"
+EXPERIMENT_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "live_el_contrasts.json"
+SUPPORT_COMPARISON_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "prompt_revision_support.json"
+COORDINATOR_TARGETED_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "prompt_revision_coordinator.json"
+FINAL_HISTORY_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "final_history_contrasts.json"
+FINAL_REGRESSION_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "final_regression_contrasts.json"
+READABILITY_COVERAGE_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "readability_coverage.json"
 
 
 @dataclass(frozen=True)
@@ -31,6 +37,8 @@ class RevisionFixture:
     draft: str
     goal_selection: str
     self_reports: dict[str, str]
+    goal_indices: tuple[int, ...] = ()
+    goal_references: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -41,6 +49,12 @@ class AcceptanceScenario(PracticeScenario):
     finish: bool
     genre_correction: str
     clarification_answers: tuple[str, ...]
+    expected_outcomes: tuple[str, ...] = ()
+    workstreams: tuple[str, ...] = ()
+    controlled_round: dict[str, Any] | None = None
+    support_only: bool = False
+    allow_direct_response_finish: bool = False
+    lineage: dict[str, Any] = field(default_factory=dict)
 
 
 def load_scenarios() -> list[PracticeScenario]:
@@ -74,9 +88,12 @@ def get_scenario(scenario_id: str) -> PracticeScenario:
     raise KeyError(scenario_id)
 
 
-def load_acceptance_scenarios() -> list[AcceptanceScenario]:
-    data = json.loads(ACCEPTANCE_PATH.read_text(encoding="utf-8"))
+def _load_review_scenarios(path: Path) -> list[AcceptanceScenario]:
+    data = json.loads(path.read_text(encoding="utf-8"))
     bases = {scenario.scenario_id: scenario for scenario in load_scenarios()}
+    controlled_rounds = {
+        item["number"]: item.get("controlled_round") for item in data["scenarios"]
+    }
     scenarios = []
     for item in data["scenarios"]:
         base = bases.get(item.get("base_scenario", ""))
@@ -105,19 +122,87 @@ def load_acceptance_scenarios() -> list[AcceptanceScenario]:
                         draft=revision["draft"],
                         goal_selection=revision.get("goal_selection", "first"),
                         self_reports=revision.get("self_reports", {}),
+                        goal_indices=tuple(revision.get("goal_indices", [])),
+                        goal_references=tuple(revision.get("goal_references", [])),
                     )
                     for revision in item.get("revisions", [])
                 ),
                 finish=item.get("finish", False),
                 genre_correction=item.get("genre_correction", ""),
                 clarification_answers=tuple(item.get("clarification_answers", [])),
+                expected_outcomes=tuple(item.get("expected_outcomes", [])),
+                workstreams=tuple(item.get("workstreams", [])),
+                controlled_round=(
+                    item.get("controlled_round")
+                    or controlled_rounds.get(item.get("controlled_round_from"))
+                ),
+                support_only=item.get("support_only", False),
+                allow_direct_response_finish=item.get(
+                    "allow_direct_response_finish", False
+                ),
+                lineage=item.get("lineage", {}),
             )
         )
     return scenarios
 
 
+def load_acceptance_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(ACCEPTANCE_PATH)
+
+
+def load_experiment_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(EXPERIMENT_PATH)
+
+
+def load_support_comparison_scenarios() -> list[AcceptanceScenario]:
+    existing = [
+        scenario for scenario in load_experiment_scenarios() if scenario.support_only
+    ]
+    additional = _load_review_scenarios(SUPPORT_COMPARISON_PATH)
+    return [
+        replace(scenario, number=number)
+        for number, scenario in enumerate([*existing, *additional], start=1)
+    ]
+
+
+def load_coordinator_targeted_scenarios() -> list[AcceptanceScenario]:
+    targeted = _load_review_scenarios(COORDINATOR_TARGETED_PATH)
+    strong = replace(
+        get_acceptance_scenario(10),
+        expected_outcomes=(
+            "Affirm the strong draft without manufacturing a revision issue.",
+        ),
+        workstreams=("CR",),
+    )
+    imaginative = replace(get_experiment_scenario(16), workstreams=("CR",))
+    combined = [*targeted, strong, imaginative]
+    return [
+        replace(scenario, number=number)
+        for number, scenario in enumerate(combined, start=1)
+    ]
+
+
+def load_final_history_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(FINAL_HISTORY_PATH)
+
+
+def load_final_regression_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(FINAL_REGRESSION_PATH)
+
+
+def load_readability_coverage_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(READABILITY_COVERAGE_PATH)
+
+
 def get_acceptance_scenario(number: int) -> AcceptanceScenario:
     for scenario in load_acceptance_scenarios():
+        if scenario.number == number:
+            return scenario
+    raise KeyError(number)
+
+
+def get_experiment_scenario(number: int) -> AcceptanceScenario:
+    for scenario in load_experiment_scenarios():
         if scenario.number == number:
             return scenario
     raise KeyError(number)

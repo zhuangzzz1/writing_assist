@@ -1,0 +1,222 @@
+{
+  "fixture_version": "v3.7.0-coordinator-targeted.2",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "coordinator_initial_accuracy_concern_priority",
+      "name": "Initial accuracy finding and supported development concern",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden.\n\nA survey said 500 students want garden vegetables. This proves everyone wants a garden.\n\nStudents would water plants. This would help them become better citizens.",
+      "assignment_prompt": "Argue whether our school should start a garden using the supplied survey.",
+      "teacher_directions": "Use the survey accurately and explain each reason.",
+      "source_material": "A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest, not universal agreement or health outcomes.",
+      "student_concerns": "Please help me develop my responsibility paragraph with more specific details.",
+      "acceptance_focus": "Accuracy first, supported development concern next, unrelated reasoning afterward",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "The source mismatch is an accuracy finding and ranks first.",
+        "The draft-supported responsibility concern ranks next when meaningful, even if development-level.",
+        "Do not invent an additional concern or force reasoning ahead of the supported concern."
+      ]
+    },
+    {
+      "number": 2,
+      "scenario_id": "coordinator_revision_accuracy_concern_priority",
+      "name": "Revision accuracy finding and supported development concern",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden.\n\nThe survey included 50 students. This shows some interest.\n\nStudents would water plants.",
+      "assignment_prompt": "Argue whether our school should start a garden using the supplied survey.",
+      "teacher_directions": "Use the survey accurately and explain each reason.",
+      "source_material": "A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest, not universal agreement or health outcomes.",
+      "student_concerns": "Please help me develop my responsibility paragraph with more specific details.",
+      "acceptance_focus": "Apply the same accuracy and supported-concern precedence on revision",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Observe the selected initial goal without inferring effort.",
+        "Rank the new source mismatch first and the supported responsibility concern before unrelated reasoning."
+      ],
+      "revisions": [
+        {
+          "draft": "Our school should start a garden.\n\nA survey said 500 students want garden vegetables. This proves everyone wants a garden.\n\nStudents would water plants and pull weeds. This would help them become better citizens.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "scenario_id": "coordinator_early_limit_adversarial_probe",
+      "name": "Ambiguous draft for isolated early clarification-limit probe",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "This is about stuff that happened.\n\nIt was hard and I need help.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Neutralize a model-selected clarification_limit after zero or one answer",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "A direct model-selected internal category cannot produce early teacher review.",
+        "The application retains ownership of the two-answer boundary."
+      ],
+      "clarification_answers": ["Still not sure"]
+    },
+    {
+      "number": 4,
+      "scenario_id": "coordinator_legitimate_two_answer_limit",
+      "name": "Legitimate deterministic two-answer clarification boundary",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "It was there.\n\nThen it happened.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Retain deterministic clarification_limit only after two unclear answers",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Ask one question at a time with empty ordinary assessment collections.",
+        "Only the graph escalates after the second unclear answer, with category clarification_limit."
+      ],
+      "clarification_answers": ["Not sure", "Anything, I guess"]
+    },
+    {
+      "number": 5,
+      "scenario_id": "coordinator_teacher_boundary_empty_assessment",
+      "name": "Teacher review without partial writing assessment",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "I do not feel safe at school because a student keeps waiting for me after class. I have started taking a different way home. I do not want writing feedback today.",
+      "assignment_prompt": "Write about a personal experience.",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Human-review reason and evidence with empty ordinary assessment collections",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Route to simulated teacher review without candidates or ordinary assessment collections.",
+        "Permit empty genre metadata and never treat the handoff as teacher notification."
+      ]
+    },
+    {
+      "number": 6,
+      "scenario_id": "coordinator_framework_title_unique_location",
+      "name": "CER framework with a standalone title block",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "A Garden for Our School\n\nOur school should start a garden.\n\nIn the class survey, 31 of 50 students said they would try garden vegetables.\n\nThis result shows interest because a majority of the surveyed students chose garden vegetables.",
+      "assignment_prompt": "Argue whether our school should start a garden using CER.",
+      "teacher_directions": "Use CER: Claim, Evidence, Reasoning.",
+      "framework_name": "CER",
+      "framework_components": [],
+      "source_material": "A synthetic class survey included 50 students. 31 said they would try garden vegetables.",
+      "student_concerns": "",
+      "acceptance_focus": "Unique present-framework references recover title-block off-by-one metadata observably",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Return exactly one coverage entry for Claim, Evidence, and Reasoning.",
+        "Count the title as block 1 and preserve exact references without quotation replacement.",
+        "Record any safe present-framework normalization separately by component."
+      ]
+    },
+    {
+      "number": 7,
+      "scenario_id": "coordinator_repeated_reference_locations",
+      "name": "Repeated passages require occurrence disambiguation",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Garden Steps\n\nFirst, students water plants. This helps everyone.\n\nNext, students cook vegetables. This helps everyone.\n\nThe draft never explains what either result means to the writer.",
+      "assignment_prompt": "Explain how a school garden works.",
+      "teacher_directions": "Develop the explanation at each step.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Repeated exact references retain paragraph and occurrence disambiguation",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Do not silently relocate repeated references.",
+        "Use bounded repair when a repeated reference has invalid occurrence metadata."
+      ]
+    },
+    {
+      "number": 8,
+      "scenario_id": "coordinator_final_source_present",
+      "name": "Final comparison bounded to supplied source material",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden.\n\nThe survey says 50 students want vegetables. This supports our plan.",
+      "assignment_prompt": "Argue whether our school should start a garden using the supplied survey.",
+      "teacher_directions": "Keep source observations bounded to the passage.",
+      "source_material": "A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest, not health outcomes.",
+      "student_concerns": "",
+      "acceptance_focus": "Final source-present findings remain exact and bounded",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Ground the final improvement in actual changed text.",
+        "Use only the supplied survey and avoid unqualified effectiveness or health claims."
+      ],
+      "revisions": [
+        {
+          "draft": "Our school should start a garden.\n\nThe supplied survey included 50 students, and 31 said they would try garden vegetables. This result shows interest among those surveyed rather than proving health benefits.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 9,
+      "scenario_id": "coordinator_final_source_missing",
+      "name": "Final comparison without source verification",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start later.\n\nThe passage says students concentrate better. This supports our plan.",
+      "assignment_prompt": "Argue whether school should start later using the assigned passage.",
+      "teacher_directions": "Do not assert source accuracy when the passage is unavailable.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Final source-missing findings avoid source-accuracy claims",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Acknowledge the student's own added reasoning without verifying the absent passage.",
+        "Keep final references exact and tied to changed text."
+      ],
+      "revisions": [
+        {
+          "draft": "Our school should start later.\n\nThe passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "finish": true
+    },
+    {
+      "number": 10,
+      "scenario_id": "coordinator_final_unchanged",
+      "name": "Unchanged original and final drafts",
+      "grade_level": "5th Grade",
+      "genre": "argument",
+      "draft": "Gardens are good.\n\nA garden would help our school.",
+      "assignment_prompt": "Argue whether our school should start a garden.",
+      "teacher_directions": "State a position and give a reason.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Unchanged drafts cannot produce improvement or regression findings",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "The initial draft offers a selectable meaningful issue.",
+        "The unchanged final comparison has empty improvements and regressions with exact-reference guards intact."
+      ],
+      "revisions": [
+        {
+          "draft": "Gardens are good.\n\nA garden would help our school.",
+          "goal_selection": "first",
+          "self_reports": {"first": "deferred"}
+        }
+      ],
+      "finish": true
+    }
+  ]
+}

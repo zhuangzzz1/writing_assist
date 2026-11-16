@@ -18,6 +18,7 @@ from langgraph_core.nodes import (
     make_support_node,
     teacher_review_node,
 )
+from langgraph_core.revision import build_revision_history
 from langgraph_core.routing import route_from_assessment
 from langgraph_core.state import WritingAssistantState
 from storage.interface import CompositionStorage
@@ -46,12 +47,16 @@ class WritingAssistantService:
         client: DeepSeekClient,
         storage: CompositionStorage,
         checkpointer: SqliteSaver,
+        *,
+        coordinator: AssessmentCoordinator | None = None,
+        support_agent: InstructionalSupportAgent | None = None,
     ):
         self.storage = storage
         self.checkpointer = checkpointer
         self.client = client
-        coordinator = AssessmentCoordinator(client)
-        support_agent = InstructionalSupportAgent(client)
+        coordinator = coordinator or AssessmentCoordinator(client)
+        support_agent = support_agent or InstructionalSupportAgent(client)
+        self.support_agent = support_agent
 
         builder = StateGraph(WritingAssistantState)
         builder.add_node("assessment_coordinator", make_assessment_node(coordinator))
@@ -194,6 +199,9 @@ class WritingAssistantService:
         stage_callback: StageCallback | None = None,
     ) -> InvocationResult:
         operation_started = time.perf_counter()
+        snapshots = self.storage.list_snapshots(state["composition_id"])
+        rounds = self.storage.list_rounds(state["composition_id"])
+        state["revision_history"] = build_revision_history(snapshots, rounds)
         state["model_config"] = self.client.model_config()
         self.storage.create_final(
             session_id, state, original_snapshot_id, final_snapshot_id
@@ -311,6 +319,9 @@ def create_writing_assistant_service(
     client: DeepSeekClient,
     database_path: str,
     require_thinking: bool = False,
+    *,
+    coordinator: AssessmentCoordinator | None = None,
+    support_agent: InstructionalSupportAgent | None = None,
 ) -> WritingAssistantService:
     if require_thinking and not client.thinking:
         raise ConfigurationError(
@@ -325,4 +336,10 @@ def create_writing_assistant_service(
     connection.execute("PRAGMA busy_timeout=30000")
     checkpointer = SqliteSaver(connection)
     checkpointer.setup()
-    return WritingAssistantService(client, storage, checkpointer)
+    return WritingAssistantService(
+        client,
+        storage,
+        checkpointer,
+        coordinator=coordinator,
+        support_agent=support_agent,
+    )

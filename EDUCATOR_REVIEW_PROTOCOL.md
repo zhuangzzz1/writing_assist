@@ -29,7 +29,7 @@ For every assigned scenario, provide the reviewer with:
 - Any source material, or an explicit indication that none was supplied.
 - The intended revision goal and any staged revision text.
 - Generated Coordinator findings and student-facing Support feedback.
-- The full candidate, including its exact passage reference, action, hint, self-check, vocabulary options, frame, and stuck step.
+- The full candidate, including its exact passage reference, action, hint steps, self-check, and stuck step. Historical artifacts may also contain legacy vocabulary/frame fields; the local v3.8.0 contract does not generate them.
 - Revision observations and final reflection when the scenario includes them.
 
 Do **not** remove student context when evaluating scaffold authorship. Model mode may be blinded, but the draft, task, and source context are necessary to judge accuracy and whether a hint supplies the target response.
@@ -52,7 +52,7 @@ Each reviewer completes three scenarios. One shared scaffold scenario supports c
 
 ### Reviewer A
 
-- **#16 — Scaffold boundary:** assigned-topic replacement risk and abstract support.
+- **#16 — Scaffold boundary:** assigned-topic replacement risk and student-authored support without completion frames.
 - **#24 — Non-obscuring language errors:** prioritizing ideas and organization over mechanics.
 - **#25 — Strong outer paragraphs, weak middle:** accurate middle-paragraph targeting.
 
@@ -113,11 +113,11 @@ For every reviewed hint, ask both PRD checks:
 1. **Could the student paste the scaffold into the essay and obtain a coherent on-topic response?**
 2. **Does the scaffold name a reason, piece of evidence, explanation, or elaboration that the student was asked to produce?**
 
-A yes answer to either check is a scaffold-boundary failure. A blank does not make an assigned-topic frame acceptable, and different wording does not make an example substantively unrelated.
+A yes answer to either check is a scaffold-boundary failure. The local v3.8.0 contract generates no vocabulary lists, sentence starters, or completion frames. Different wording does not make an example substantively unrelated.
 
 Also inspect:
 
-- Whether vocabulary supplies content answers rather than word-choice support.
+- Whether any field supplies target content or invites an unprovided real-world mechanism when the finding only needs relevance to the student's central idea.
 - Whether a revision action names the exact explanation the student was asked to generate.
 - Whether linked steps are specific enough to guide thinking without becoming a completed paragraph.
 - Whether appropriate informal narrative voice is preserved.
@@ -133,7 +133,37 @@ Use severity rather than reviewer vote count for critical issues:
 
 Recurring issues should be prioritized, but no critical issue requires two reviewers before action. Document fixes and rerun the affected fixtures. Do not change frozen historical V1/V2 fixtures.
 
-## 9. Reviewer Record Template
+## 9. Lightweight Anchored Review Guide
+
+Use this guide alongside Sections 6–8 with the complete draft, task, source, Coordinator handoff, and student-facing output. Blind the model mode and prompt arm where feasible; do not blind the writing context needed for judgment. These are synthetic discussion anchors, not generated exemplars, pedagogical-effectiveness evidence, or a numerical scoring system. Calibrate with educators on the shared scaffold scenario where feasible, record anchor revisions and disagreements, and leave uncertain cases visible.
+
+For each relevant dimension, retain **Meets / Needs refinement / Unacceptable** and **Critical / Major / Moderate / Minor**. Do not aggregate ratings into an unvalidated quality score.
+
+### 9.1 Authorship anchors
+
+- **Meets:** For a survey-explanation goal, the candidate asks the student to find the existing survey sentence and interpret it in their own words, and supplies no interpretation or final warrant. The student must still generate the target idea and language.
+- **Needs refinement:** The guidance is generic or only partly connected to the passage, such as repeated advice to “think about why the detail matters,” but it does not name the answer. Record the usefulness limitation separately from an authorship failure.
+- **Unacceptable:** Any field supplies a target reason, mechanism, narrative detail, or explanation; for example, a hint states what a survey proves or a stuck step supplies the required causal link. A source-less relevance finding must not be turned into a request for an unprovided real-world mechanism, such as asking what octopus hearts do when the Coordinator only asked how the fact fits the student's central idea. Treat a credible target-response or source-grounding leak as **Critical** under Section 8.
+
+### 9.2 Cross-field coherence anchors
+
+- **Meets:** The revision action asks for a student-authored survey interpretation; the concept restatement explains evidence warrants; procedural steps locate, interpret, and connect the same evidence; the self-check inspects that connection; and the stuck step reduces that same task to one concrete action. Student-facing instructions and checks use second person while exact draft quotations preserve first-person wording.
+- **Needs refinement:** The candidate concerns evidence explanation but its hint mainly discusses paragraph order, or its steps repeat the action without helping the student attempt it. Use **Major** if the mismatch would prevent independent revision and **Moderate** for limited recurring coherence or repetition problems.
+- **Unacceptable:** The action, hint, self-check, and stuck step pursue unrelated revisions, or a field contradicts the Coordinator’s finding. Apply **Critical** instead when the mismatch also leaks a target response or fabricates grounding.
+
+### 9.3 Multilingual-learner readability and tone anchors
+
+- **Meets:** Warm, direct language uses short sentences and manageable actions, explains a necessary teacher-supplied term in plain language, and respects the student’s ideas and voice. For example: “Find the survey number. What does it tell you about the students who answered? Write that idea in your own words.”
+- **Needs refinement:** Long multi-action sentences combine locating, reasoning, and connecting; unexplained academic jargon, repeated advice, or excessive feedback density makes the student’s next step harder to identify. Usually record **Moderate**, or **Major** if the output cannot be used independently.
+- **Unacceptable:** Feedback is condescending, shaming, or dismissive; uses exaggerated praise, rewards, or comparison; or is too complex for the intended grade and support context. Record dignity concerns under Section 8’s severity rules rather than averaging them away.
+
+### 9.4 Remaining full-context checks
+
+Continue to assess exact quotations, supplied-source limits, invented requirements, genre appropriateness, meaningfulness and priority, revision/final consistency, and navigation/accessibility under Sections 6–8. In particular, do not invent claims for narratives or claim-less drafts, demand narrative citations or counterclaims, manufacture transition/conclusion/mechanics goals, or contradict the actual text changes.
+
+For every anchor judgment, record the exact passage or screen, rating, severity, rationale, uncertainty, and any reviewer disagreement. An LLM may assist with screening but cannot replace the pending educator gate.
+
+## 10. Reviewer Record Template
 
 Complete one record per reviewer without inventing any field in advance:
 
@@ -152,6 +182,8 @@ For each scenario:
 - Task/source accuracy: Meets / Needs refinement / Unacceptable
 - Hint guidance: Meets / Needs refinement / Unacceptable
 - Student authorship: Meets / Needs refinement / Unacceptable
+- Cross-field coherence: Meets / Needs refinement / Unacceptable
+- Multilingual-learner readability/tone: Meets / Needs refinement / Unacceptable
 - Revision/final accuracy: Meets / Needs refinement / Unacceptable / Not applicable
 - Exact passage or screen involved:
 - Observation and evidence:
@@ -163,7 +195,7 @@ Unresolved critical concerns: Yes / No
 Additional notes:
 ```
 
-## 10. Gate Decision Record
+## 11. Gate Decision Record
 
 Complete only after all three reviewer records exist:
 
@@ -179,10 +211,15 @@ Gate outcome: Pending / Passed / Failed
 
 A pass requires at least two ready assessments and addressed or documented issues. It does not establish direct student usability evidence or authorize a pilot by itself.
 
-## 11. Current Status
+## 12. Current Status
 
-- Protocol prepared.
+- Protocol and lightweight anchored review guide prepared; educator calibration of the anchors remains pending.
+- The thinking v3.7.1 control and v3.8.1-baseline-readable Support artifacts are available for a small blinded paired review, with the failed v3.8.0 source-boundary artifact preserved for calibration. Candidate non-thinking outputs are unavailable. See `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md`.
+- LLM-assisted rubric screening is recorded in `data/evidence/v3_baseline_readability_rubric_screening_20261116T070407Z.json`: overall candidate **Needs refinement**, with no unresolved Critical issue in the reviewed v3.8.1 sample and Moderate readability/Final-meaningfulness concerns. This is not a reviewer assessment and does not change the pending gate.
+- `V3_BASELINE_READABILITY_EXPERT_REVIEW.md` is a self-contained paired-output packet with prompt/logic summaries, exact output anchors, coverage limits, and a reviewer record template for external expert review.
 - Reviewer recruitment not completed.
-- No reviewer assessments have been recorded.
-- No gate pass is claimed.
+- External expert feedback on the self-contained packet was supplied and is summarized in `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md`; it recommended against promoting v3.8.1. No protocol-qualified reviewer records or gate decision have been completed, so this input does not pass the educator gate.
+- The v3.8.2 candidate is implemented for synthetic evaluation with 369 passing mocked checks. Targeted thinking LLM-assisted screening is recorded in `data/evidence/v3_8_2_targeted_rubric_screening_20261116T084042Z.json`: Gate B is not passed because F2 improvement credit, imaginative Coordinator selection, and complete #9 regression preservation remain unresolved. The exact-output packet is `V3_8_2_READABILITY_AND_FINAL_EXPERT_REVIEW.md`. Integrated coverage is recorded in `data/evidence/v3_8_2_coverage_rubric_review_20261116T085413Z.json`: Gate C passes only for the seven-scenario successor set, while adaptive #15 adds another Final-credit omission. No v3.8.2 educator assessment or pedagogical gate pass is claimed.
+- The promoted local v3.8.3 implementation has 372 passing mocked checks. Its earlier evaluation-arm run in `data/evidence/v3_final_regression_regression_readable_evaluation_20261116T154531Z.json` screened **Meets for #9 Regression handling on that reviewed output**, with two findings covering all three loss types; F1 and E remained intact. A later default-factory check in `data/evidence/v3_final_regression_runtime_default_scenario_04_evaluation_20261116T160207Z.json` confirmed the promoted `v3.8.3`/`v3.8.0` wiring but omitted the tracking-purpose regression, so #9 behavior is mixed across runs. The owner explicitly promoted v3.8.3 locally despite these limitations; this is not Gate B acceptance, educator approval, or deployment. F2 Final credit remains **Needs refinement / Moderate**. See Sections 8–9 of `V3_8_2_READABILITY_AND_FINAL_IMPLEMENTATION_RESULTS.md`.
+- No educator gate pass is claimed.
 - No supervised student contact is authorized by this document.

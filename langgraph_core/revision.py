@@ -1,4 +1,5 @@
 import difflib
+import hashlib
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -63,6 +64,24 @@ def reference_is_valid(
     occurrence: int = 1,
 ) -> bool:
     return locate_reference(text, reference, paragraph_number, occurrence) is not None
+
+
+def locate_unique_reference(text: str, reference: str) -> ReferenceLocation | None:
+    if not reference:
+        return None
+    matches = list(re.finditer(re.escape(reference), text))
+    if len(matches) != 1:
+        return None
+    match = matches[0]
+    for paragraph_number, (start, end) in enumerate(_paragraph_spans(text), start=1):
+        if match.start() >= start and match.end() <= end:
+            return ReferenceLocation(
+                start=match.start(),
+                end=match.end(),
+                paragraph_number=paragraph_number,
+                occurrence=1,
+            )
+    return None
 
 
 def _word_tokens(text: str) -> list[str]:
@@ -192,6 +211,73 @@ def group_overlapping_goals(
         [item["goal"] for item in sorted(group, key=lambda item: item["input_index"])]
         for group in groups
     ]
+
+
+def draft_sha256(writing: str) -> str:
+    return hashlib.sha256(writing.encode("utf-8")).hexdigest()
+
+
+def build_revision_history(
+    snapshots: list[Any], rounds: list[Any]
+) -> list[dict[str, Any]]:
+    history = []
+    for snapshot in snapshots[1:]:
+        reviewed = None
+        for round_record in rounds:
+            round_state = round_record.state
+            if (
+                round_record.revision_number == snapshot.revision_number
+                and round_record.status in ("active", "completed")
+                and round_state.get("writing") == snapshot.writing
+                and round_state.get("routing_decision")
+                in ("support_agent", "direct_response")
+            ):
+                reviewed = round_record
+        observations = {
+            item.get("goal_id"): item
+            for item in (
+                reviewed.state.get("selected_goal_observations", []) if reviewed else []
+            )
+            if isinstance(item, dict)
+        }
+        selected_goals = []
+        for goal in snapshot.selected_goals:
+            goal_id = str(goal.get("goal_id", ""))
+            observation = observations.get(goal_id, {})
+            status = observation.get("status", "")
+            if status not in (
+                "specific_improvement",
+                "improvement_not_yet_evident",
+                "uncertain",
+            ):
+                status = ""
+            carry_forward = observation.get("carry_forward")
+            if not isinstance(carry_forward, bool):
+                carry_forward = None
+            selected_goals.append(
+                {
+                    "goal_id": goal_id,
+                    "draft_reference": str(goal.get("draft_reference", "")),
+                    "paragraph_number": goal.get("paragraph_number", 1),
+                    "occurrence": goal.get("occurrence", 1),
+                    "status": status,
+                    "observation": str(observation.get("observation", "")),
+                    "evidence_reference": str(
+                        observation.get("evidence_reference", "")
+                    ),
+                    "carry_forward": carry_forward,
+                }
+            )
+        history.append(
+            {
+                "revision_number": snapshot.revision_number,
+                "snapshot_id": snapshot.snapshot_id,
+                "reviewed_round_id": reviewed.round_id if reviewed else "",
+                "reviewed_draft_sha256": draft_sha256(snapshot.writing),
+                "selected_goals": selected_goals,
+            }
+        )
+    return history
 
 
 def selected_goal_ids(selected_goals: list[dict[str, Any]]) -> list[str]:

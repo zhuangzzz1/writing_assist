@@ -232,6 +232,13 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
     state = make_review_state(writing, "6th Grade")
     references = ["A clear claim.", "A first reason.", "A second reason.", "Repeated wording here."]
     issues = [issue_for(writing, reference, f"goal_{index}") for index, reference in enumerate(references, 1)]
+    issues[-1] = issue_for(
+        writing,
+        references[-1],
+        "goal_4",
+        category="language_conventions",
+        obscures_meaning=False,
+    )
     calls = install_responses(monkeypatch, review_pair(state, issues=issues))
     app = configured_app(tmp_path, monkeypatch).run()
     app.text_area(key="writing_input").set_value(writing)
@@ -239,7 +246,14 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
 
     assert app.button(key="start_revising").disabled is True
     assert len(calls) == 2
+    assert any(item.value == "**A good place to start**" for item in app.markdown)
     assert any('class="v3-goal-quote"' in item.value for item in app.markdown)
+    assert [item.key for item in app.checkbox if item.key.startswith("select_goal_")] == [
+        goal_key(app, "goal_1")
+    ]
+    app.button(key="show_other_choices").click().run()
+    assert len(calls) == 2
+    assert any(item.value == "**Optional sentence polishing**" for item in app.markdown)
     for index in range(1, 4):
         app.checkbox(key=goal_key(app, f"goal_{index}")).set_value(True).run()
     assert len(calls) == 2
@@ -256,6 +270,10 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
     assert app.session_state.selection_warning == "Choose no more than three goals."
     assert any(item.label == "Show a hint" for item in app.expander)
 
+    app.button(key="show_less_choice_feedback").click().run()
+    assert app.session_state.alternative_choices_visible is False
+    assert app.session_state.selected_goal_ids == ["goal_1", "goal_2", "goal_3"]
+    assert len(calls) == 2
     app.button(key="start_revising").click().run()
     app.button(key="show_less_feedback").click().run()
     assert app.session_state.less_feedback is True
@@ -265,6 +283,37 @@ def test_initial_review_selection_hints_and_support_actions_make_no_extra_calls(
     assert len(calls) == 2
     assert not app.session_state.current_invocation.state.get("teacher_message")
     assert any("One next step:" in item.value for item in app.info)
+
+
+def test_choose_just_recommended_goal_replaces_other_selections_without_model_calls(
+    tmp_path, monkeypatch
+):
+    writing = "A clear claim.\n\nA reason that needs a clearer connection."
+    state = make_review_state(writing, "6th Grade")
+    issues = [
+        issue_for(writing, "A clear claim.", "goal_1"),
+        issue_for(writing, "A reason that needs a clearer connection.", "goal_2"),
+    ]
+    calls = install_responses(monkeypatch, review_pair(state, issues=issues))
+    app = configured_app(tmp_path, monkeypatch).run()
+    app.text_area(key="writing_input").set_value(writing)
+    app.button(key="analyze_writing").click().run()
+    round_id = app.session_state.current_invocation.state["round_id"]
+
+    app.button(key=f"choose_only_{round_id}_goal_1").click().run()
+
+    assert app.session_state.selected_goal_ids == ["goal_1"]
+    assert app.checkbox(key=goal_key(app, "goal_1")).value is True
+    assert app.button(key="start_revising").disabled is False
+    app.button(key="show_other_choices").click().run()
+    app.checkbox(key=goal_key(app, "goal_2")).set_value(True).run()
+    assert app.session_state.selected_goal_ids == ["goal_1", "goal_2"]
+
+    app.button(key=f"choose_only_{round_id}_goal_1").click().run()
+
+    assert app.session_state.selected_goal_ids == ["goal_1"]
+    assert app.checkbox(key=goal_key(app, "goal_2")).value is False
+    assert len(calls) == 2
 
 
 def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkeypatch):
@@ -502,6 +551,57 @@ def test_model_failure_preserves_draft_and_retries_without_duplicate_snapshot(tm
     assert len(storage.list_snapshots(app.session_state.active_composition_id)) == 1
 
 
+def test_failed_revision_restores_latest_snapshot_goals_and_retries_without_duplication(
+    tmp_path, monkeypatch
+):
+    revised = INITIAL_DRAFT + (
+        "\n\nStudents practice noticing what others need and explain how their shared "
+        "work helps the whole school community."
+    )
+    install_responses(
+        monkeypatch,
+        [
+            *review_pair(make_review_state(INITIAL_DRAFT, "6th Grade")),
+            APIError("Temporary revision failure"),
+            *revision_pair(INITIAL_DRAFT, revised),
+        ],
+    )
+    app = configured_app(tmp_path, monkeypatch).run()
+    start_support(app)
+    enter_revision(app)
+    set_editor(app, revised)
+    app.button(key="submit_revision").click().run()
+
+    composition_id = app.session_state.active_composition_id
+    session_id = app.query_params["session_id"]
+    storage = SQLiteStorage(str(tmp_path / "ui.db"))
+    failed = storage.get_latest_round(composition_id)
+    assert failed.status == "failed"
+    assert failed.input_state["writing"] == revised
+    assert failed.input_state["selected_goals"][0]["goal_id"] == "goal_1"
+    assert app.session_state.editor_text == revised
+    assert app.session_state.selected_goal_ids == ["goal_1"]
+    assert len(storage.list_snapshots(composition_id)) == 2
+
+    restored = configured_app(tmp_path, monkeypatch)
+    restored.query_params["session_id"] = session_id
+    restored.run()
+
+    assert not restored.exception
+    assert restored.session_state.editor_text == revised
+    assert restored.session_state.selected_goal_ids == ["goal_1"]
+    assert restored.session_state.current_step == "Revise"
+    assert restored.button(key="retry_round").label == "Retry saved review"
+    restored.button(key="retry_round").click().run()
+
+    assert not restored.exception
+    assert restored.session_state.current_invocation.state["writing"] == revised
+    assert restored.session_state.current_invocation.state["goal_feedback"]
+    assert len(storage.list_snapshots(composition_id)) == 2
+    assert len(storage.list_rounds(composition_id)) == 2
+    assert storage.get_latest_round(composition_id).status == "completed"
+
+
 def test_saved_composition_restores_in_a_new_app_runtime(tmp_path, monkeypatch):
     install_responses(
         monkeypatch, review_pair(make_review_state(INITIAL_DRAFT, "6th Grade"))
@@ -671,6 +771,8 @@ def test_failed_final_reflection_can_be_retried_after_session_restore(tmp_path, 
     app.button(key="finish_review").click().run()
     app.button(key="confirm_finish").click().run()
     assert not app.exception
+    assert app.session_state.finish_dialog_open is False
+    assert app.button(key="retry_final").label == "Retry final reflection"
     session_id = app.query_params["session_id"]
     composition_id = app.session_state.active_composition_id
     storage = SQLiteStorage(str(tmp_path / "ui.db"))
@@ -733,3 +835,37 @@ def test_new_composition_clears_scenario_and_framework_metadata(tmp_path, monkey
     assert app.session_state.writing_input == ""
     assert app.session_state.framework_name_input == ""
     assert app.session_state.framework_components_input == ""
+
+
+
+def test_corrected_framework_location_reaches_ui_review_state(tmp_path, monkeypatch):
+    state = make_review_state(
+        INITIAL_DRAFT, "6th Grade", framework_name="CER", framework_components=[]
+    )
+    coverage = [
+        {
+            "framework": "CER",
+            "component": component,
+            "status": "present",
+            "reference": "It would teach responsibility.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "goal_id": "",
+        }
+        for component in state["framework_components"]
+    ]
+    install_responses(monkeypatch, review_pair(state, framework_coverage=coverage))
+    app = configured_app(tmp_path, monkeypatch).run()
+    app.text_area(key="writing_input").set_value(INITIAL_DRAFT)
+    app.text_input(key="framework_name_input").set_value("CER")
+
+    app.button(key="analyze_writing").click().run()
+
+    assert not app.exception
+    rendered_state = app.session_state.current_invocation.state
+    assert {item["paragraph_number"] for item in rendered_state["framework_coverage"]} == {2}
+    assert len(rendered_state["coordinator_framework_normalizations"]) == 3
+    assert {
+        item["component"]
+        for item in rendered_state["coordinator_framework_normalizations"]
+    } == {"Claim", "Evidence", "Reasoning"}

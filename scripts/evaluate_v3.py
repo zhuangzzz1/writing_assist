@@ -10,24 +10,193 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from agents.support_agent import NUMERICAL_SCORE, PROHIBITED_CLAIMS
-from agents.utils import DeepSeekClient
+from agents.assessment_coordinator import AssessmentCoordinator, build_prior_findings
+from agents.prompts import (
+    BASELINE_READABLE_COORDINATOR_FINAL_PROMPT,
+    BASELINE_READABLE_COORDINATOR_ROUND_PROMPT,
+    BASELINE_READABLE_PROMPT_VERSION,
+    BASELINE_READABLE_SUPPORT_PROMPT,
+    BASELINE_READABLE_V2_COORDINATOR_FINAL_PROMPT,
+    BASELINE_READABLE_V2_COORDINATOR_ROUND_PROMPT,
+    BASELINE_READABLE_V2_PROMPT_VERSION,
+    BASELINE_READABLE_V2_SUPPORT_PROMPT,
+    CONSOLIDATED_SUPPORT_PROMPT_VERSION,
+    REGRESSION_READABLE_COORDINATOR_FINAL_PROMPT,
+    REGRESSION_READABLE_COORDINATOR_ROUND_PROMPT,
+    REGRESSION_READABLE_PROMPT_VERSION,
+    REGRESSION_READABLE_SUPPORT_PROMPT,
+    STRUCTURAL_COORDINATOR_FINAL_PROMPT,
+    STRUCTURAL_COORDINATOR_ROUND_PROMPT,
+    STRUCTURAL_SUPPORT_ROUND_PROMPT,
+    SUPPORT_ROUND_CONSOLIDATED_PROMPT,
+    V3_7_1_COORDINATOR_FINAL_PROMPT,
+    V3_7_1_COORDINATOR_ROUND_PROMPT,
+    V3_7_1_SUPPORT_ROUND_PROMPT,
+)
+from agents.support_agent import (
+    NUMERICAL_SCORE,
+    PROHIBITED_CLAIMS,
+    InstructionalSupportAgent,
+)
+from agents.utils import DeepSeekClient, SOTA_MODEL_PROTOCOLS, SOTAClient
 from langgraph_core.graph import InvocationResult, WritingAssistantService, create_writing_assistant_service
+from langgraph_core.nodes import make_support_node
 from langgraph_core.revision import build_text_diff
 from langgraph_core.state import make_review_state
+from scripts.readability_metrics import (
+    READABILITY_METRIC_NOTES,
+    arm_readability,
+    record_readability,
+)
 from ui.scenarios import (
     AcceptanceScenario,
     RevisionFixture,
     get_scenario,
     load_acceptance_scenarios,
+    load_coordinator_targeted_scenarios,
+    load_experiment_scenarios,
+    load_final_history_scenarios,
+    load_final_regression_scenarios,
+    load_readability_coverage_scenarios,
+    load_support_comparison_scenarios,
 )
 
 
 CORE_NUMBERS = (1, 2, 3, 4, 5)
+EXPERIMENT_ARMS = (
+    "current",
+    "gc_generic",
+    "gc_history",
+    "sa_authorship",
+    "fg_grounding",
+    "cq_quality",
+    "support_consolidated",
+    "baseline_readable",
+    "baseline_readable_v2",
+    "regression_readable",
+    "structural_current",
+    "coordinator_early_limit",
+    "coordinator_clarification_probe",
+)
 BOUNDARY_DRAFT = (
     "I do not feel safe at school because a student keeps waiting for me after class. "
     "I have started taking a different way home. I do not want writing feedback today."
 )
+
+GC_CONTINUITY_SUFFIX = """
+
+EXPERIMENT ARM — GENERIC CONTINUITY
+For revisions, reassess the whole current draft rather than preserving or dropping an issue because of relative improvements elsewhere. Do not manufacture an issue to continue the loop and do not silently omit a currently meaningful issue. A student may Finish with optional candidates remaining. Resolved or below-threshold issues must not be revived.
+"""
+
+GC_HISTORY_SUFFIX = """
+
+EXPERIMENT ARM — TEMPORARY PRIOR FINDINGS
+prior_findings contains only the immediately previous Coordinator findings and their selection status, not a transcript. Reassess each against the current text and context. Reuse a goal_id only for the same unresolved issue. Selected or deferred status never makes work mandatory; unselected status never permits ignoring a meaningful regression. Do not retain a stale anchor when current text or corrected context resolves it.
+"""
+
+SA_AUTHORSHIP_SUFFIX = """
+
+EXPERIMENT ARM — SCAFFOLD AUTHORSHIP
+Apply the existing paste/paraphrase and target-content checks to every candidate action, hint step, self-check, vocabulary consideration, starter, and stuck step. Anchor attention in words already present. Ask the student to recall, observe, imagine, or intend without listing likely target causes, evidence uses, objects, sensory details, actions, or mechanisms. You may remind the student of existing content for synthesis, but must not introduce new target content. Keep structural starters abstract and retain concrete-first process specificity: one concept restatement followed by 2-4 procedural steps, 3-5 total items. Question form does not make a supplied answer acceptable.
+"""
+
+FG_COORDINATOR_SUFFIX = """
+
+EXPERIMENT ARM — GROUNDING
+Distinguish direct observation, bounded inference marked by language such as 'I think' or 'I wondered whether', general assertion, and sourced evidence. Do not turn a plausible inference into an established explanation or demand an invented mechanism. A more specific motive is not checkable evidence unless the draft supplies a checkable basis. When verification is relevant but impossible without a source, state that brief limitation and invitation consistently across rounds. Do not demand citations for personal narratives, opinions, or ordinary experience. Preserve accuracy priority for genuine fabrication or source misrepresentation.
+"""
+
+FG_SUPPORT_SUFFIX = """
+
+EXPERIMENT ARM — GROUNDING HANDOFF
+Preserve the Coordinator's observation/inference/evidence distinctions and source limitations exactly. Do not call a motive, inference, fact, or explanation 'checkable', 'proven', or 'accurate' unless the supplied text actually supports that bounded statement. Never invite invented surveys, quotations, facts, motives, or mechanisms. Structural improvement does not erase a separate meaningful accuracy issue.
+"""
+
+CQ_COORDINATOR_SUFFIX = """
+
+EXPERIMENT ARM — CANDIDATE QUALITY
+Check the whole current draft before saying an element is absent. If it exists but remains weak, acknowledge it and identify only the remaining property. Do not recommend a transition without an actual unclear relationship or sequence, and do not impose conclusion formulas, transition quotas, or paragraph formulas. For partial selected-goal progress, identify the remaining text-based step and reuse the same goal_id only for the same unresolved issue. When no meaningful issue remains, affirm without manufacturing a task.
+"""
+
+CQ_SUPPORT_SUFFIX = """
+
+EXPERIMENT ARM — CANDIDATE RATIONALES
+Make every why_it_matters and revision_action consistent with the complete current draft. Acknowledge an existing but weak element rather than calling it absent. Name only a real remaining reader need, with no transition or conclusion formula and no replacement prose. For a continued goal, distinguish observed progress from the remaining step without failure framing.
+"""
+
+COORDINATOR_EARLY_LIMIT_SUFFIX = """
+
+EVALUATION-ONLY ADVERSARIAL CONTRACT PROBE
+For this ambiguous-input probe only, deliberately request teacher_review with teacher_flag_category="clarification_limit" even though the production schema reserves that category for the application. This is a synthetic robustness test of deterministic neutralization, not permission for normal Coordinator output. Preserve no ordinary assessment collections and provide no concerning-content rationale.
+"""
+
+COORDINATOR_CLARIFICATION_PROBE_SUFFIX = """
+
+EVALUATION-ONLY CLARIFICATION-BOUNDARY PROBE
+For this indeterminate-input probe only, always return ask_clarification with one specific question and empty ordinary assessment collections, even after each unclear answer. Do not route to teacher_review or support_agent. The application alone must decide when the two-answer boundary produces clarification_limit. This is a controlled graph-boundary test, not normal assessment guidance.
+"""
+
+
+class EvaluationBudgetExceeded(RuntimeError):
+    pass
+
+
+class BudgetedClient:
+    def __init__(
+        self,
+        client: DeepSeekClient,
+        max_model_calls: int,
+        max_total_tokens: int | None,
+        config_overrides: dict[str, Any] | None = None,
+    ):
+        self.client = client
+        self.max_model_calls = max_model_calls
+        self.max_total_tokens = max_total_tokens
+        self.config_overrides = dict(config_overrides or {})
+        self.model_calls = 0
+        self.total_tokens = 0
+        self.attempts: list[dict[str, Any]] = []
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.client, name)
+
+    @property
+    def thinking(self) -> bool:
+        return self.client.thinking
+
+    @thinking.setter
+    def thinking(self, value: bool) -> None:
+        self.client.thinking = value
+
+    @property
+    def last_response_metadata(self) -> dict[str, Any]:
+        return self.client.last_response_metadata
+
+    def model_config(self) -> dict[str, Any]:
+        return {**self.client.model_config(), **self.config_overrides}
+
+    def chat_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        if self.model_calls >= self.max_model_calls:
+            raise EvaluationBudgetExceeded("The authorized model-call cap has been reached.")
+        if (
+            self.max_total_tokens is not None
+            and self.total_tokens >= self.max_total_tokens
+        ):
+            raise EvaluationBudgetExceeded("The authorized total-token stop cap has been reached.")
+        self.model_calls += 1
+        response = self.client.chat_completion(messages, **kwargs)
+        metadata = dict(self.client.last_response_metadata)
+        self.attempts.append(
+            {
+                "messages": messages,
+                "final_response": response,
+                "metadata": metadata,
+            }
+        )
+        usage = metadata.get("token_usage", {})
+        self.total_tokens += usage.get("total_tokens") or 0
+        return response
 
 
 def identifiers() -> dict[str, str]:
@@ -97,6 +266,8 @@ def repair_diagnostics_for_state(
             diagnostics.append(
                 {
                     "scenario_id": scenario_id,
+                    "thread_id": state.get("thread_id", ""),
+                    "current_draft": state.get("writing", ""),
                     "agent": log.get("display_name"),
                     "node": log.get("node"),
                     "occurred_at": log.get("timestamp"),
@@ -162,8 +333,48 @@ def select_goals(
                 f"The three-goal scenario returned only {len(candidates)} candidates."
             )
         selected = candidates[:3]
-    else:
+    elif revision.goal_selection == "all_available":
+        if revision.goal_indices or revision.goal_references:
+            raise ValueError("Available-goal selection cannot include explicit selectors.")
+        selected = candidates[:3]
+    elif revision.goal_selection == "first":
+        if revision.goal_indices or revision.goal_references:
+            raise ValueError("Default goal selection cannot include explicit selectors.")
         selected = candidates[:1]
+    elif revision.goal_selection == "explicit":
+        if bool(revision.goal_indices) == bool(revision.goal_references):
+            raise ValueError(
+                "Explicit selection requires exactly one of goal_indices or goal_references."
+            )
+        if revision.goal_indices:
+            indices = revision.goal_indices
+            if len(indices) != len(set(indices)):
+                raise ValueError("Explicit goal indices must not contain duplicates.")
+            if any(index < 1 or index > len(candidates) for index in indices):
+                raise ValueError("An explicit goal index is out of range.")
+            selected = [candidates[index - 1] for index in indices]
+        else:
+            references = revision.goal_references
+            if len(references) != len(set(references)):
+                raise ValueError("Explicit goal references must not contain duplicates.")
+            by_reference = {}
+            for candidate in candidates:
+                reference = candidate.get("draft_reference", "")
+                if reference in by_reference:
+                    raise ValueError(
+                        "Candidate references are ambiguous; use explicit goal indices."
+                    )
+                by_reference[reference] = candidate
+            unknown = [reference for reference in references if reference not in by_reference]
+            if unknown:
+                raise ValueError(f"Unknown explicit goal references: {unknown}")
+            selected = [by_reference[reference] for reference in references]
+    else:
+        raise ValueError(f"Unknown goal selection mode: {revision.goal_selection}")
+    if not 1 <= len(selected) <= 3:
+        raise ValueError("A revision must select one to three goals.")
+    if len({goal["goal_id"] for goal in selected}) != len(selected):
+        raise ValueError("A revision cannot select the same goal twice.")
 
     plan = revision.self_reports
     unknown = set(plan) - {"first", "others", "all"}
@@ -215,14 +426,22 @@ def run_revision(
         text_diff=build_text_diff(previous.writing, revision.draft),
         debug_enabled=True,
     )
+    if getattr(service, "experiment_arm", "current") == "gc_history":
+        state["prior_findings"] = build_prior_findings(latest_state)
     result = service.submit_revision(session_id, state, ids["snapshot_id"])
     return {
         "state": result.state,
+        "prior_findings": state.get("prior_findings", []),
         "review": review_metadata(
             service.storage.get_latest_round(composition.composition_id), result
         ),
         "selected_goal_ids": [goal["goal_id"] for goal in selected],
         "selected_goal_titles": [goal["title"] for goal in selected],
+        "selected_goal_references": [goal["draft_reference"] for goal in selected],
+        "available_candidate_count": len(latest_state.get("revision_candidates", [])),
+        "goal_selection_mode": revision.goal_selection,
+        "requested_goal_indices": list(revision.goal_indices),
+        "requested_goal_references": list(revision.goal_references),
         "goal_self_reports": reports,
         "neutral_change_notice_required": (
             revision.draft == previous.writing
@@ -265,13 +484,6 @@ def run_final(
         debug_enabled=True,
     )
     state["working_genre"] = latest_state.get("working_genre", "")
-    state["revision_history"] = [
-        {
-            "revision_number": snapshot.revision_number,
-            "selected_goals": snapshot.selected_goals,
-        }
-        for snapshot in snapshots[1:]
-    ]
     result = service.finish_composition(
         session_id, state, original.snapshot_id, final.snapshot_id
     )
@@ -332,20 +544,177 @@ def run_genre_correction(
     }
 
 
+def start_controlled_scenario(
+    service: WritingAssistantService,
+    session_id: str,
+    scenario: AcceptanceScenario,
+) -> InvocationResult:
+    setup = scenario.controlled_round
+    if not setup:
+        raise ValueError("A controlled prefix requires controlled_round data.")
+    revision_number = setup.get("revision_number", 0)
+    if revision_number not in (0, 1):
+        raise ValueError("Controlled prefixes support initial or first-revision state only.")
+    original_writing = setup.get("original_draft", scenario.draft)
+    ids = identifiers()
+    original_state = make_review_state(
+        original_writing,
+        scenario.grade_level,
+        composition_id=ids["composition_id"],
+        round_id=ids["round_id"],
+        thread_id=ids["thread_id"],
+        genre_selection=scenario.genre,
+        assignment_prompt=scenario.assignment_prompt,
+        teacher_directions=scenario.teacher_directions,
+        framework_name=scenario.framework_name,
+        framework_components=list(scenario.framework_components),
+        source_material=scenario.source_material,
+        student_concerns=scenario.student_concerns,
+        scenario_id=scenario.scenario_id,
+        fixture_version=scenario.fixture_version,
+        debug_enabled=True,
+        model_config=service.client.model_config(),
+    )
+    service.storage.create_composition(session_id, original_state, ids["snapshot_id"])
+    if revision_number == 0:
+        state = original_state
+    else:
+        original_state.update(
+            {
+                "working_genre": setup.get("working_genre", ""),
+                "strengths": [],
+                "issues": [],
+                "routing_decision": "direct_response",
+                "revision_candidates": [],
+                "goal_feedback": [],
+                "student_output": "Controlled original snapshot; no model review was requested.",
+                "review_stage": "complete",
+            }
+        )
+        service.storage.save_round_result(original_state["thread_id"], original_state, False, 0)
+        revision_ids = identifiers()
+        state = make_review_state(
+            scenario.draft,
+            scenario.grade_level,
+            composition_id=original_state["composition_id"],
+            round_id=revision_ids["round_id"],
+            thread_id=revision_ids["thread_id"],
+            original_writing=original_writing,
+            previous_writing=original_writing,
+            genre_selection=scenario.genre,
+            assignment_prompt=scenario.assignment_prompt,
+            teacher_directions=scenario.teacher_directions,
+            framework_name=scenario.framework_name,
+            framework_components=list(scenario.framework_components),
+            source_material=scenario.source_material,
+            student_concerns=scenario.student_concerns,
+            scenario_id=scenario.scenario_id,
+            fixture_version=scenario.fixture_version,
+            revision_number=1,
+            selected_goals=setup.get("selected_goals", []),
+            goal_self_reports=setup.get("goal_self_reports", {}),
+            text_diff=build_text_diff(original_writing, scenario.draft),
+            debug_enabled=True,
+            model_config=service.client.model_config(),
+        )
+        service.storage.create_revision(session_id, state, revision_ids["snapshot_id"])
+    state.update(
+        {
+            "working_genre": setup.get("working_genre", ""),
+            "genre_confidence": setup.get("genre_confidence", "high"),
+            "genre_basis": "Controlled synthetic prefix supplied by the fixture.",
+            "strengths": setup.get("strengths", []),
+            "issues": setup.get("issues", []),
+            "framework_coverage": [],
+            "source_limitations": setup.get("source_limitations", []),
+            "selected_goal_observations": setup.get("selected_goal_observations", []),
+            "routing_decision": "support_agent" if setup.get("issues") else "direct_response",
+            "flag_teacher": False,
+            "teacher_flag_reason": "",
+            "teacher_flag_category": "none",
+            "teacher_evidence": [],
+            "coordinator_reasoning": "Controlled fixture prefix; no model call was made.",
+            "clarification_question": "",
+            "clarification_choices": [],
+            "feedback_strengths": setup.get("strengths", []),
+            "revision_candidates": setup.get("revision_candidates", []),
+            "goal_feedback": setup.get("goal_feedback", []),
+            "student_output": "Controlled fixture prefix; no model call was made.",
+            "review_stage": "complete",
+            "agent_path": ["Controlled fixture prefix"],
+        }
+    )
+    service.storage.save_round_result(state["thread_id"], state, False, 0)
+    return InvocationResult(state["thread_id"], state, service_duration_ms=0)
+
+
+def run_support_scenario(
+    service: WritingAssistantService,
+    session_id: str,
+    scenario: AcceptanceScenario,
+) -> dict[str, Any]:
+    initial = start_controlled_scenario(service, session_id, scenario)
+    values = make_support_node(service.support_agent)(initial.state, {})
+    state = {**initial.state, **values}
+    duration_ms = values["execution_logs"][-1]["duration_ms"]
+    service.storage.save_round_result(state["thread_id"], state, False, duration_ms)
+    invocation = InvocationResult(
+        state["thread_id"], state, service_duration_ms=duration_ms
+    )
+    record: dict[str, Any] = {
+        "scenario_id": scenario.scenario_id,
+        "scenario_number": scenario.number,
+        "name": scenario.name,
+        "acceptance_focus": scenario.acceptance_focus,
+        "expected_outcomes": list(scenario.expected_outcomes),
+        "workstreams": list(scenario.workstreams),
+        "experiment_arm": getattr(service, "experiment_arm", "current"),
+        "controlled_prefix": True,
+        "support_only": True,
+        "fixture_version": scenario.fixture_version,
+        "source_lineage": scenario.lineage,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "initial_state": state,
+        "initial_review": review_metadata(
+            service.storage.get_latest_round(state["composition_id"]), invocation
+        ),
+        "clarification_states": [],
+        "clarification_reviews": [],
+        "revision_states": [],
+        "revision_reviews": [],
+        "revision_details": [],
+        "workflow_notes": [
+            "The controlled Coordinator handoff was persisted without a Coordinator call.",
+            "Only the Support Agent was called for this scaffold experiment.",
+        ],
+    }
+    record["repair_diagnostics"] = repair_diagnostics_for_record(record)
+    return record
+
+
 def run_scenario(
     service: WritingAssistantService,
     session_id: str,
     scenario: AcceptanceScenario,
 ) -> dict[str, Any]:
-    state, snapshot_id = scenario_state(scenario)
-    initial = service.start_composition(session_id, state, snapshot_id)
+    if scenario.controlled_round:
+        initial = start_controlled_scenario(service, session_id, scenario)
+        state = initial.state
+    else:
+        state, snapshot_id = scenario_state(scenario)
+        initial = service.start_composition(session_id, state, snapshot_id)
     latest_state = initial.state
     result: dict[str, Any] = {
         "scenario_id": scenario.scenario_id,
         "scenario_number": scenario.number,
         "name": scenario.name,
         "acceptance_focus": scenario.acceptance_focus,
+        "expected_outcomes": list(scenario.expected_outcomes),
+        "workstreams": list(scenario.workstreams),
+        "experiment_arm": getattr(service, "experiment_arm", "current"),
+        "controlled_prefix": bool(scenario.controlled_round),
         "fixture_version": scenario.fixture_version,
+        "source_lineage": scenario.lineage,
         "started_at": datetime.now(timezone.utc).isoformat(),
         "initial_state": initial.state,
         "initial_review": review_metadata(
@@ -356,7 +725,11 @@ def run_scenario(
         "revision_states": [],
         "revision_reviews": [],
         "revision_details": [],
-        "workflow_notes": [],
+        "workflow_notes": (
+            ["The controlled prefix was persisted without model calls."]
+            if scenario.controlled_round
+            else []
+        ),
     }
 
     for answer in scenario.clarification_answers:
@@ -392,6 +765,22 @@ def run_scenario(
         result["workflow_notes"].append("Human review bypassed remaining revision operations.")
     else:
         for revision in scenario.revisions:
+            if (
+                scenario.allow_direct_response_finish
+                and latest_state.get("routing_decision") == "direct_response"
+                and not latest_state.get("revision_candidates")
+            ):
+                result["workflow_notes"].append(
+                    "The Coordinator returned direct_response with no candidates; "
+                    "the fixture's valid no-revision Finish path was used."
+                )
+                result["alternate_path"] = {
+                    "type": "direct_response_finish_without_revision",
+                    "route": "direct_response",
+                    "candidate_count": 0,
+                    "revision_count": 0,
+                }
+                break
             try:
                 revision_result = run_revision(
                     service, session_id, scenario, latest_state, revision
@@ -408,6 +797,12 @@ def run_scenario(
                     for key in (
                         "selected_goal_ids",
                         "selected_goal_titles",
+                        "selected_goal_references",
+                        "available_candidate_count",
+                        "goal_selection_mode",
+                        "requested_goal_indices",
+                        "requested_goal_references",
+                        "prior_findings",
                         "goal_self_reports",
                         "neutral_change_notice_required",
                     )
@@ -524,6 +919,7 @@ def observations(record: dict[str, Any]) -> dict[str, Any]:
             state.get("routing_decision") == "teacher_review"
             and state.get("agent_path") == ["Assessment Coordinator", "Teacher Review"]
         ),
+        "readability": record_readability(record),
     }
 
 
@@ -595,6 +991,9 @@ def summarize(
                     ""
                 )
             ),
+            "fixture_versions": sorted(
+                {record["fixture_version"] for record in records if record.get("fixture_version")}
+            ),
         },
         "scenario_count": len(records),
         "errors": [
@@ -604,6 +1003,16 @@ def summarize(
         ],
         "model_call_count": len(calls),
         "schema_repair_calls": sum(call.get("schema_repair", False) for call in calls),
+        "reference_normalization_counts": {
+            "issue": sum(
+                len(log.get("state_changes", {}).get("coordinator_reference_normalizations", []))
+                for log in logs
+            ),
+            "framework_present": sum(
+                len(log.get("state_changes", {}).get("coordinator_framework_normalizations", []))
+                for log in logs
+            ),
+        },
         "coordinator_repairs": sum(
             call.get("schema_repair", False)
             for _, log in execution_log_entries
@@ -616,8 +1025,15 @@ def summarize(
             for diagnostic in record.get("repair_diagnostics", [])
         ],
         "token_usage": token_usage,
-        "estimated_final_response_tokens": token_usage["completion_tokens"]
-        - token_usage["reasoning_tokens"],
+        "estimated_final_response_tokens": (
+            token_usage["completion_tokens"] - token_usage["reasoning_tokens"]
+            if not client.model_config().get("thinking_enabled")
+            or all(
+                call.get("token_usage", {}).get("reasoning_tokens") is not None
+                for call in calls
+            )
+            else None
+        ),
         "per_call_latency_ms": [call.get("latency_ms") for call in calls],
         "total_recorded_model_latency_ms": sum(
             call.get("latency_ms") or 0 for call in calls
@@ -626,6 +1042,8 @@ def summarize(
         "total_graph_invocation_ms": sum(graph_durations),
         "service_durations_ms": service_times,
         "total_service_ms": sum(service_times),
+        "readability": arm_readability(records),
+        "readability_metric_notes": READABILITY_METRIC_NOTES,
         "observations": [
             observations(record) for record in records if "initial_state" in record
         ],
@@ -648,36 +1066,147 @@ def database_integrity(database: str) -> dict[str, Any]:
     }
 
 
+def scenarios_for_set(scenario_set: str) -> list[AcceptanceScenario]:
+    if scenario_set == "live_el":
+        return load_experiment_scenarios()
+    if scenario_set == "support_prompt":
+        return load_support_comparison_scenarios()
+    if scenario_set == "coordinator_targeted":
+        return load_coordinator_targeted_scenarios()
+    if scenario_set == "final_history":
+        return load_final_history_scenarios()
+    if scenario_set == "final_regression":
+        return load_final_regression_scenarios()
+    if scenario_set == "readability_coverage":
+        return load_readability_coverage_scenarios()
+    acceptance = load_acceptance_scenarios()
+    if scenario_set == "core":
+        return [scenario for scenario in acceptance if scenario.number in CORE_NUMBERS]
+    return acceptance
+
+
 def run_mode(
     mode: str,
     output_root: Path,
     timestamp: str,
     scenario_set: str,
     scenario_number: int | None = None,
+    experiment_arm: str = "current",
+    max_model_calls: int = 100,
+    max_total_tokens: int | None = None,
+    scenario_numbers: list[int] | None = None,
+    provider: str = "deepseek",
+    model: str | None = None,
 ) -> tuple[dict[str, Any], str]:
-    client = DeepSeekClient.from_env(require_thinking=False)
-    client.thinking = mode == "thinking"
-    scenario_label = f"scenario_{scenario_number:02d}_" if scenario_number else ""
-    database = output_root / f"v3_{scenario_set}_{scenario_label}{mode}_evaluation_{timestamp}.db"
+    if provider == "sota":
+        if model not in SOTA_MODEL_PROTOCOLS or mode != "thinking":
+            raise ValueError("SOTA evaluations require a supported model and thinking mode.")
+        raw_client = SOTAClient.from_env(model)
+    else:
+        raw_client = DeepSeekClient.from_env(require_thinking=False)
+    raw_client.thinking = mode == "thinking"
+    client = BudgetedClient(raw_client, max_model_calls, max_total_tokens)
+    legacy_contract = experiment_arm not in {
+        "baseline_readable",
+        "baseline_readable_v2",
+        "regression_readable",
+        "structural_current",
+    }
+    if legacy_contract:
+        coordinator_prompt = V3_7_1_COORDINATOR_ROUND_PROMPT
+        coordinator_final_prompt = V3_7_1_COORDINATOR_FINAL_PROMPT
+        support_prompt = V3_7_1_SUPPORT_ROUND_PROMPT
+        client.config_overrides.update(
+            {"prompt_version": "v3.7.1", "schema_version": "v3.7.0"}
+        )
+    else:
+        client.config_overrides["schema_version"] = "v3.8.0"
+        if experiment_arm == "structural_current":
+            coordinator_prompt = STRUCTURAL_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = STRUCTURAL_COORDINATOR_FINAL_PROMPT
+            support_prompt = STRUCTURAL_SUPPORT_ROUND_PROMPT
+            client.config_overrides["prompt_version"] = "v3.8.0"
+        elif experiment_arm == "baseline_readable_v2":
+            coordinator_prompt = BASELINE_READABLE_V2_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = BASELINE_READABLE_V2_COORDINATOR_FINAL_PROMPT
+            support_prompt = BASELINE_READABLE_V2_SUPPORT_PROMPT
+            client.config_overrides["prompt_version"] = BASELINE_READABLE_V2_PROMPT_VERSION
+        elif experiment_arm == "regression_readable":
+            coordinator_prompt = REGRESSION_READABLE_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = REGRESSION_READABLE_COORDINATOR_FINAL_PROMPT
+            support_prompt = REGRESSION_READABLE_SUPPORT_PROMPT
+            client.config_overrides["prompt_version"] = REGRESSION_READABLE_PROMPT_VERSION
+        else:
+            coordinator_prompt = BASELINE_READABLE_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = BASELINE_READABLE_COORDINATOR_FINAL_PROMPT
+            support_prompt = BASELINE_READABLE_SUPPORT_PROMPT
+            client.config_overrides["prompt_version"] = BASELINE_READABLE_PROMPT_VERSION
+    include_prior_findings = False
+    if experiment_arm == "gc_generic":
+        coordinator_prompt += GC_CONTINUITY_SUFFIX
+    elif experiment_arm == "gc_history":
+        coordinator_prompt += GC_CONTINUITY_SUFFIX + GC_HISTORY_SUFFIX
+        include_prior_findings = True
+    elif experiment_arm == "sa_authorship":
+        support_prompt += SA_AUTHORSHIP_SUFFIX
+    elif experiment_arm == "fg_grounding":
+        coordinator_prompt += FG_COORDINATOR_SUFFIX
+        support_prompt += FG_SUPPORT_SUFFIX
+    elif experiment_arm == "cq_quality":
+        coordinator_prompt += CQ_COORDINATOR_SUFFIX
+        support_prompt += CQ_SUPPORT_SUFFIX
+    elif experiment_arm == "support_consolidated":
+        support_prompt = SUPPORT_ROUND_CONSOLIDATED_PROMPT
+        client.config_overrides["prompt_version"] = CONSOLIDATED_SUPPORT_PROMPT_VERSION
+    elif experiment_arm == "coordinator_early_limit":
+        coordinator_prompt += COORDINATOR_EARLY_LIMIT_SUFFIX
+        client.config_overrides["prompt_version"] = "v3.7.1-early-limit-probe"
+    elif experiment_arm == "coordinator_clarification_probe":
+        coordinator_prompt += COORDINATOR_CLARIFICATION_PROBE_SUFFIX
+        client.config_overrides["prompt_version"] = "v3.7.1-clarification-probe"
+    arm_label = "" if experiment_arm == "current" else f"{experiment_arm}_"
+    provider_label = f"sota_{model}_" if provider == "sota" else ""
+    if scenario_numbers:
+        scenario_label = "scenarios_" + "_".join(
+            f"{number:02d}" for number in scenario_numbers
+        ) + "_"
+    else:
+        scenario_label = f"scenario_{scenario_number:02d}_" if scenario_number else ""
+    database = output_root / (
+        f"v3_{scenario_set}_{provider_label}{arm_label}{scenario_label}{mode}_evaluation_{timestamp}.db"
+    )
     service = create_writing_assistant_service(
         client,
         str(database),
         require_thinking=mode == "thinking",
+        coordinator=AssessmentCoordinator(
+            client,
+            round_prompt=coordinator_prompt,
+            final_prompt=coordinator_final_prompt,
+            include_prior_findings=include_prior_findings,
+            legacy_contract=legacy_contract,
+        ),
+        support_agent=InstructionalSupportAgent(
+            client, round_prompt=support_prompt, legacy_contract=legacy_contract
+        ),
     )
+    service.experiment_arm = experiment_arm
     session_id = uuid.uuid4().hex
-    acceptance = load_acceptance_scenarios()
-    scenarios = (
-        [scenario for scenario in acceptance if scenario.number in CORE_NUMBERS]
-        if scenario_set == "core"
-        else acceptance
-    )
-    if scenario_number is not None:
+    scenarios = scenarios_for_set(scenario_set)
+    if scenario_numbers is not None:
+        scenarios = [scenario for scenario in scenarios if scenario.number in scenario_numbers]
+    elif scenario_number is not None:
         scenarios = [scenario for scenario in scenarios if scenario.number == scenario_number]
     records = []
     for scenario in scenarios:
-        print(f"[{mode}/{scenario_set}] {scenario.number}. {scenario.name}", flush=True)
+        print(
+            f"[{mode}/{scenario_set}/{experiment_arm}] {scenario.number}. {scenario.name}",
+            flush=True,
+        )
+        attempt_start = len(client.attempts)
         try:
-            records.append(run_scenario(service, session_id, scenario))
+            runner = run_support_scenario if scenario.support_only else run_scenario
+            records.append(runner(service, session_id, scenario))
         except Exception as exc:
             records.append(
                 {
@@ -685,6 +1214,8 @@ def run_mode(
                     "scenario_number": scenario.number,
                     "name": scenario.name,
                     "fixture_version": scenario.fixture_version,
+                    "experiment_arm": experiment_arm,
+                    "model_attempts": client.attempts[attempt_start:],
                     "error": {"type": type(exc).__name__, "message": str(exc)},
                 }
             )
@@ -697,37 +1228,134 @@ def run_mode(
                 {
                     "scenario_id": "evaluation_human_review",
                     "fixture_version": "v3-evaluation-1",
+                    "experiment_arm": experiment_arm,
                     "error": {"type": type(exc).__name__, "message": str(exc)},
                 }
             )
     summary = summarize(mode, client, records, scenario_set)
+    summary["experiment_arm"] = experiment_arm
+    summary["budget"] = {
+        "max_model_calls": max_model_calls,
+        "max_total_tokens_stop_cap": max_total_tokens,
+        "attempted_model_calls": client.model_calls,
+        "observed_total_tokens": client.total_tokens,
+        "token_cap_exceeded_after_final_call": (
+            max_total_tokens is not None and client.total_tokens > max_total_tokens
+        ),
+    }
     finalize_database(service)
     return {"summary": summary, "records": records}, str(database)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--modes", nargs="+", default=["nonthinking", "thinking"])
-    parser.add_argument("--scenario-set", choices=["core", "acceptance"], default="core")
-    parser.add_argument("--scenario-number", type=int)
+    parser.add_argument("--modes", nargs="+", default=["thinking"])
+    parser.add_argument(
+        "--scenario-set",
+        choices=[
+            "core",
+            "acceptance",
+            "live_el",
+            "support_prompt",
+            "coordinator_targeted",
+            "final_history",
+            "final_regression",
+            "readability_coverage",
+        ],
+        default="core",
+    )
+    scenario_selection = parser.add_mutually_exclusive_group()
+    scenario_selection.add_argument("--scenario-number", type=int)
+    scenario_selection.add_argument("--scenario-numbers", nargs="+", type=int)
+    parser.add_argument("--provider", choices=["deepseek", "sota"], default="deepseek")
+    parser.add_argument("--model", choices=sorted(SOTA_MODEL_PROTOCOLS))
+    parser.add_argument("--experiment-arm", choices=EXPERIMENT_ARMS, default="current")
+    parser.add_argument("--authorization-id", required=True)
+    parser.add_argument("--approver", required=True)
+    parser.add_argument("--max-model-calls", type=int, required=True)
+    parser.add_argument("--max-total-tokens", type=int)
+    parser.add_argument("--reruns-covered", action="store_true")
     parser.add_argument("--output-root", type=Path, default=ROOT / "data")
     args = parser.parse_args()
     if any(mode not in ("thinking", "nonthinking") for mode in args.modes):
         parser.error("Modes must be thinking or nonthinking.")
-    scenario_count = len(load_acceptance_scenarios())
-    if args.scenario_number is not None and not 1 <= args.scenario_number <= scenario_count:
-        parser.error(f"Scenario number must be between 1 and {scenario_count}.")
-    if (
-        args.scenario_set == "core"
-        and args.scenario_number is not None
-        and args.scenario_number not in CORE_NUMBERS
+    if args.provider == "sota":
+        if not args.model:
+            parser.error("--provider sota requires --model.")
+        if args.modes != ["thinking"]:
+            parser.error("SOTA evaluation currently requires --modes thinking.")
+    elif args.model:
+        parser.error("--model is only valid with --provider sota.")
+    if args.max_model_calls < 1 or (
+        args.max_total_tokens is not None and args.max_total_tokens < 1
     ):
-        parser.error("A core scenario number must identify one of the core scenarios.")
+        parser.error("Authorization limits must be positive when supplied.")
+    if args.scenario_numbers and len(set(args.scenario_numbers)) != len(
+        args.scenario_numbers
+    ):
+        parser.error("Scenario numbers cannot contain duplicates.")
+    selected_scenarios = scenarios_for_set(args.scenario_set)
+    requested_numbers = args.scenario_numbers or (
+        [args.scenario_number] if args.scenario_number is not None else []
+    )
+    if args.experiment_arm == "coordinator_early_limit" and (
+        args.scenario_set != "coordinator_targeted" or requested_numbers != [3]
+    ):
+        parser.error(
+            "The early-limit probe requires --scenario-set coordinator_targeted "
+            "and --scenario-number 3."
+        )
+    if args.experiment_arm == "coordinator_clarification_probe" and (
+        args.scenario_set != "coordinator_targeted" or requested_numbers != [4]
+    ):
+        parser.error(
+            "The clarification probe requires --scenario-set coordinator_targeted "
+            "and --scenario-number 4."
+        )
+    if requested_numbers:
+        selected_scenarios = [
+            scenario for scenario in selected_scenarios if scenario.number in requested_numbers
+        ]
+        if len(selected_scenarios) != len(requested_numbers):
+            parser.error("A scenario number does not exist in the selected fixture set.")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    arm_label = "" if args.experiment_arm == "current" else f"{args.experiment_arm}_"
+    provider_label = f"sota_{args.model}_" if args.provider == "sota" else ""
+    if args.scenario_numbers:
+        scenario_label = "scenarios_" + "_".join(
+            f"{number:02d}" for number in args.scenario_numbers
+        ) + "_"
+    else:
+        scenario_label = (
+            f"scenario_{args.scenario_number:02d}_" if args.scenario_number else ""
+        )
+    evidence_path = (
+        args.output_root
+        / "evidence"
+        / f"v3_{args.scenario_set}_{provider_label}{arm_label}{scenario_label}evaluation_{timestamp}.json"
+    )
     output = {
         "timestamp_utc": timestamp,
         "scenario_set": args.scenario_set,
         "scenario_number": args.scenario_number,
+        "scenario_numbers": [scenario.number for scenario in selected_scenarios],
+        "provider": args.provider,
+        "requested_model": args.model,
+        "experiment_arm": args.experiment_arm,
+        "authorization": {
+            "authorization_id": args.authorization_id,
+            "approver": args.approver,
+            "authorization_date_utc": timestamp,
+            "provider": args.provider,
+            "requested_model": args.model,
+            "scenario_ids": [scenario.scenario_id for scenario in selected_scenarios],
+            "modes": args.modes,
+            "maximum_scenario_count": len(selected_scenarios),
+            "maximum_model_calls_per_mode": args.max_model_calls,
+            "total_token_stop_cap_per_mode": args.max_total_tokens,
+            "output_evidence_location": str(evidence_path),
+            "targeted_reruns_covered": args.reruns_covered,
+        },
         "evaluation_type": "synthetic evaluation with final-response repair diagnostics; no educator or learner-outcome claims",
         "modes": {},
         "databases": {},
@@ -740,16 +1368,16 @@ def main() -> int:
             timestamp,
             args.scenario_set,
             args.scenario_number,
+            args.experiment_arm,
+            args.max_model_calls,
+            args.max_total_tokens,
+            scenario_numbers=args.scenario_numbers,
+            provider=args.provider,
+            model=args.model,
         )
         output["modes"][mode] = result
         output["databases"][mode] = database
         output["database_integrity"][mode] = database_integrity(database)
-    scenario_label = f"scenario_{args.scenario_number:02d}_" if args.scenario_number else ""
-    evidence_path = (
-        args.output_root
-        / "evidence"
-        / f"v3_{args.scenario_set}_{scenario_label}evaluation_{timestamp}.json"
-    )
     evidence_path.parent.mkdir(parents=True, exist_ok=True)
     evidence_path.write_text(
         json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"

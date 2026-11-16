@@ -9,6 +9,7 @@ from agents.utils import (
     AuthError,
     ConfigurationError,
     DeepSeekClient,
+    SOTAClient,
     InputValidationError,
     RateLimitError,
     ResponseValidationError,
@@ -72,6 +73,115 @@ def test_thinking_json_request_omits_temperature_and_records_authorized_metadata
     assert "reasoning_content" not in json.dumps(client.last_response_metadata)
 
 
+def test_sota_environment_selects_the_requested_native_protocol(monkeypatch):
+    monkeypatch.setenv("SOTA_API_KEY", "test-sota-key")
+    monkeypatch.setenv("SOTA_BASE_URL", "https://relay.example/v1")
+
+    client = SOTAClient.from_env("claude-opus-5-5")
+
+    assert client.model == "claude-opus-5-5"
+    assert client.protocol == "anthropic"
+    assert client.thinking is True
+    assert client.model_config()["provider"] == "sota"
+
+
+def test_sota_claude_thinking_filters_reasoning_and_maps_usage():
+    response = FakeResponse(
+        payload={
+            "id": "claude-request",
+            "model": "claude-opus-5-5",
+            "content": [
+                {"type": "thinking", "thinking": "never capture this"},
+                {"type": "text", "text": '{"ok": true}'},
+            ],
+            "usage": {"input_tokens": 100, "output_tokens": 40},
+        }
+    )
+    session = FakeSession(response)
+    client = SOTAClient(
+        "test-key",
+        "https://relay.example/v1",
+        "claude-opus-5-5",
+        "anthropic",
+        session=session,
+    )
+
+    result = client.chat_completion(
+        [{"role": "system", "content": "Rules"}, {"role": "user", "content": "Test"}],
+        json_mode=True,
+    )
+
+    url, request = session.calls[0]
+    assert url == "https://relay.example/v1/messages"
+    assert request["json"]["thinking"] == {"type": "enabled", "budget_tokens": 4000}
+    assert request["json"]["system"] == "Rules"
+    assert "temperature" not in request["json"]
+    assert result == '{"ok": true}'
+    assert client.last_response_metadata["token_usage"]["total_tokens"] == 140
+    assert client.last_response_metadata["token_usage"]["reasoning_tokens"] is None
+    assert "never capture this" not in json.dumps(client.last_response_metadata)
+
+
+def test_sota_gemini_thinking_filters_thought_parts_and_maps_usage():
+    response = FakeResponse(
+        payload={
+            "responseId": "gemini-request",
+            "modelVersion": "gemini-4-argon",
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"thought": True, "text": "never capture this"},
+                            {"text": '{"ok": true}'},
+                        ]
+                    }
+                }
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 80,
+                "candidatesTokenCount": 30,
+                "totalTokenCount": 122,
+                "thoughtsTokenCount": 12,
+            },
+        }
+    )
+    session = FakeSession(response)
+    client = SOTAClient(
+        "test-key",
+        "https://relay.example/v1",
+        "gemini-4-argon",
+        "gemini",
+        session=session,
+    )
+
+    result = client.chat_completion([{"role": "user", "content": "Test"}], json_mode=True)
+
+    url, request = session.calls[0]
+    assert url == "https://relay.example/v1beta/models/gemini-4-argon:generateContent"
+    assert request["json"]["generationConfig"]["thinkingConfig"] == {
+        "thinkingLevel": "HIGH",
+        "includeThoughts": False,
+    }
+    assert request["json"]["generationConfig"]["responseMimeType"] == "application/json"
+    assert "temperature" not in request["json"]["generationConfig"]
+    assert result == '{"ok": true}'
+    assert client.last_response_metadata["token_usage"]["reasoning_tokens"] == 12
+    assert "never capture this" not in json.dumps(client.last_response_metadata)
+
+
+def test_sota_controlled_evaluation_cannot_silently_switch_to_nonthinking():
+    client = SOTAClient(
+        "test-key",
+        "https://relay.example/v1",
+        "gemini-4-argon",
+        "gemini",
+        session=FakeSession(),
+    )
+
+    with pytest.raises(ConfigurationError, match="explicit thinking"):
+        client.chat_completion([], thinking=False)
+
+
 def test_explicit_nonthinking_baseline_uses_temperature_zero():
     session = FakeSession()
 
@@ -94,13 +204,14 @@ def test_thinking_request_can_be_explicitly_disabled_only_by_caller():
     assert session.calls[0][1]["json"]["thinking"] == {"type": "disabled"}
 
 
-def test_runtime_environment_uses_nonthinking_by_default(monkeypatch):
+def test_runtime_environment_uses_thinking_by_default(monkeypatch):
+    monkeypatch.setattr("agents.utils.load_dotenv", lambda: None)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test")
-    monkeypatch.setenv("DEEPSEEK_THINKING", "false")
+    monkeypatch.delenv("DEEPSEEK_THINKING", raising=False)
 
     client = DeepSeekClient.from_env()
 
-    assert client.thinking is False
+    assert client.thinking is True
 
 
 def test_thinking_requirement_is_explicit_not_a_runtime_fallback(monkeypatch):

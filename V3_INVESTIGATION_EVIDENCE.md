@@ -19,7 +19,9 @@ The manifest consolidates the latest outcomes without making new model calls:
 
 No raw hidden reasoning is included. The manifest contains final structured responses and evaluation-only final-response repair diagnostics with synthetic content.
 
-## 2. Current Configuration
+## 2. Historical Snapshot Configuration
+
+This section describes the 2026-11-10 evidence snapshot, not the current working tree or deployment. See `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` for current investigation status.
 
 | Setting | Value |
 | --- | --- |
@@ -37,8 +39,8 @@ No raw hidden reasoning is included. The manifest contains final structured resp
 
 | Material | Primary paths |
 | --- | --- |
-| Current 32-scenario non-thinking run and mixed outcomes | `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`; `V3_OUTCOMES_REPORT.md` Section 17 |
-| Current Chrome verification | `data/evidence/v3_4_browser_verification.json` |
+| Historical 32-scenario non-thinking run and mixed outcomes | `data/evidence/v3_acceptance_evaluation_20261110T194146Z.json`; `V3_OUTCOMES_REPORT.md` Section 17 |
+| Historical Chrome verification | `data/evidence/v3_4_browser_verification.json` |
 | Historical consolidated investigation manifest | `data/evidence/v3_investigation_manifest_20261110.json` |
 | Original matched baseline | `data/evidence/v3_paired_evaluation_20261110T094344Z.json` |
 | New paired core 1 | `data/evidence/v3_core_evaluation_20261110T161430Z.json` |
@@ -171,9 +173,9 @@ Compare the result with the corresponding entry in `manifest["artifacts"]`.
 
 ## 7. Evidence Boundaries
 
-- All writing is synthetic. Do not add real student work or identifying information.
+- All writing in this historical manifest is synthetic. Do not add real student work or identifying information. The separately authorized exact-text exception in `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` Section 14 is outside this manifest and the synthetic-only prototype workflow.
 - All analysis is local and limited to the recorded scenarios.
 - No pedagogical effectiveness, educator approval, learner outcome, motivation, engagement, or retention claim is supported.
-- No V3 deployment or production-readiness claim is supported.
+- This historical snapshot does not establish deployment or production readiness; see `README.md` and the implementation results for later runtime status.
 - The full set of 30 model scenarios is not equivalent to 30 complete browser walkthroughs.
 - Future student contact requires separate privacy, safety, consent, institutional, and operational review.

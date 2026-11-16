@@ -1,0 +1,159 @@
+{
+  "fixture_version": "v3.8.0-final-history.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "final_history_same_unchanged_goal",
+      "name": "Final respects unchanged not-yet-evident goal",
+      "grade_level": "5th Grade",
+      "genre": "argument",
+      "draft": "Our class should have a reading corner. It would give students a quiet place to read.\n\nRight now, readers have to sit at their desks.",
+      "assignment_prompt": "Argue for one realistic reading improvement at school.",
+      "teacher_directions": "State a claim and explain how the change would help readers.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Use the authoritative prior verdict for the same unchanged goal text",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Do not classify the exact unchanged goal reference as a Final improvement after improvement_not_yet_evident.",
+        "A different genuine improvement may still be reported without inferring an empty goal ID."
+      ],
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our class should have a reading corner. It would give students a place to read.\n\nRight now, readers have to sit at their desks.",
+        "working_genre": "argument",
+        "strengths": ["The draft names a specific reading improvement."],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "description": "The quiet-place detail does not yet explain how the corner would help students focus on reading.",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_1",
+            "title": "Explain the reading benefit",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Explain the reading benefit",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The sentence adds quiet as a detail but still does not explain how the corner would help students focus on reading.",
+            "evidence_reference": "It would give students a quiet place to read.",
+            "carry_forward": true
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "You added a detail, and you can still explain the reading benefit.",
+            "carry_forward": true
+          }
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 2,
+      "scenario_id": "final_history_later_start_remains",
+      "name": "Final verifies retained later-start opening",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start later.\n\nThe passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+      "assignment_prompt": "Argue whether school should start later using the assigned passage.",
+      "teacher_directions": "Keep source observations bounded when the passage is unavailable.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Verify the complete Final draft before deletion or weakening claims",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Do not claim that the retained opening proposal disappeared or was deleted.",
+        "Do not verify the unavailable passage or convert the old goal reference into an improvement."
+      ],
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should start later.\n\nThe passage says students concentrate better. This supports our plan.",
+        "working_genre": "argument",
+        "strengths": ["The revision labels the added classroom connection as the writer's interpretation."],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "description": "The added class-discussion interpretation does not yet explain how starting later would lead to better concentration.",
+            "draft_reference": "The passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_1",
+            "title": "Connect the later-start reason",
+            "draft_reference": "The passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "paragraph_number": 2,
+            "occurrence": 1
+          }
+        ],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Connect the later-start reason",
+            "draft_reference": "The passage says students concentrate better. This supports our plan.",
+            "paragraph_number": 2,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The revision adds a possible classroom benefit but still does not explain how starting later would lead to better concentration.",
+            "evidence_reference": "I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "carry_forward": true
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "You added your own interpretation and can still connect the later start to concentration.",
+            "carry_forward": true
+          }
+        ],
+        "source_limitations": ["The assigned passage was not supplied, so its content cannot be checked."]
+      }
+    }
+  ]
+}

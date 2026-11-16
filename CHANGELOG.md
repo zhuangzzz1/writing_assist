@@ -1,13 +1,46 @@
 # Changelog
 
-Notable changes to the local V3 Iterative Revision Coach. Version labels below refer to the V3 prompt/schema and fixture series, not the historical V1/V2 coursework runtime.
+Notable changes to the V3 Iterative Revision Coach. Version labels below refer to the V3 prompt/schema and fixture series, not the historical V1/V2 coursework runtime.
 
 For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V2 outcomes remain in `PRD.md`; V1 is preserved at commit `4eaa0ad` under the annotated `v1` tag.
 
 ## [Unreleased]
 
+### Added
+
+- Added explicit evaluation-goal selection by 1-based index or exact reference, with duplicate/unknown/out-of-range rejection and recorded selected IDs, titles, and references.
+- Added the versioned `live_el_contrasts.json` experiment set, controlled no-call prefixes, Support-only handoffs, non-persistent GC experiment arms, and per-run authorization/call/token-stop records.
+- Added evaluation-only SOTA relay support for `claude-opus-5-5` and `gemini-4-argon` using native Anthropic/Gemini thinking protocols, explicit scenario lists, provider-aware evidence filenames, and final-text-only capture without hidden reasoning. Student runtime remains unchanged.
+- Added targeted failed-revision restoration/retry coverage and local mocked-browser evidence for revision, refresh, failed final reflection, retry, and final comparison.
+- Added targeted synthetic `live_el` scenario #16 for an imaginative system explanation with a missing output path, no required scientific source, and an existing closing sentence.
+- Added 14 frozen Support comparison handoffs, 12 Coordinator-targeted scenarios, the evaluation-only `support_consolidated` and isolated `coordinator_early_limit` arms, per-arm prompt-version metadata, and issue/framework normalization metrics.
+- Added `scripts/analyze_repairs.py` for deduplicated field-level repair-cause analysis, including preserved failed-scenario attempts and separate API/empty-response failures.
+- Added protocol-consistent educator anchors for authorship, cross-field coherence, and multilingual-learner readability/tone; educator calibration and review remain pending.
+- Added declared Final `revision_history` built from persisted snapshots and authoritative Coordinator observations, draft hashes, exact-link consistency guards, and legacy-round compatibility.
+- Added the evaluation-only `baseline_readable` Coordinator/Support candidate and descriptive scenario/arm readability metrics for sentence length, long actions, repetition, and action/self-check scope review. Added `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md` with evidence and rollback boundaries.
+- Added the evaluation-only `regression_readable` arm and `v3.8.3-regression-readable` Final prompt, preserving v3.8.2 as a control while checking whether changed qualifications undermine an original step's purpose. The owner subsequently promoted the behavioral contract to local prompt `v3.8.3`; the evaluation control and v3.8.0 structural control remain preserved.
+
 ### Changed
 
+- After the 2×2 pedagogical review, the user explicitly selected the Phase 1 baseline with thinking as the repository default (`DEEPSEEK_THINKING=true`). Thinking omits temperature and uses configured reasoning effort; explicit non-thinking comparisons remain available. No deployment occurred.
+- Choose now presents one recommended goal with a choose-only action, reveals alternatives on request, and separates idea/reasoning/organization choices from optional sentence polishing. Revealing and hiding choices make no model calls.
+- Coordinator and Support guidance now covers imaginative process/system explanations, observable reader-facing strengths and rationales, and concise pattern-based conventions instruction without replacement prose or formulaic transition/conclusion demands.
+- Local prompt/schema are `v3.8.3`/`v3.8.0` after the owner's explicit promotion decision; the v3.8.0 structural prompts and v3.7.1/v3.7.0 contracts remain evaluation controls. The promoted prompt carries the readability, strong-draft, Final-credit, and contextual purpose-loss guidance with local-runtime labels. This product decision is not a Gate B pass or deployment. Hints consistently require one concept restatement plus 2–4 procedural steps (3–5 total); Coordinator output uses singular `regression`, restricted model flag categories, and explicit boundary-route defaults. Only the graph owns `clarification_limit`; `teacher_review` with `none` returns to clarification rather than being relabeled as concerning content.
+- Ranking now applies accuracy-first stable partitioning on initial and revision routes while preserving the Coordinator's supported-concern and non-accuracy order. No `addresses_student_concern` field was added.
+- Added evaluation-only consolidated Support prompt (targeted `v3.7.1-consolidated`; routing-fixed full-run `v3.7.2-consolidated`) with genre-neutral focus anchoring, consolidated authorship/frame rules, and clearer multi-action instruction guidance; the production default did not switch arms.
+- Removed generated vocabulary options, sentence starters, and Coordinator `reasoning_operation` from the local v3.8.0 contract after the user's cognitive-load/product decision. Legacy v3.7.x evaluation controls retain separate prompts and validators; v3.8.2 readability/strong-draft wording remains evaluation-only, while v3.8.3 was subsequently promoted locally as recorded in this Unreleased section.
+- Retained Coordinator finding-severity classification while removing the reasoning-operation classification whose only consumer was sentence-starter selection.
+- Kept GC, FG, and CQ production behavior unchanged after mixed, null, or unresolved targeted experiments; no persistent prior-findings production path was adopted.
+
+### Fixed
+
+- Added recorded deterministic paragraph/occurrence recovery for exact issue references that occur exactly once in the full draft; repeated, missing, and cross-paragraph references still require bounded repair.
+- Extended the same narrow recovery to unique `present` framework references within one block, with separate framework/component correction records and no Final-reference normalization.
+- Before the v3.8.0 scaffold removal, removed the literal `This evidence/detail matters because ____.` starter from the legacy contract. Exact quoted draft ellipses used for locating do not trigger completion-placeholder repair; target frames and non-reference ellipses still fail.
+- Prevented Final same-goal improvement contradictions and verbatim-text deletion regressions through exact-link deterministic guards without inferring empty goal IDs or semantic weakening.
+- Preserved the Support schema after baseline analysis found zero echo mismatches: 17 validation-failure events yielded 19 field findings, including 12 genuine authorship leaks and three quoted-ellipsis false positives across 212 attempted calls in the two preserved acceptance artifacts.
+- Fixed practice-scenario overwrite confirmation by applying widget updates in an `on_click` callback.
+- Closed the Finish confirmation dialog when final reflection fails so the saved failure and retry remain visible without discarding drafts.
 - Simplified optional assignment and goal self-report language while preserving custom frameworks and stable internal self-report values.
 - Moved the four workflow steps into the header and added action-based completed states with textual markers.
 - Grouped revision candidates in native bordered containers with selected-state styling and escaped, visually distinct draft quotes.
@@ -19,6 +52,22 @@ For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V
 - Restored Deploy button and theme switcher visibility in the Streamlit toolbar menu.
 - Fixed the Choose/Revise highlight editor dropping or scrambling characters during fast typing; the textarea now takes Session State only on first mount.
 - Added a small footer showing the commit recorded in `version.txt`.
+
+### Verification
+
+- **372 mocked checks passed** for the promoted local v3.8.3 implementation. In `data/evidence/v3_final_regression_regression_readable_evaluation_20261116T154531Z.json`, all four matched thinking Final contrasts completed with eight calls, zero errors, and zero repairs; two #9 findings covered all three loss types, and F1/E remained intact. A later default-factory check in `data/evidence/v3_final_regression_runtime_default_scenario_04_evaluation_20261116T160207Z.json` confirmed `v3.8.3`/`v3.8.0` with two calls, zero errors, and zero repairs, but omitted the tracking-purpose regression. Regression handling is therefore mixed across runs. F2 still withholds improvement credit and Gate B remains not passed; local promotion is an explicit owner product decision, not semantic acceptance or deployment. See Sections 8–9 of `V3_8_2_READABILITY_AND_FINAL_IMPLEMENTATION_RESULTS.md`.
+- **369 mocked checks passed** for the evaluation-only v3.8.2 implementation. It preserves the two-agent architecture and v3.8.0 schema, adds Final credit/regression-restraint prompt guidance and an internal Support delivery review, and introduces versioned Final/coverage fixtures. `all_available` selects one to three actual candidates; the versioned #20 successor can Finish after direct_response without manufacturing a revision. These are engineering contracts, not semantic acceptance. Targeted thinking rubric screening rates the candidate **Needs refinement** and does not pass Gate B: Support survey/octopus wording and F1 improve, but F2 credit, imaginative Coordinator selection, and complete #9 regression preservation remain unresolved. Zero targeted repairs does not erase these semantic failures. Integrated Gate C passes only for the seven-scenario versioned coverage set; #15/#20 adaptive and controlled paths completed without forced counts/routes, and integrated #15 revealed another Final-credit omission. Full acceptance, non-thinking, human, accessibility, promotion, and deployment gates remain separate. See `V3_8_2_READABILITY_AND_FINAL_IMPLEMENTATION_RESULTS.md`, `V3_8_2_READABILITY_AND_FINAL_EXPERT_REVIEW.md`, and `data/evidence/v3_8_2_targeted_rubric_screening_20261116T084042Z.json`.
+
+- **350 mocked checks passed** for the earlier structural/readability implementation, including the controlled Final-history fixtures and payload tests. Educator-rubric screening rates v3.8.1 **Needs refinement** overall: no unresolved Critical issue in the reviewed sample, with Moderate multilingual-readability and Final-meaningfulness concerns. The earlier v3.8.0 octopus source-grounding leak was **Unacceptable / Critical** and was corrected. Operational calls/tokens/latency and surface heuristics are secondary diagnostics, not performance rankings. See `data/evidence/v3_baseline_readability_rubric_screening_20261116T070407Z.json` and `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md`.
+- External expert feedback on `V3_BASELINE_READABILITY_EXPERT_REVIEW.md` recommended against promoting v3.8.1, retaining its calibration/consistency gains while fixing Final-regression restraint and EL readability. The expert considered F2 potentially Major rather than merely Moderate. `V3_8_2_READABILITY_AND_FINAL_IMPROVEMENT_PLAN.md` is now implemented as an evaluation-only candidate, not an adopted runtime or promoted pedagogical improvement.
+- Thinking Coordinator-targeted arms each completed 12 scenarios with zero repairs. The v3.8.1 candidate affirmed strong-draft #10 and avoided the later-start deletion regression; a source-present Final meaningfulness caution remains. Integrated candidate #15/#20 produced explained fixture-selection incompatibilities without forced retries, so Gate C is not passed. Controlled Final-history probes verified exact-verdict repair and retained-opening behavior for both arms. See `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md` and the paired artifacts.
+- **325 mocked checks passed** for Gate A of the earlier prompt/contract revision. The repair analyzer and baseline decision are preserved in `data/evidence/v3_repair_analysis_20261115T151252Z.json`; real-model targeted and integrated outcomes are recorded in `V3_PROMPT_REVISION_IMPLEMENTATION_RESULTS.md`.
+- All four Support 2×2 arms completed 14 handoffs without scenario errors. Consolidation changed non-thinking repairs from three to five and kept thinking at one; it did not earn promotion. Target-like vocabulary and a mismatched passage frame remain semantic failures. Coordinator targets completed 12 scenarios per mode and motivated the `none`-category routing fix; controlled probes reached `clarification_limit` correctly in both modes. See `V3_PROMPT_REVISION_IMPLEMENTATION_RESULTS.md` for mixed/negative findings and open semantic gates.
+- Full integrated `v3.7.2-consolidated` diagnostics completed 32 scenarios per mode. Non-thinking used 110 calls/four repairs with zero scenario errors; thinking used 97 calls/four repairs with two explained fixture-selection incompatibilities (#9/#15) and no empty API response. Strong-draft, authorship, and revision/final consistency concerns mean Gates B and C are not passed; operational completion is not semantic acceptance or deployment evidence.
+- **260 mocked checks passed** after the one-goal-first Choose, speculative-process, unique-reference, and language-guidance changes. Targeted SA outputs improved after corrections, but the final non-thinking integrated `v3.6.5`/`v3.6.3` artifact has two scenario errors and ten repairs. The full thinking run in `data/evidence/v3_acceptance_evaluation_20261115T113518Z.json` avoided the earlier #1/#10 Support validation failures and reduced repairs to three, but recorded three scenario errors (#8/#15 fixture selection and #24 empty API response), premature #30 clarification escalation, and remaining semantic concerns. It used 488,010 observed tokens and 1,266.141 seconds of model latency. Neither integrated engineering nor clean semantic acceptance is passed; the repository default at that time was non-thinking and the separate local port-8501 process was explicitly switched to thinking. See `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` for all positive, null, mixed, and negative findings.
+- A separately authorized exact-text check, outside the synthetic-only prototype workflow, used eight cumulative non-thinking calls and 37,801 tokens across four attempts. Final prompt `v3.6.8` delivered four candidates in two calls with no repairs and passed local Choose/Revise browser inspection; earlier title-location failures and final semantic scope/priority concerns are recorded in `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` Section 14.
+- Completed SOTA smoke checks and seven targeted thinking scenarios per model without total token stop caps. Claude Opus 5.5 recorded one scenario error/four repairs; Gemini 4 Argon recorded three timeout-ended scenarios/one repair. Both affirmed #10 and avoided the sampled #22 target-vocabulary issue, but Claude failed #8 occurrence validation and Gemini retained semantic concerns. Neither solved the targeted set; see Section 13 of `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md`.
+- Educator review, actual screen-reader/full-keyboard verification, deployment, and production-readiness claims remain open.
 
 ## [V3.4.0] — 2026-11-10
 
@@ -192,13 +241,15 @@ For the complete evidence analysis, see `V3_OUTCOMES_REPORT.md`. Historical V1/V
 
 These findings drove the V3.1.0 changes. The earlier artifact `data/evidence/v3_paired_evaluation_20261110T093315Z.json` is development evidence, not current-output evidence.
 
-## [Unreleased]
+## [V3.0.0 planning record] — 2026-11-10
 
-### Planned validation and decisions
+### Planning items at that time
 
-- Decide the default model configuration after repeated matched runs and educator review. Non-thinking is currently favored by the representative evidence.
+These items preserve the early V3.0.0 planning context and are not current status. Later outcomes are recorded above and in `V3_OUTCOMES_REPORT.md`; current deployment and verification boundaries are in `README.md`.
+
+- Decide the default model configuration after repeated matched runs and educator review. Non-thinking was favored by the representative evidence at that time.
 - Complete the remaining exact Section 14.2 scenarios, including all-three-goal revision, meaningful organizational regression, long informational writing, language-error prioritization, middle-paragraph highlighting, register shifts, and repeated identical resubmissions.
 - Capture invalid first responses during authorized debug evaluation to diagnose schema repairs.
 - Complete the three-educator synthetic walk-through gate before any supervised student contact.
-- Expand keyboard, zoom, focus, and assistive-technology checks beyond the current desktop verification.
-- Make any deployment, durable-storage, privacy, consent, and institutional decisions separately. V3 remains local and is not deployed.
+- Expand keyboard, zoom, focus, and assistive-technology checks beyond the desktop verification available then.
+- Make deployment, durable-storage, privacy, consent, and institutional decisions separately. V3 was local and undeployed at this planning point.

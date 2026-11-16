@@ -23,6 +23,7 @@ ALLOWED_SENTENCE_STARTERS = {
     "____",
     # causal / explanatory
     "____ because ____.",
+    "this matters because ____.",
     "this detail matters because ____.",
     "this evidence matters because ____.",
     "this shows that ____.",
@@ -32,6 +33,7 @@ ALLOWED_SENTENCE_STARTERS = {
     "therefore, ____.",
     # source-based
     "according to the passage, ____.",
+    "according to the survey, ____.",
     # argument structure
     "one reason is that ____.",
     "another reason is that ____.",
@@ -60,20 +62,30 @@ class HintOutput(BaseModel):
     passage_reference: str = Field(min_length=1)
     steps: list[str] = Field(min_length=3, max_length=5)
     self_check: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def check_scaffold_boundaries(self):
+        if any(not step for step in self.steps):
+            raise ValueError("Hint steps cannot be empty.")
+        if len(self.steps) < 3:
+            raise ValueError(
+                "Hints must include one concept restatement followed by 2-4 procedural steps."
+            )
+        return self
+
+
+class LegacyHintOutput(HintOutput):
     vocabulary_options: list[str] = Field(max_length=4)
     sentence_starter: str
 
     @model_validator(mode="after")
-    def check_scaffold_boundaries(self):
+    def check_legacy_scaffolds(self):
+        if self.sentence_starter.lower() not in ALLOWED_SENTENCE_STARTERS:
+            raise ValueError(
+                "Sentence starters must use an approved abstract structural frame."
+            )
         if any(re.search(r"\d", option) for option in self.vocabulary_options):
             raise ValueError("Vocabulary options cannot supply numeric evidence answers.")
-        if any(not step for step in self.steps):
-            raise ValueError("Hint steps cannot be empty.")
-        # Steps now require minimum 3 to account for Step 0 (concept restatement) + 2 procedural steps
-        if len(self.steps) < 3:
-            raise ValueError(
-                "Hints must include Step 0 (concept restatement) followed by at least 2 procedural steps."
-            )
         return self
 
 
@@ -89,6 +101,29 @@ class CandidateOutput(BaseModel):
     revision_action: str = Field(min_length=1)
     hint: HintOutput
     stuck_step: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def check_completion_frames(self):
+        instructional_text = [
+            self.why_it_matters,
+            self.revision_action,
+            *self.hint.steps,
+            self.hint.self_check,
+            self.stuck_step,
+        ]
+        if any("____" in text for text in instructional_text):
+            raise ValueError("Completion blanks are not allowed in instructional fields.")
+        return self
+
+
+class LegacyCandidateOutput(CandidateOutput):
+    hint: LegacyHintOutput
+
+    @model_validator(mode="after")
+    def check_legacy_completion_frames(self):
+        if any("____" in text for text in self.hint.vocabulary_options):
+            raise ValueError("Vocabulary options cannot contain completion blanks.")
+        return self
 
 
 class GoalFeedbackOutput(BaseModel):
@@ -107,6 +142,61 @@ class RoundSupportOutput(BaseModel):
     candidates: list[CandidateOutput] = Field(min_length=1, max_length=5)
     goal_feedback: list[GoalFeedbackOutput] = Field(max_length=3)
     source_limitations: list[str] = Field(max_length=3)
+
+
+class LegacyRoundSupportOutput(RoundSupportOutput):
+    candidates: list[LegacyCandidateOutput] = Field(min_length=1, max_length=5)
+
+
+def exact_ellipsis_locating_quotation(text: str, writing: str) -> bool:
+    lowered = text.lower()
+    locating = re.search(r"\b(?:find|read|reread|look|locate|underline)\b", lowered)
+    completing = re.search(r"\b(?:finish|complete)\b", lowered) or (
+        re.search(r"\b(?:write|say|add)\b", lowered)
+        and re.search(r"\b(?:starts?|begins?)\b[^.!?]*\bwith\b", lowered)
+    )
+    quotations = list(
+        re.finditer(r"(['\"“])([^'\"”]*?(?:\.\.\.|…)[^'\"”]*)(['\"”])", text)
+    )
+    remainder = re.sub(
+        r"(['\"“])([^'\"”]*?(?:\.\.\.|…)[^'\"”]*)(['\"”])", "", text
+    )
+    exact_excerpt = bool(quotations) and all(
+        any(
+            segment.strip() and segment.strip() in writing
+            for segment in re.split(r"\.\.\.|…", match.group(2))
+        )
+        for match in quotations
+    )
+    return bool(
+        locating
+        and not completing
+        and exact_excerpt
+        and "..." not in remainder
+        and "…" not in remainder
+    )
+
+
+def ensure_no_completion_ellipses(
+    output: RoundSupportOutput, writing: str
+) -> None:
+    for candidate in output.candidates:
+        instructional_text = [
+            candidate.why_it_matters,
+            candidate.revision_action,
+            *candidate.hint.steps,
+            candidate.hint.self_check,
+            *getattr(candidate.hint, "vocabulary_options", []),
+            candidate.stuck_step,
+        ]
+        for text in instructional_text:
+            if ("..." in text or "…" in text) and not exact_ellipsis_locating_quotation(
+                text, writing
+            ):
+                raise ValueError(
+                    "Instructional ellipses must be exact quoted draft excerpts "
+                    "used for locating, not completion placeholders."
+                )
 
 
 class FinalFindingOutput(BaseModel):
@@ -135,8 +225,18 @@ class SupportResult:
 
 
 class InstructionalSupportAgent:
-    def __init__(self, client: DeepSeekClient):
+    def __init__(
+        self,
+        client: DeepSeekClient,
+        *,
+        round_prompt: str | None = None,
+        final_prompt: str | None = None,
+        legacy_contract: bool = False,
+    ):
         self.client = client
+        self.round_prompt = round_prompt or SUPPORT_ROUND_PROMPT
+        self.final_prompt = final_prompt or SUPPORT_FINAL_PROMPT
+        self.legacy_contract = legacy_contract
 
     def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
         payload: dict[str, Any] = {
@@ -171,7 +271,7 @@ class InstructionalSupportAgent:
                 }
             )
         return [
-            {"role": "system", "content": SUPPORT_ROUND_PROMPT},
+            {"role": "system", "content": self.round_prompt},
             {
                 "role": "user",
                 "content": "Provide the required round-feedback JSON for this handoff:\n"
@@ -191,7 +291,7 @@ class InstructionalSupportAgent:
             "revision_history": state.get("revision_history", []),
         }
         return [
-            {"role": "system", "content": SUPPORT_FINAL_PROMPT},
+            {"role": "system", "content": self.final_prompt},
             {
                 "role": "user",
                 "content": "Create the final reflection from these verified findings:\n"
@@ -221,6 +321,7 @@ class InstructionalSupportAgent:
                 or candidate.hint.passage_reference != candidate.draft_reference
             ):
                 raise ValueError("Candidate and hint references must preserve the Coordinator reference.")
+        ensure_no_completion_ellipses(output, state["writing"])
         if output.source_limitations != state.get("source_limitations", []):
             raise ValueError("Support must preserve every Coordinator source limitation exactly.")
 
@@ -260,7 +361,8 @@ class InstructionalSupportAgent:
         ensure_bounded_language(output.model_dump(), state["source_material_available"])
 
     def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
-        output = RoundSupportOutput.model_validate(parse_json_object(raw_response))
+        output_type = LegacyRoundSupportOutput if self.legacy_contract else RoundSupportOutput
+        output = output_type.model_validate(parse_json_object(raw_response))
         self._validate_round(output, state)
         values = output.model_dump()
         issue_order = {

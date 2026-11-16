@@ -388,6 +388,110 @@ def test_final_comparison_uses_original_and_latest_submitted_draft(tmp_path):
     assert result.state["writing"] == revised
     assert result.state["final_reflection"]["improvements"]
     assert service.storage.get_reflection(initial["composition_id"]).status == "completed"
+    history = result.state["revision_history"]
+    assert len(history) == 1
+    assert history[0]["snapshot_id"] == revision_snapshot_id
+    assert history[0]["reviewed_round_id"] == revision["round_id"]
+    assert history[0]["selected_goals"] == [
+        {
+            "goal_id": "goal_1",
+            "draft_reference": "It would teach responsibility.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "status": "specific_improvement",
+            "observation": "The revised explanation makes the connection clearer.",
+            "evidence_reference": "",
+            "carry_forward": False,
+        }
+    ]
+    final_payload = json.loads(
+        final_client.calls[0][0][1]["content"].split("\n", 1)[1]
+    )
+    assert final_payload["revision_history"] == history
+    assert final_payload["final_submitted_draft_sha256"] == history[0][
+        "reviewed_draft_sha256"
+    ]
+
+
+def test_final_history_guard_rejects_contradiction_after_persisted_revisions(tmp_path):
+    initial, original_snapshot_id = initial_state()
+    client = FakeClient(
+        [coordinator_payload(initial), support_payload(handoff(initial))]
+    )
+    service = create_writing_assistant_service(client, str(tmp_path / "app.db"))
+    first = service.start_composition("session", initial, original_snapshot_id)
+
+    goal_text = "It would teach shared responsibility."
+    first_revision_text = INITIAL_DRAFT.replace(
+        "It would teach responsibility.", goal_text
+    )
+    first_revision, first_snapshot_id = revision_state(
+        service,
+        initial["composition_id"],
+        first_revision_text,
+        first.state["revision_candidates"],
+    )
+    first_observation = observation_for(status="improvement_not_yet_evident")
+    first_issues = [issue_for(first_revision_text, goal_text)]
+    client.responses = [
+        coordinator_payload(
+            first_revision, issues=first_issues, observations=[first_observation]
+        ),
+        support_payload(
+            {
+                **first_revision,
+                "issues": first_issues,
+                "selected_goal_observations": [first_observation],
+            }
+        ),
+    ]
+    reviewed = service.submit_revision("session", first_revision, first_snapshot_id)
+
+    second_revision_text = first_revision_text + "\n\nA separate conclusion."
+    second_revision, second_snapshot_id = revision_state(
+        service,
+        initial["composition_id"],
+        second_revision_text,
+        reviewed.state["revision_candidates"],
+    )
+    second_observation = observation_for(status="improvement_not_yet_evident")
+    client.responses = [
+        coordinator_payload(
+            second_revision,
+            route="direct_response",
+            issues=[],
+            observations=[second_observation],
+        )
+    ]
+    service.submit_revision("session", second_revision, second_snapshot_id)
+
+    final, original_id, final_id = final_state(service, initial["composition_id"])
+    invalid = json.loads(final_coordinator_payload(final))
+    invalid["improvements"][0]["final_reference"] = goal_text
+    valid = json.loads(final_coordinator_payload(final, changed=False))
+    final_handoff = {
+        **final,
+        "original_strengths": valid["original_strengths"],
+        "comparison_improvements": [],
+        "comparison_regressions": [],
+        "future_areas": valid["future_areas"],
+    }
+    client.responses = [
+        json.dumps(invalid),
+        json.dumps(valid),
+        final_support_payload(final_handoff),
+    ]
+
+    result = service.finish_composition("session", final, original_id, final_id)
+
+    assert result.state["coordinator_repair_count"] == 1
+    assert result.state["comparison_improvements"] == []
+    assert result.state["revision_history"][-1]["selected_goals"][0][
+        "draft_reference"
+    ] == goal_text
+    assert result.state["revision_history"][-1]["selected_goals"][0][
+        "status"
+    ] == "improvement_not_yet_evident"
 
 
 def test_honest_stage_callback_order(tmp_path):
@@ -637,3 +741,108 @@ def test_failed_final_reflection_retries_without_duplicate_snapshots(tmp_path):
     assert result.state["final_reflection"]["improvements"] == []
     assert service.storage.get_reflection(initial["composition_id"]).status == "completed"
     assert len(service.storage.list_snapshots(initial["composition_id"])) == 2
+
+
+
+def test_model_cannot_trigger_clarification_limit_after_one_answer(tmp_path):
+    state, snapshot_id = initial_state()
+    early_limit = coordinator_payload(
+        state,
+        route="teacher_review",
+        teacher_flag_category="clarification_limit",
+        teacher_flag_reason="The model requested an early limit.",
+    )
+    client = FakeClient(
+        [coordinator_payload(state, route="ask_clarification"), early_limit]
+    )
+    service = create_writing_assistant_service(client, str(tmp_path / "app.db"))
+    service.start_composition("session", state, snapshot_id)
+
+    result = service.resume_clarification(
+        "session", state["composition_id"], "I am still deciding."
+    )
+
+    assert result.pending is True
+    assert result.state["routing_decision"] == "ask_clarification"
+    assert result.state["teacher_flag_category"] == "none"
+    assert result.state["clarification_count"] == 2
+    assert not result.state.get("teacher_message")
+
+
+
+def test_framework_correction_is_logged_once_with_component_identity(tmp_path):
+    writing = "Garden Essay\n\nOur school should start a garden.\n\nIt would teach responsibility."
+    state, snapshot_id = initial_state(writing)
+    state["framework_name"] = "Custom"
+    state["framework_components"] = ["Claim"]
+    coverage = [
+        {
+            "framework": "Custom",
+            "component": "Claim",
+            "status": "present",
+            "reference": "It would teach responsibility.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "goal_id": "",
+        }
+    ]
+    client = FakeClient(
+        [
+            coordinator_payload(state, framework_coverage=coverage),
+            support_payload(handoff(state)),
+        ]
+    )
+    service = create_writing_assistant_service(client, str(tmp_path / "app.db"))
+
+    result = service.start_composition("session", state, snapshot_id)
+
+    coordinator_logs = [
+        log
+        for log in result.state["execution_logs"]
+        if log["node"] == "assessment_coordinator"
+    ]
+    assert len(coordinator_logs) == 1
+    corrections = coordinator_logs[0]["state_changes"][
+        "coordinator_framework_normalizations"
+    ]
+    assert corrections == [
+        {
+            "framework": "Custom",
+            "component": "Claim",
+            "previous_paragraph_number": 2,
+            "previous_occurrence": 1,
+            "paragraph_number": 3,
+            "occurrence": 1,
+        }
+    ]
+    assert result.state["framework_coverage"][0]["paragraph_number"] == 3
+
+
+
+def test_none_category_teacher_route_after_two_answers_uses_clarification_limit(tmp_path):
+    state, snapshot_id = initial_state()
+    client = FakeClient(
+        [
+            coordinator_payload(state, route="ask_clarification"),
+            coordinator_payload(state, route="ask_clarification"),
+            coordinator_payload(
+                state,
+                route="teacher_review",
+                teacher_flag_category="none",
+                teacher_flag_reason="The task remains unclear after two answers.",
+            ),
+        ]
+    )
+    service = create_writing_assistant_service(client, str(tmp_path / "app.db"))
+    service.start_composition("session", state, snapshot_id)
+    service.resume_clarification("session", state["composition_id"], "Not sure")
+
+    result = service.resume_clarification(
+        "session", state["composition_id"], "Anything, I guess"
+    )
+
+    assert result.state["routing_decision"] == "teacher_review"
+    assert result.state["teacher_flag_category"] == "clarification_limit"
+    assert result.state["teacher_flag_reason"] == (
+        "Essential context remains unclear after two clarification answers."
+    )

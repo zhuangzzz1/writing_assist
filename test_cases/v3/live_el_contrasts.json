@@ -1,0 +1,808 @@
+{
+  "fixture_version": "v3.6.6-live-el.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "live_el_01_beach_continuity",
+      "name": "Controlled beach revision 2 with an unselected long-sentence finding",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "Last summer my family went to the beach and it was really fun. When we got there the sand was super hot so I ran fast to the water. The waves were really big and loud and my little brother started crying because he was scared but my dad held him. He was holding my dad's shirt and had tears on his face. My dad said it was okay and stayed with him until he stopped crying.\n\nLater we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up. After that we saw dolphins swimming in the ocean! Everyone was pointing at them and taking pictures. It was so cool to see their fins. The beach was the best vacation ever and I want to go back next year and try surfing.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare identical current, generic-continuity, and temporary-history inputs for the disputed revision 2",
+      "workstreams": ["GC"],
+      "expected_outcomes": [
+        "Recognize the selected sandcastle-detail improvement with exactly one observation.",
+        "Leave the previous long-sentence finding unselected; do not mechanically revive it or make it required before Finish.",
+        "Record whether the unchanged sentence remains meaningful under the PRD instead of treating candidate count or direct_response alone as proof of quality."
+      ],
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Last summer my family went to the beach and it was really fun. When we got there the sand was super hot so I ran fast to the water. The waves were really big and loud and my little brother started crying because he was scared but my dad held him.\n\nThen we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up. After that we saw dolphins swimming in the ocean! Everyone was pointing at them and taking pictures. It was so cool to see their fins. The beach was the best vacation ever and I want to go back next year and try surfing.",
+        "working_genre": "narrative",
+        "strengths": ["The brother's fear and the dad's comforting are shown with concrete actions."],
+        "issues": [
+          {
+            "goal_id": "goal_run_on",
+            "category": "language_conventions",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The long waves-and-brother sentence may make the order of actions harder to follow.",
+            "draft_reference": "The waves were really big and loud and my little brother started crying because he was scared but my dad held him. He was holding my dad's shirt and had tears on his face.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": false
+          },
+          {
+            "goal_id": "goal_sandcastle",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The sandcastle scene is summarized without a concrete sensory detail.",
+            "draft_reference": "Later we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_run_on", "title": "Break up the long sentence", "draft_reference": "The waves were really big and loud and my little brother started crying because he was scared but my dad held him. He was holding my dad's shirt and had tears on his face.", "paragraph_number": 1, "occurrence": 1},
+          {"goal_id": "goal_sandcastle", "title": "Add a sensory detail to the sandcastle scene", "draft_reference": "Later we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goals": [
+          {"goal_id": "goal_brother", "title": "Make the brother's scared moment more vivid", "draft_reference": "my little brother started crying because he was scared but my dad held him", "paragraph_number": 1, "occurrence": 1},
+          {"goal_id": "goal_transition", "title": "Strengthen the connection between events", "draft_reference": "Then we built a big sandcastle with a moat around it", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "goal_self_reports": {},
+        "selected_goal_observations": [
+          {"goal_id": "goal_brother", "status": "specific_improvement", "observation": "The revision adds actions showing the brother's fear and the dad's response.", "evidence_reference": "He was holding my dad's shirt and had tears on his face.", "carry_forward": false},
+          {"goal_id": "goal_transition", "status": "specific_improvement", "observation": "Later now marks the time relationship.", "evidence_reference": "Later we built", "carry_forward": false}
+        ],
+        "goal_feedback": [
+          {"goal_id": "goal_brother", "status": "specific_improvement", "observation": "You added actions showing the brother's fear and the dad's response.", "carry_forward": false},
+          {"goal_id": "goal_transition", "status": "specific_improvement", "observation": "Later now marks the time relationship.", "carry_forward": false}
+        ]
+      },
+      "revisions": [
+        {
+          "draft": "Last summer my family went to the beach and it was really fun. When we got there the sand was super hot so I ran fast to the water. The waves were really big and loud and my little brother started crying because he was scared but my dad held him. He was holding my dad's shirt and had tears on his face. My dad said it was okay and stayed with him until he stopped crying.\n\nLater we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up. The towers were lopsided and the wet sand felt cold and squishy in my hands. After that we saw dolphins swimming in the ocean! Everyone was pointing at them and taking pictures. It was so cool to see their fins. The beach was the best vacation ever and I want to go back next year and try surfing.",
+          "goal_selection": "explicit",
+          "goal_references": ["Later we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up."],
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "scenario_id": "live_el_02_beach_resolved_control",
+      "name": "Beach control with all initial goals addressed",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "Last summer my family went to the beach and it was really fun. When we got there the sand was super hot so I ran fast to the water. The waves were really big and loud and my little brother started crying because he was scared but my dad held him.\n\nThen we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up. After that we saw dolphins swimming in the ocean! Everyone was pointing at them and taking pictures. It was so cool to see their fins. The beach was the best vacation ever and I want to go back next year and try surfing.",
+      "assignment_prompt": "Tell about a memorable family experience.",
+      "teacher_directions": "Use a clear sequence and concrete details. Language corrections are optional unless they obscure meaning.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Resolved selected issues and non-obscuring conventions must not be revived by continuity instructions or history",
+      "workstreams": ["GC"],
+      "expected_outcomes": [
+        "Give exactly one observation to each of the three selected goals.",
+        "Allow direct_response when the selected issues are resolved and no meaningful new issue remains.",
+        "Do not manufacture a stale run-on, transition, or vivid-detail goal from prior findings."
+      ],
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "narrative",
+        "strengths": ["The draft recounts a clear family beach experience."],
+        "issues": [
+          {
+            "goal_id": "goal_brother",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The brother's scared moment can be developed with a concrete action.",
+            "draft_reference": "my little brother started crying because he was scared but my dad held him",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_transition",
+            "category": "organization",
+            "finding_severity": "development",
+            "reasoning_operation": "sequential",
+            "description": "The move into the sandcastle event can name its time relationship more deliberately.",
+            "draft_reference": "Then we built a big sandcastle with a moat around it",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_run_on",
+            "category": "language_conventions",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The long combined sentence obscures the boundaries between the waves, crying, and comforting actions.",
+            "draft_reference": "The waves were really big and loud and my little brother started crying because he was scared but my dad held him.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": true
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_brother", "title": "Make the brother's scared moment more vivid", "draft_reference": "my little brother started crying because he was scared but my dad held him", "paragraph_number": 1, "occurrence": 1},
+          {"goal_id": "goal_transition", "title": "Strengthen the connection between events", "draft_reference": "Then we built a big sandcastle with a moat around it", "paragraph_number": 2, "occurrence": 1},
+          {"goal_id": "goal_run_on", "title": "Break up the long run-on sentence", "draft_reference": "The waves were really big and loud and my little brother started crying because he was scared but my dad held him.", "paragraph_number": 1, "occurrence": 1}
+        ]
+      },
+      "revisions": [
+        {
+          "draft": "Last summer my family went to the beach and it was really fun. When we got there, the sand was super hot, so I ran fast to the water. The waves were really big and loud. My little brother started crying because he was scared, but my dad held him. He gripped my dad's shirt and hid his face while my dad spoke softly and stayed beside him.\n\nLater, we built a big sandcastle with a moat around it. We tried to put water in it, but it kept drying up. After that, we saw dolphins swimming in the ocean! Everyone pointed and took pictures. It was so cool to see their fins. The beach was the best vacation ever, and I want to go back next year and try surfing.",
+          "goal_selection": "explicit",
+          "goal_references": [
+            "my little brother started crying because he was scared but my dad held him",
+            "Then we built a big sandcastle with a moat around it",
+            "The waves were really big and loud and my little brother started crying because he was scared but my dad held him."
+          ],
+          "self_reports": {"all": "attempted"}
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "scenario_id": "live_el_03_homework_authorship_rationale",
+      "name": "Homework argument authorship and closing-claim contrast",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "I think teachers should not give us so much homework every day. We already stay at school for seven hours and it is very tiring. When we get home we have a lot of other things to do like sports and spending time with our family. My friend Sarah has so much homework she had to quit soccer and that is not good because exercise is healthy for kids.\n\nAlso homework causes too much stress. When you have a lot of worksheets you get mad and stay up late and then you are tired at school the next day which makes your grades worse. Homework does not help kids learn better it just makes them hate school. Teachers should let us practice in class instead of giving homework every night.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Elicit student-authored causal explanation and recognize the existing final position statement",
+      "workstreams": ["SA", "CQ"],
+      "expected_outcomes": [
+        "Do not list no time, tiredness, focus loss, missed instructions, mistakes, or other likely target causes for the student to choose.",
+        "Ask linked questions about the student's own Sarah example and classroom experience while leaving the causal connection to the student.",
+        "Acknowledge that the last sentence already restates the position; any conclusion goal must identify a real remaining gap rather than claim no final reminder exists.",
+        "Abstract starters such as ____ because ____ remain permitted."
+      ]
+    },
+    {
+      "number": 4,
+      "scenario_id": "live_el_04_octopus_grounding_conclusion",
+      "name": "Controlled octopus bounded-inference revision",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. You should definitely read more about octopuses because they are really smart and can even open bottles.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Distinguish bounded inference from verified fact without requiring an unsupported mechanism",
+      "workstreams": ["FG", "SA"],
+      "expected_outcomes": [
+        "Treat 'I think' as a bounded inference rather than automatically demanding correction or an unsupported mechanism.",
+        "Do not claim that octopus facts or the aquarium inference were verified without a source.",
+        "When verification remains relevant, give a brief source limitation and invitation consistently with the controlled initial meaning.",
+        "Hints may connect existing observations and traits without inventing facts or mechanisms."
+      ],
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "informational",
+        "strengths": ["The draft groups several octopus traits and includes a personal observation."],
+        "source_limitations": [],
+        "issues": [
+          {
+            "goal_id": "goal_aquarium",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The aquarium observation needs a clear connection to the surrounding octopus traits.",
+            "draft_reference": "My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_conclusion",
+            "category": "organization",
+            "finding_severity": "development",
+            "reasoning_operation": "summary",
+            "description": "The final request to read more does not synthesize the traits already presented.",
+            "draft_reference": "You should definitely read more about octopuses because they are really smart and can even open bottles.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_aquarium", "title": "Connect your aquarium story to your octopus facts", "draft_reference": "My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring.", "paragraph_number": 2, "occurrence": 1},
+          {"goal_id": "goal_conclusion", "title": "End with a sentence that ties your octopus facts together", "draft_reference": "You should definitely read more about octopuses because they are really smart and can even open bottles.", "paragraph_number": 2, "occurrence": 1}
+        ]
+      },
+      "revisions": [
+        {
+          "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. It was hiding in the corner so I think it was using camouflage to stay safe. You should definitely read more about octopuses because they are really smart and can even open bottles. Octopuses are cool animals with special ways to survive.",
+          "goal_selection": "explicit",
+          "goal_references": [
+            "My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring.",
+            "You should definitely read more about octopuses because they are really smart and can even open bottles."
+          ],
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "scenario_id": "live_el_05_cell_phone_evidence_wording",
+      "name": "Cell-phone attributed motive and evidence wording",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our stuff away because they don't trust us.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. Schools need to change the rules and let us keep our phones.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Recognize a more specific attributed motive without calling it checkable or verified",
+      "workstreams": ["FG", "CQ", "SA"],
+      "expected_outcomes": [
+        "Acknowledge the revised teacher sentence as a clearer attributed reason, not a checkable or established motive.",
+        "Do not ask for invented surveys, quotations, facts, or motives; invite an actual observation or bounded opinion instead.",
+        "Recognize the existing final call to change the rules and do not claim that a final position reminder is absent.",
+        "Do not let structural improvement erase a separate meaningful unsupported-motive issue."
+      ],
+      "revisions": [
+        {
+          "draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our stuff away because they don't trust us.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. He uses the calculator and looks up words for his homework, and that helps him get better grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. When the phone is in my pocket I cant see the screen or hear it buzz. Then I can listen to the teacher instead of looking at it. Schools need to change the rules and let us keep our phones.",
+          "goal_selection": "explicit",
+          "goal_references": [
+            "That is not true for everyone because kids know how to put them in their pockets.",
+            "My brother uses his phone in high school all the time and he gets good grades."
+          ],
+          "self_reports": {}
+        },
+        {
+          "draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our phones away because they think we will text in class and not listen.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. He uses the calculator and looks up words for his homework, and that helps him get better grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. When the phone is in my pocket I can't see the screen or hear it buzz. Then I can listen to the teacher instead of looking at it. Schools need to change the rules and let us keep our phones.",
+          "goal_selection": "explicit",
+          "goal_references": [
+            "Teachers just want to take our stuff away because they don't trust us.",
+            "I cant see the screen"
+          ],
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "scenario_id": "live_el_06_cake_sequence_hints",
+      "name": "Cake narrative with clear existing sequence words",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "Last month I decided to surprise my mom by baking a chocolate cake for her birthday. I get all the bowls and ingredients out of the cabinet. I mixed the flour and eggs together and I forgot to check how much sugar I was putting in. When I put the batter in the oven it smells weird already.\n\nTwenty minutes later my brother runs into the kitchen yelling that there is smoke! I open the oven door and black smoke comes pouring out everywhere. The cake was burnt like a rock on the outside and still liquid inside. My mom walked in right then and saw the mess on the counter. She wasn't even mad she just laughed and we ordered pizza instead. Next time I am going to follow the recipe carefully so I don't ruin the kitchen.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Recognize clear sequence markers and preserve narrative authorship",
+      "workstreams": ["CQ", "SA"],
+      "expected_outcomes": [
+        "Recognize 'When' and 'Twenty minutes later' as existing sequence markers; do not recommend a transition without an actual unclear relationship.",
+        "A recognizable tense-shift pattern may remain a meaningful candidate when it affects the sequence or reader understanding.",
+        "Do not impose transition quotas or a formulaic conclusion.",
+        "Narrative hints must not supply absent objects, textures, sounds, or actions as suggested details."
+      ]
+    },
+    {
+      "number": 7,
+      "scenario_id": "live_el_07_sandcastle_authorship",
+      "name": "Support-only sandcastle hint authorship control",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "Last summer my family went to the beach and it was really fun. When we got there the sand was super hot so I ran fast to the water. The waves were really big and loud and my little brother started crying because he was scared but my dad held him. He was holding my dad's shirt and had tears on his face. My dad said it was okay and stayed with him until he stopped crying.\n\nLater we built a big sandcastle with a moat around it and we tried to put water in it but it kept drying up. After that we saw dolphins swimming in the ocean! Everyone was pointing at them and taking pictures. It was so cool to see their fins. The beach was the best vacation ever and I want to go back next year and try surfing.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Generate scaffolds from an identical controlled Coordinator handoff",
+      "workstreams": ["SA"],
+      "expected_outcomes": [
+        "Preserve the two controlled selected-goal observations.",
+        "Anchor the sandcastle hint in existing sandcastle or moat words without naming absent towers, textures, sounds, or actions as answers.",
+        "Keep hints concrete and linked rather than replacing specificity with a generic question."
+      ],
+      "controlled_round_from": 1,
+      "support_only": true
+    },
+    {
+      "number": 8,
+      "scenario_id": "live_el_08_cell_phone_motive_controlled",
+      "name": "Controlled cell-phone revision 2 for attributed-motive wording",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our stuff away because they don't trust us.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. He uses the calculator and looks up words for his homework, and that helps him get better grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. When the phone is in my pocket I cant see the screen or hear it buzz. Then I can listen to the teacher instead of looking at it. Schools need to change the rules and let us keep our phones.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare motive observation wording from an identical saved revision 1",
+      "workstreams": ["FG"],
+      "expected_outcomes": [
+        "Acknowledge that the revised sentence attributes a more specific teacher concern without calling that motive checkable, proven, or accurate.",
+        "Do not ask the student to invent facts, surveys, quotations, mechanisms, or motives.",
+        "Keep any separate meaningful overgeneralization visible without diminishing the selected-goal improvements."
+      ],
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our stuff away because they don't trust us.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. Schools need to change the rules and let us keep our phones.",
+        "working_genre": "argument",
+        "strengths": ["The revision explains the pocket example and connects the brother example to learning."],
+        "issues": [
+          {
+            "goal_id": "goal_teacher",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The sentence attributes distrust to teachers without a supplied observation or other basis.",
+            "draft_reference": "Teachers just want to take our stuff away because they don't trust us.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_apostrophe",
+            "category": "language_conventions",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The missing apostrophe in cant is a localized convention correction.",
+            "draft_reference": "I cant see the screen",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": false
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_teacher", "title": "Support your point about teachers", "draft_reference": "Teachers just want to take our stuff away because they don't trust us.", "paragraph_number": 1, "occurrence": 1},
+          {"goal_id": "goal_apostrophe", "title": "Fix the missing apostrophe", "draft_reference": "I cant see the screen", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goals": [
+          {"goal_id": "goal_distraction", "title": "Explain why phones are not distracting for everyone", "draft_reference": "That is not true for everyone because kids know how to put them in their pockets.", "paragraph_number": 2, "occurrence": 1},
+          {"goal_id": "goal_brother", "title": "Make your brother example stronger", "draft_reference": "My brother uses his phone in high school all the time and he gets good grades.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goal_observations": [
+          {"goal_id": "goal_distraction", "status": "specific_improvement", "observation": "The pocket example now explains not seeing or hearing the phone.", "evidence_reference": "I cant see the screen or hear it buzz", "carry_forward": false},
+          {"goal_id": "goal_brother", "status": "specific_improvement", "observation": "The brother example now names specific school uses.", "evidence_reference": "He uses the calculator and looks up words", "carry_forward": false}
+        ],
+        "goal_feedback": [
+          {"goal_id": "goal_distraction", "status": "specific_improvement", "observation": "The pocket example now explains not seeing or hearing the phone.", "carry_forward": false},
+          {"goal_id": "goal_brother", "status": "specific_improvement", "observation": "The brother example now names specific school uses.", "carry_forward": false}
+        ]
+      },
+      "revisions": [
+        {
+          "draft": "Students should be allowed to have cell phones at school. Every single kid has a phone now anyway. Parents want to text us after school. If there is an emergency we need to call home right away. Teachers think phones are bad. Teachers just want to take our phones away because they think we will text in class and not listen.\n\nPhones are actually helpful for learning. We can use calculators on them. We can look up words we don't know. My brother uses his phone in high school all the time and he gets good grades. He uses the calculator and looks up words for his homework, and that helps him get better grades. Some people say phones are distracting. That is not true for everyone because kids know how to put them in their pockets. When the phone is in my pocket I can't see the screen or hear it buzz. Then I can listen to the teacher instead of looking at it. Schools need to change the rules and let us keep our phones.",
+          "goal_selection": "explicit",
+          "goal_references": [
+            "Teachers just want to take our stuff away because they don't trust us.",
+            "I cant see the screen"
+          ],
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "scenario_id": "live_el_09_octopus_completed_conclusion",
+      "name": "Controlled octopus revision 2 with a completed conclusion",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. It was hiding in the corner so I think it was using camouflage to stay safe. You should definitely read more about octopuses because they are really smart and can even open bottles. Octopuses are cool animals with special ways to survive.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "A specific completed conclusion should not mechanically continue the same goal",
+      "workstreams": ["CQ", "FG"],
+      "expected_outcomes": [
+        "Recognize specific improvement in the selected conclusion goal.",
+        "Do not repeat the same conclusion goal merely because the previous version was general; the revision now names existing traits.",
+        "Preserve the bounded aquarium inference and relevant source limitation without verification praise."
+      ],
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. You should definitely read more about octopuses because they are really smart and can even open bottles.",
+        "working_genre": "informational",
+        "strengths": ["The revision connects the aquarium observation and adds a general survival conclusion."],
+        "source_limitations": ["No source passage was provided, so factual claims cannot be checked against a text; add the passage if source checking is needed."],
+        "issues": [
+          {
+            "goal_id": "goal_conclusion",
+            "category": "organization",
+            "finding_severity": "development",
+            "reasoning_operation": "summary",
+            "description": "The new conclusion returns to survival but remains general and does not name the traits already discussed.",
+            "draft_reference": "Octopuses are cool animals with special ways to survive.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_conclusion", "title": "Tie your octopus traits together in the ending", "draft_reference": "Octopuses are cool animals with special ways to survive.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goals": [
+          {"goal_id": "goal_aquarium", "title": "Connect your aquarium story to your octopus facts", "draft_reference": "My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring.", "paragraph_number": 2, "occurrence": 1},
+          {"goal_id": "goal_conclusion", "title": "End with a sentence that ties your octopus facts together", "draft_reference": "You should definitely read more about octopuses because they are really smart and can even open bottles.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goal_observations": [
+          {"goal_id": "goal_aquarium", "status": "specific_improvement", "observation": "The revision adds a bounded connection to camouflage.", "evidence_reference": "I think it was using camouflage", "carry_forward": false},
+          {"goal_id": "goal_conclusion", "status": "specific_improvement", "observation": "The revision adds a general survival conclusion.", "evidence_reference": "Octopuses are cool animals with special ways to survive.", "carry_forward": true}
+        ],
+        "goal_feedback": [
+          {"goal_id": "goal_aquarium", "status": "specific_improvement", "observation": "You added a bounded connection to camouflage.", "carry_forward": false},
+          {"goal_id": "goal_conclusion", "status": "specific_improvement", "observation": "You added a general survival conclusion.", "carry_forward": true}
+        ]
+      },
+      "revisions": [
+        {
+          "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. It was hiding in the corner so I think it was using camouflage to stay safe. You should definitely read more about octopuses because they are really smart and can even open bottles. They can squeeze into small places, change color, and spray ink to get away from predators.",
+          "goal_selection": "explicit",
+          "goal_references": ["Octopuses are cool animals with special ways to survive."],
+          "self_reports": {}
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "scenario_id": "live_el_10_homework_support_controlled",
+      "name": "Support-only homework causal scaffolds",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "I think teachers should not give us so much homework every day. We already stay at school for seven hours and it is very tiring. When we get home we have a lot of other things to do like sports and spending time with our family. My friend Sarah has so much homework she had to quit soccer and that is not good because exercise is healthy for kids.\n\nAlso homework causes too much stress. When you have a lot of worksheets you get mad and stay up late and then you are tired at school the next day which makes your grades worse. Homework does not help kids learn better it just makes them hate school. Teachers should let us practice in class instead of giving homework every night.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare current and authorship prompts with an identical Coordinator handoff",
+      "workstreams": ["SA"],
+      "expected_outcomes": [
+        "Sarah and tired-to-grades hints elicit the student's own experiences without listing target causes or classroom events.",
+        "Every scaffold remains passage-specific, linked, and student-authored.",
+        "Sentence starters remain abstract and vocabulary remains optional."
+      ],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": ["The draft states a clear position and gives several reasons."],
+        "issues": [
+          {
+            "goal_id": "goal_sarah",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The Sarah example does not explain the causal steps between homework and quitting soccer.",
+            "draft_reference": "My friend Sarah has so much homework she had to quit soccer and that is not good because exercise is healthy for kids.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_tired",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The chain from tiredness to worse grades skips the classroom events that would connect them.",
+            "draft_reference": "then you are tired at school the next day which makes your grades worse",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ]
+      }
+    },
+    {
+      "number": 11,
+      "scenario_id": "live_el_11_cake_support_controlled",
+      "name": "Support-only narrative authorship scaffolds",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "Last month I decided to surprise my mom by baking a chocolate cake for her birthday. I get all the bowls and ingredients out of the cabinet. I mixed the flour and eggs together and I forgot to check how much sugar I was putting in. When I put the batter in the oven it smells weird already.\n\nTwenty minutes later my brother runs into the kitchen yelling that there is smoke! I open the oven door and black smoke comes pouring out everywhere. The cake was burnt like a rock on the outside and still liquid inside. My mom walked in right then and saw the mess on the counter. She wasn't even mad she just laughed and we ordered pizza instead. Next time I am going to follow the recipe carefully so I don't ruin the kitchen.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare causal and narrative-detail hints with an identical Coordinator handoff",
+      "workstreams": ["SA", "FG"],
+      "expected_outcomes": [
+        "Do not supply a sugar amount, cake-burning mechanism, or completed on-topic causal frame.",
+        "Do not name absent objects, sounds, textures, dialogue, or actions as suggested narrative details.",
+        "Keep a concrete next step and useful self-check without replacement prose."
+      ],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "narrative",
+        "strengths": ["The story has a clear sequence and a closing lesson."],
+        "issues": [
+          {
+            "goal_id": "goal_sugar",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The draft hints at a sugar mistake but does not establish its connection to the burnt cake.",
+            "draft_reference": "I forgot to check how much sugar I was putting in.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_mom",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The mother's reaction is summarized rather than shown with a student-chosen detail.",
+            "draft_reference": "She wasn't even mad she just laughed and we ordered pizza instead.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ]
+      }
+    },
+    {
+      "number": 12,
+      "scenario_id": "live_el_12_octopus_support_grounding",
+      "name": "Support-only source-less mechanism boundary",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. You should definitely read more about octopuses because they are really smart and can even open bottles.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare Support wording for a source-less factual-mechanism issue",
+      "workstreams": ["FG", "SA"],
+      "expected_outcomes": [
+        "Preserve the source limitation exactly.",
+        "Do not suggest swimming, cold-water survival, or other possible mechanisms as answers.",
+        "Direct the student to actual knowledge, observation, or an added source without inventing facts."
+      ],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "informational",
+        "strengths": ["The draft presents several specific octopus traits."],
+        "source_limitations": ["No source passage was provided, so factual claims cannot be checked against a text; add the passage if source checking is needed."],
+        "issues": [
+          {
+            "goal_id": "goal_hearts",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "causal",
+            "description": "The three-hearts fact is stated without explaining its relevance or connection to the central idea.",
+            "draft_reference": "They also have three hearts which is pretty crazy to think about.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ]
+      }
+    },
+    {
+      "number": 13,
+      "scenario_id": "live_el_13_octopus_initial_source_notice",
+      "name": "Octopus initial source-limitation consistency",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "Octopuses are one of the weirdest animals in the ocean. They do not have any bones in their body so they can squeeze into tiny spaces like jars or cracks in rocks. This helps them hide from sharks and eels that want to eat them. They also have three hearts which is pretty crazy to think about.\n\nAnother cool thing is camouflage. Octopuses can change the color of their skin in like one second to match sand or coral. Also if a predator catches them they spray black ink and swim away super fast. My cousin and I saw an octopus at the aquarium last year and it was just sitting in the corner looking boring. You should definitely read more about octopuses because they are really smart and can even open bottles.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Initial review should carry the same relevant no-source limitation meaning as the revision review",
+      "workstreams": ["FG"],
+      "expected_outcomes": [
+        "When factual verification is relevant, state briefly that no supplied source allows checking and invite the student to add one.",
+        "Do not make an unqualified accuracy claim or demand citations for the personal aquarium observation.",
+        "Do not treat bounded interpretation as a factual error merely because it is uncertain."
+      ]
+    },
+    {
+      "number": 14,
+      "scenario_id": "live_el_14_garden_source_support_controlled",
+      "name": "Thinking comparison for garden source scaffolds",
+      "base_scenario": "garden_source_accurate",
+      "acceptance_focus": "Compare non-thinking and thinking Support output from the failed acceptance #1 handoff",
+      "workstreams": ["SA"],
+      "expected_outcomes": [
+        "Preserve every issue, exact reference, source location, and source limitation.",
+        "Do not produce assigned-topic completion frames, target-answer menus, or unsupported source claims.",
+        "Retain specific process guidance and abstract starters without increasing repair pressure."
+      ],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": [
+          "Clear, explicit claim stated in the introduction and restated in the conclusion.",
+          "Two distinct reasons are provided: fresh food and responsibility.",
+          "Survey evidence is cited with a specific figure that matches the supplied source."
+        ],
+        "source_limitations": [],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "source_based",
+            "description": "The survey evidence is reported but not explained: the draft states the 62% result and then asserts some students are interested without connecting that interest to the claim that a garden would give students fresh food. A warrant linking the survey result to the claim is missing.",
+            "draft_reference": "This result shows that some students are interested in fresh food.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": true,
+            "source_location": "Paragraph 1",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_2",
+            "category": "source_use",
+            "finding_severity": "accuracy",
+            "reasoning_operation": "source_based",
+            "description": "The draft uses the survey to support a claim about fresh food, but the supplied source explicitly notes that the survey measured interest, not health outcomes. The evidence is stretched beyond what the source supports without acknowledging this limit.",
+            "draft_reference": "In the synthetic class survey, 62% of students said they would try vegetables from a school garden.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": true,
+            "source_location": "Paragraph 1",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_3",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "causal",
+            "description": "The responsibility reason lists actions and a general lesson, but does not explain how these experiences would help students become better citizens.",
+            "draft_reference": "This would help them become better citizens.",
+            "paragraph_number": 3,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ]
+      }
+    },
+    {
+      "number": 15,
+      "scenario_id": "live_el_15_strong_draft_support_controlled",
+      "name": "Thinking comparison for strong-draft Support handoff",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should add a quiet reading period because it gives students time to practice choosing and enjoying books. During a recent synthetic class discussion, several students said interruptions made sustained reading difficult. A short scheduled period would protect that focus while still allowing teachers to offer help. This routine would support reading without replacing regular instruction.",
+      "assignment_prompt": "Argue for one realistic reading routine at school.",
+      "teacher_directions": "State a claim, give a relevant reason, and explain it.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Compare non-thinking and thinking Support output from the failed acceptance #10 handoff",
+      "workstreams": ["SA"],
+      "expected_outcomes": [
+        "Do not use on-topic frames such as During our class discussion or invent quotations from students.",
+        "Preserve the no-source limitation and leave target reasoning to the student.",
+        "Retain concrete, useful steps without repeated validation failure."
+      ],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": [
+          "Clear, focused claim stated in the opening sentence.",
+          "Connects the reason to a benefit and addresses a concern about replacing instruction."
+        ],
+        "source_limitations": ["No source passage was provided, so the class-discussion reference cannot be verified against supplied material."],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "causal",
+            "description": "The supporting reason is asserted but not explained: the draft says a scheduled period would protect that focus without showing how or why a quiet period leads to better reading practice or enjoyment.",
+            "draft_reference": "A short scheduled period would protect that focus while still allowing teachers to offer help.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_2",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "source_based",
+            "description": "The reference to a recent synthetic class discussion is vague and unattributed; the reader cannot tell what students actually said or how it supports the claim.",
+            "draft_reference": "During a recent synthetic class discussion, several students said interruptions made sustained reading difficult.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ]
+      }
+    },
+    {
+      "number": 16,
+      "scenario_id": "live_el_16_speculative_process",
+      "name": "Imaginative rainwater system with an unexplained output",
+      "grade_level": "5th Grade",
+      "genre": "auto",
+      "draft": "My Amazing Rainwater Helper\n\nI want to invent a rainwater helper for our town,in the present,rain runs into drains and carries litter with it,this can make the river dirty,and we also use fresh water for gardens.\n\nFirst,rain falls into a tank on the roof. A turning wheel lifts out leaves and wrappers. The water then moves through a filter and into a storage tank. When the tank is full,a sensor closes the gate.\n\nThe filter catches dirt and tiny pieces of plastic. Clean water flows to a small garden tank. Students can use the stored water for class plants. A solar panel runs the sensor and turning wheel.\n\nThis is my amazing rainwater helper,I hope it can make our town cleaner.",
+      "assignment_prompt": "Write an imaginative explanation of a system that could help your community.",
+      "teacher_directions": "Explain the steps in your invented system so readers can follow them. This is imaginative writing; no scientific source is required. Focus on ideas before optional sentence polishing.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Prioritize a reader-facing process gap while preserving imaginative authorship and avoiding formulaic polishing",
+      "workstreams": ["CQ", "SA", "FG"],
+      "expected_outcomes": [
+        "Infer a working informational purpose from the imaginative explanation without forcing a narrative or asking unnecessary genre clarification.",
+        "Treat the invented system as a student design, not fabricated evidence; do not certify its technical effectiveness or require a scientific source for this assignment.",
+        "Prioritize the missing next step for dirt and plastic already caught by the filter over non-obscuring conventions, without suggesting disposal or treatment answers.",
+        "Recognize the existing sequence and closing purpose without imposing transition quotas or a longer conclusion.",
+        "Give specific, bounded strengths and student-authored revision guidance without replacement prose, grades, talent claims, or readiness claims."
+      ]
+    }
+  ]
+}

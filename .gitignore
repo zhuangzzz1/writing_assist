@@ -26,3 +26,4 @@ venv/
 
 # Browser automation captures
 .playwright-mcp/
+*.png

@@ -1,0 +1,355 @@
+{
+  "fixture_version": "v3.7.0-support-2x2.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "support_imaginative_filter_process",
+      "name": "Imaginative informational process with an unclear next step",
+      "grade_level": "5th Grade",
+      "genre": "informational",
+      "draft": "My Air Cleaner\n\nMy imagined machine cleans classroom air. A fan pulls air through a reusable filter. The filter catches dirt and tiny pieces of plastic. Then the clean air goes back into the room.",
+      "assignment_prompt": "Explain an imaginative machine that could help a classroom. No scientific source is required.",
+      "teacher_directions": "Explain the process clearly. Do not certify that the invention works.",
+      "source_material": "",
+      "student_concerns": "I want readers to follow my machine's steps.",
+      "acceptance_focus": "Anchor to an imaginative topic without inventing a factual claim, mechanism, or target answer",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Use the proposed process as the focus and leave the missing process idea to the student."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "informational",
+        "strengths": ["The draft names the machine's purpose and an input-output sequence."],
+        "issues": [
+          {
+            "goal_id": "goal_filter_path",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "sequential",
+            "description": "The draft does not explain what the student proposes happens to the material caught by the filter.",
+            "draft_reference": "The filter catches dirt and tiny pieces of plastic.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_filter_path", "title": "Clarify the next proposed step", "draft_reference": "The filter catches dirt and tiny pieces of plastic.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 2,
+      "scenario_id": "support_missing_claim_garden",
+      "name": "Short argument without a specific claim",
+      "grade_level": "5th Grade",
+      "genre": "argument",
+      "draft": "Gardens are good.\n\nA garden would help our school.",
+      "assignment_prompt": "Argue whether our school should start a garden.",
+      "teacher_directions": "State a position and give a reason. Five paragraphs are not required.",
+      "source_material": "",
+      "student_concerns": "I am not sure my first sentence says what I think.",
+      "acceptance_focus": "Support focus development without writing the missing claim for the student",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Refer to the topic or existing wording instead of inventing the student's position."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": ["The draft introduces a clear topic."],
+        "issues": [
+          {
+            "goal_id": "goal_position",
+            "category": "central_idea",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "none",
+            "description": "The opening praises gardens without stating what the student thinks the school should do.",
+            "draft_reference": "Gardens are good.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_position", "title": "Make your position clear", "draft_reference": "Gardens are good.", "paragraph_number": 1, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 3,
+      "scenario_id": "support_first_person_friend_moment",
+      "name": "Narrative key moment with first-person references",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "I waited with my friend before our performance.\n\nMy friend squeezed my hand and smiled at me. I felt better.",
+      "assignment_prompt": "Tell about a moment when someone helped you.",
+      "teacher_directions": "Use concrete actions and preserve your personal voice.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Use a key moment rather than a claim and preserve first-person reference text exactly",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Do not change my friend, my, or me inside the exact quotation."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "narrative",
+        "strengths": ["The friend's action gives the reader a concrete sign of support."],
+        "issues": [
+          {
+            "goal_id": "goal_friend_detail",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The emotional change is summarized without a concrete detail showing what felt different.",
+            "draft_reference": "My friend squeezed my hand and smiled at me. I felt better.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_friend_detail", "title": "Show what changed in the moment", "draft_reference": "My friend squeezed my hand and smiled at me. I felt better.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 4,
+      "scenario_id": "support_language_sentence_boundary",
+      "name": "Obscuring sentence-boundary pattern",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "The waves roared and my brother cried and Dad held him and I did not know what to do.\n\nThen we built a sandcastle.",
+      "assignment_prompt": "Tell about a family experience.",
+      "teacher_directions": "Language corrections are optional unless they obscure meaning.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Teach one recognizable sentence-boundary pattern without rewriting the sentence",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Use the exact combined-action reference and avoid a list of unrelated conventions fixes."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "narrative",
+        "strengths": ["The draft presents a clear sequence of family events."],
+        "issues": [
+          {
+            "goal_id": "goal_boundaries",
+            "category": "language_conventions",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The combined actions obscure where one action ends and the narrator's response begins.",
+            "draft_reference": "The waves roared and my brother cried and Dad held him and I did not know what to do.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": true
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_boundaries", "title": "Clarify the sentence boundaries", "draft_reference": "The waves roared and my brother cried and Dad held him and I did not know what to do.", "paragraph_number": 1, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 5,
+      "scenario_id": "support_informational_revision_pollination",
+      "name": "Informational revision with a supplied source",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Pollination helps plants reproduce.\n\nBees move pollen from one flower to another. The supplied passage explains that pollen reaches the stigma. This step matters because it allows fertilization to begin.",
+      "assignment_prompt": "Explain how pollination works using the supplied passage.",
+      "teacher_directions": "Use the source accurately and connect the process steps.",
+      "source_material": "Paragraph 2: Bees carry pollen between flowers. When pollen reaches a flower's stigma, fertilization can begin.",
+      "student_concerns": "I tried to connect the steps in this revision.",
+      "acceptance_focus": "Maintain a bounded source handoff and cross-field coherence on an informational revision",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Acknowledge the observed connection and focus the remaining action on the student's next process link."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Pollination helps plants reproduce.\n\nBees move pollen from one flower to another. The supplied passage explains that pollen reaches the stigma.",
+        "working_genre": "informational",
+        "strengths": ["The revision connects the stigma step to fertilization in bounded language."],
+        "issues": [
+          {
+            "goal_id": "goal_process_link",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "source_based",
+            "description": "The explanation would be clearer if the student connected the bee's action to the arrival of pollen at the stigma in their own words.",
+            "draft_reference": "Bees move pollen from one flower to another. The supplied passage explains that pollen reaches the stigma.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": true,
+            "source_location": "paragraph 2",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_process_link", "title": "Connect the process steps", "draft_reference": "Bees move pollen from one flower to another. The supplied passage explains that pollen reaches the stigma.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goals": [
+          {"goal_id": "goal_process_link", "title": "Connect the process steps", "draft_reference": "The supplied passage explains that pollen reaches the stigma.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "goal_self_reports": {"goal_process_link": "attempted"},
+        "selected_goal_observations": [
+          {"goal_id": "goal_process_link", "status": "specific_improvement", "observation": "The revision adds a bounded explanation of why the stigma step matters.", "evidence_reference": "This step matters because it allows fertilization to begin.", "carry_forward": true}
+        ],
+        "goal_feedback": [
+          {"goal_id": "goal_process_link", "status": "specific_improvement", "observation": "You added an explanation of why the stigma step matters.", "carry_forward": true}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 6,
+      "scenario_id": "support_argument_revision_source_missing",
+      "name": "Argument revision with unavailable source verification",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start later because students would be more alert.\n\nThe passage says students concentrate better. I added that this could help them participate in class discussions.",
+      "assignment_prompt": "Argue whether school should start later using the assigned passage.",
+      "teacher_directions": "Connect evidence to the claim and do not invent source content.",
+      "source_material": "",
+      "student_concerns": "I tried to explain the evidence.",
+      "acceptance_focus": "Preserve a missing-source limitation while giving student-authored revision guidance",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Do not verify the passage or supply the missing source explanation."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should start later because students would be more alert.\n\nThe passage says students concentrate better.",
+        "working_genre": "argument",
+        "strengths": ["The revision adds the student's own possible classroom connection."],
+        "issues": [
+          {
+            "goal_id": "goal_evidence_link",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The new discussion detail would help readers more if the student explained its connection to being alert in their own words.",
+            "draft_reference": "I added that this could help them participate in class discussions.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_evidence_link", "title": "Explain your classroom connection", "draft_reference": "I added that this could help them participate in class discussions.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "selected_goals": [
+          {"goal_id": "goal_evidence_link", "title": "Explain your classroom connection", "draft_reference": "The passage says students concentrate better.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "goal_self_reports": {"goal_evidence_link": "attempted"},
+        "selected_goal_observations": [
+          {"goal_id": "goal_evidence_link", "status": "specific_improvement", "observation": "The revision adds a concrete classroom situation while leaving the causal connection open to further explanation.", "evidence_reference": "participate in class discussions", "carry_forward": true}
+        ],
+        "goal_feedback": [
+          {"goal_id": "goal_evidence_link", "status": "specific_improvement", "observation": "You added a classroom situation and can now explain its connection in your own words.", "carry_forward": true}
+        ],
+        "source_limitations": ["The assigned passage was not supplied, so its content cannot be checked. Add the passage before verifying the reference."]
+      }
+    },
+    {
+      "number": 7,
+      "scenario_id": "support_multi_action_survey_explanation",
+      "name": "Source-based explanation requiring separated actions",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden.\n\nIn the class survey, 62% of students said they would try garden vegetables. This supports our plan.",
+      "assignment_prompt": "Argue whether our school should start a garden using the supplied survey.",
+      "teacher_directions": "Explain what the survey shows and how it connects to the claim.",
+      "source_material": "A synthetic class survey of 50 students found that 31 would try vegetables from a school garden. The survey measured interest, not health outcomes.",
+      "student_concerns": "I need help explaining the number without repeating it.",
+      "acceptance_focus": "Split locating, interpreting, and connecting into manageable steps without supplying the interpretation",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Keep the survey meaning and final warrant student-authored."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": ["The draft includes a relevant survey result and a clear garden topic."],
+        "issues": [
+          {
+            "goal_id": "goal_survey_warrant",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "reasoning_operation": "causal",
+            "description": "The draft says the result supports the plan without explaining the student's interpretation or connection to the claim.",
+            "draft_reference": "In the class survey, 62% of students said they would try garden vegetables. This supports our plan.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": true,
+            "source_location": "synthetic class survey",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_survey_warrant", "title": "Explain the survey connection", "draft_reference": "In the class survey, 62% of students said they would try garden vegetables. This supports our plan.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 8,
+      "scenario_id": "support_narrative_key_moment_auditorium",
+      "name": "Claim-less narrative key moment",
+      "grade_level": "5th Grade",
+      "genre": "narrative",
+      "draft": "I stood outside the auditorium.\n\nI opened the door and saw everyone looking at me. I walked to my seat.",
+      "assignment_prompt": "Tell about a time you felt nervous.",
+      "teacher_directions": "Develop one moment with actions or sensory details.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Anchor feedback to a key moment without demanding a claim, citation, or counterclaim",
+      "workstreams": ["SP"],
+      "expected_outcomes": ["Leave the imagined action or sensory detail to the student."],
+      "support_only": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "narrative",
+        "strengths": ["The draft establishes a clear place and sequence."],
+        "issues": [
+          {
+            "goal_id": "goal_auditorium_detail",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "reasoning_operation": "none",
+            "description": "The key entrance moment moves quickly without a concrete detail that shows the narrator's experience.",
+            "draft_reference": "I opened the door and saw everyone looking at me.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {"goal_id": "goal_auditorium_detail", "title": "Develop the entrance moment", "draft_reference": "I opened the door and saw everyone looking at me.", "paragraph_number": 2, "occurrence": 1}
+        ],
+        "source_limitations": []
+      }
+    }
+  ]
+}

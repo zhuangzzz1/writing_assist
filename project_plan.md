@@ -1,6 +1,6 @@
 # Writing Assistant Multi-Agent System - Project Plan
 
-> **Current implementation note (2026-11-10):** V3 is now the active local application, implemented under `PRD_V3_ITERATIVE_REVISION.md`. Prompt/schema `v3.4.0` adds structured framework requirements with Coordinator-owned coverage, deterministic explicit genre, grouped overlap highlights, and controlled density evidence. The plan below preserves the historical V1→V2 assignment strategy and is not a description of current V3 behavior. Local V3 is not deployed; the historical public app remains V2 at commit `7d94b58`.
+> **Current implementation note (2026-11-16):** V3 is the active application under `PRD_V3_ITERATIVE_REVISION.md`, with local prompt/schema `v3.8.3`/`v3.8.0` after explicit owner promotion, v3.7.1/v3.7.0 evaluation controls, evaluation-only `v3.7.2-consolidated`, preserved `v3.8.1-baseline-readable`, evaluation-only `v3.8.2-baseline-readable`, the preserved `v3.8.3-regression-readable` evaluation control, and `v3.4.0` student/acceptance fixtures; historical full acceptance artifacts used `v3.6.5`/`v3.6.3`. The canonical public URL serves an earlier deployed V3 surface with footer marker `v04d61af`; current working-tree changes have not been deployed. The plan below preserves the historical V1→V2 assignment strategy and is not a description of current V3 behavior. Thinking remains the selected runtime mode. Current status and evidence boundaries are in `README.md` and `AGENTS.md`; earlier outcomes are in `V3_LIVE_EL_IMPLEMENTATION_RESULTS.md` and `V3_PROMPT_REVISION_IMPLEMENTATION_RESULTS.md`. Current structural/readability outcomes and open gates are in `V3_BASELINE_READABILITY_IMPLEMENTATION_RESULTS.md`. `V3_8_2_READABILITY_AND_FINAL_IMPROVEMENT_PLAN.md` is implemented as an evaluation-only successor following external expert feedback; it is not promoted. Current evidence is in `V3_8_2_READABILITY_AND_FINAL_IMPLEMENTATION_RESULTS.md`.
 
 ## Overview
 
@@ -178,7 +178,7 @@ Clarification uses an exact LangGraph interrupt/resume with a SQLite checkpoint 
 - V1 preserved at commit `4eaa0ad` under the annotated `v1` tag, now pushed to GitHub.
 - 83 automated checks pass with mocked model calls and temporary databases.
 - The definitive post-JeepyTA V2 set uses identical frozen fixtures and V1 supplementary inputs under non-thinking temperature 0. Results are in `data/v2_final_post_jeepyta_20261103.db` and `data/evidence/v2_final_post_jeepyta_20261103_summary.json`.
-- Browser checks restored final saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_post_review_normal_full.png` and `v2_post_review_incomplete_route.png`.
+- Browser checks restored final saved runs and exercised focus/practice selection without new model calls. Captures are in `data/evidence/v2_post_review_normal_full.png` and `data/evidence/v2_post_review_incomplete_route.png`.
 - The post-JeepyTA code is deployed at `7d94b58`. After an authorized reboot, normal, incomplete/resume, and Boundary A passed on 2026-11-03 with no **Brief example** in practice. Evidence is in `data/evidence/deployed_v2_post_jeepyta_verification_20261103.json` and three deployment captures.
 - These artifacts support design/output claims only, not measured improvements in learner motivation, engagement, affect, or learning.
 

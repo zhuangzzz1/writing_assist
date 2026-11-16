@@ -1,8 +1,13 @@
+from types import SimpleNamespace
+
 from langgraph_core.revision import (
+    build_revision_history,
     build_text_diff,
     change_notification,
+    draft_sha256,
     group_overlapping_goals,
     locate_reference,
+    locate_unique_reference,
     reference_is_valid,
     reference_overlaps_change,
 )
@@ -135,3 +140,159 @@ def test_transitive_overlaps_form_one_group_and_stale_references_are_excluded():
     assert [[goal["goal_id"] for goal in group] for group in groups] == [
         ["first", "second", "third"]
     ]
+
+
+
+def test_unique_reference_location_counts_a_standalone_title_block():
+    text = "My System\n\nThe opening paragraph.\n\nA unique process step."
+
+    location = locate_unique_reference(text, "A unique process step.")
+
+    assert location is not None
+    assert location.paragraph_number == 3
+    assert location.occurrence == 1
+    assert text[location.start:location.end] == "A unique process step."
+
+
+def test_unique_reference_location_rejects_repeated_missing_and_cross_paragraph_text():
+    text = "Same idea.\n\nSame idea.\n\nFirst part.\n\nSecond part."
+
+    assert locate_unique_reference(text, "Same idea.") is None
+    assert locate_unique_reference(text, "Missing idea.") is None
+    assert locate_unique_reference(text, "First part.\n\nSecond part.") is None
+
+
+def reviewed_round(
+    revision_number,
+    writing,
+    observations,
+    *,
+    round_id="round_1",
+    status="active",
+    route="support_agent",
+):
+    return SimpleNamespace(
+        revision_number=revision_number,
+        round_id=round_id,
+        status=status,
+        state={
+            "writing": writing,
+            "routing_decision": route,
+            "selected_goal_observations": observations,
+            "goal_feedback": [
+                {**observations[0], "observation": "Support display paraphrase"}
+            ]
+            if observations
+            else [],
+        },
+    )
+
+
+def test_revision_history_uses_coordinator_observations_and_snapshot_identity():
+    writing = "A clear claim.\n\nThe same explanation."
+    selected = [
+        {**overlap_goal("goal_1", "The same explanation."), "paragraph_number": 2}
+    ]
+    snapshots = [
+        SimpleNamespace(
+            revision_number=0,
+            snapshot_id="snapshot_0",
+            writing="A clear claim.",
+            selected_goals=[],
+        ),
+        SimpleNamespace(
+            revision_number=1,
+            snapshot_id="snapshot_1",
+            writing=writing,
+            selected_goals=selected,
+        ),
+    ]
+    observation = {
+        "goal_id": "goal_1",
+        "status": "improvement_not_yet_evident",
+        "observation": "The selected explanation is unchanged.",
+        "evidence_reference": "The same explanation.",
+        "carry_forward": True,
+    }
+
+    history = build_revision_history(
+        snapshots, [reviewed_round(1, writing, [observation])]
+    )
+
+    assert history == [
+        {
+            "revision_number": 1,
+            "snapshot_id": "snapshot_1",
+            "reviewed_round_id": "round_1",
+            "reviewed_draft_sha256": draft_sha256(writing),
+            "selected_goals": [
+                {
+                    "goal_id": "goal_1",
+                    "draft_reference": "The same explanation.",
+                    "paragraph_number": 2,
+                    "occurrence": 1,
+                    "status": "improvement_not_yet_evident",
+                    "observation": "The selected explanation is unchanged.",
+                    "evidence_reference": "The same explanation.",
+                    "carry_forward": True,
+                }
+            ],
+        }
+    ]
+    assert history[0]["selected_goals"][0]["observation"] != "Support display paraphrase"
+
+
+def test_revision_history_uses_latest_matching_review_and_preserves_legacy_rounds():
+    first_writing = "A claim.\n\nA reason."
+    legacy_writing = "A claim.\n\nA legacy revision."
+    selected = [{**overlap_goal("goal_1", "A reason."), "paragraph_number": 2}]
+    snapshots = [
+        SimpleNamespace(
+            revision_number=0,
+            snapshot_id="snapshot_0",
+            writing="A claim.",
+            selected_goals=[],
+        ),
+        SimpleNamespace(
+            revision_number=1,
+            snapshot_id="snapshot_1",
+            writing=first_writing,
+            selected_goals=selected,
+        ),
+        SimpleNamespace(
+            revision_number=2,
+            snapshot_id="snapshot_2",
+            writing=legacy_writing,
+            selected_goals=selected,
+        ),
+    ]
+    first = reviewed_round(
+        1,
+        first_writing,
+        [{"goal_id": "goal_1", "status": "uncertain", "observation": "Unclear."}],
+        round_id="round_1",
+    )
+    correction = reviewed_round(
+        1,
+        first_writing,
+        [
+            {
+                "goal_id": "goal_1",
+                "status": "specific_improvement",
+                "observation": "The reason is now specific.",
+                "evidence_reference": "A reason.",
+                "carry_forward": False,
+            }
+        ],
+        round_id="round_2",
+        route="direct_response",
+    )
+
+    history = build_revision_history(snapshots, [first, correction])
+
+    assert history[0]["reviewed_round_id"] == "round_2"
+    assert history[0]["selected_goals"][0]["status"] == "specific_improvement"
+    assert history[1]["reviewed_round_id"] == ""
+    assert history[1]["selected_goals"][0]["status"] == ""
+    assert history[1]["selected_goals"][0]["observation"] == ""
+    assert history[1]["selected_goals"][0]["carry_forward"] is None

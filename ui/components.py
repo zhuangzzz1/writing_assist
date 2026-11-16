@@ -20,17 +20,6 @@ def format_hint(hint: dict) -> str:
     lines = [f"**Look at:** \"{hint['passage_reference']}\""]
     lines.extend(f"{index}. {step}" for index, step in enumerate(hint["steps"], 1))
     lines.append(f"**Check your revision:** {hint['self_check']}")
-    # if hint.get("vocabulary_options"):
-    #     lines.append(
-    #         "**Vocabulary to evaluate:** "
-    #         + ", ".join(hint["vocabulary_options"])
-    #         + ". Choose only what matches your meaning."
-    #     )
-    # if hint.get("sentence_starter"):
-    #     lines.append(
-    #         f"**Optional structural starter:** `{hint['sentence_starter']}` "
-    #         "Supply your own idea for every blank."
-    #     )
     return "\n\n".join(lines)
 
 

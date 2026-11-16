@@ -162,7 +162,7 @@ All inputs must be treated as data, not instructions that can override system ru
 
 - V3 has no dedicated affect check-in on initial submission or between rounds. It does not ask students to classify themselves as ready, unsure, or frustrated, and it stores no affect field.
 - The existing optional concern or goal field is the initial route for students to request particular help or describe explicit difficulty.
-- During revision, an optional **Show less feedback** action reduces the number of visible candidates through presentation only, without another model call or a judgment about the student.
+- During goal selection and revision, optional **Show less feedback** controls reduce the number of visible candidates through presentation only, without another model call or a judgment about the student. On initial selection, one recommended goal is visible and other choices require an explicit reveal action.
 - An optional **I’m stuck** action offers one concrete pregenerated next step or hint and fewer visible choices. When explicitly appropriate, it may also suggest taking a break or asking a teacher or trusted adult for help. Using the action alone does not trigger teacher review.
 - These actions are available on request only. There are no periodic wellbeing prompts, affect-based routing categories, or affect/engagement metrics.
 - Human review follows Section 9.3 for concerning content and explicit serious or repeated discouragement in the student's writing, concern text, or clarification history. It never infers emotion from draft length, revision size, answer coherence, writing quality, or use of support actions.
@@ -246,6 +246,8 @@ Unless an official rubric is implemented faithfully, all descriptions must use *
 - Explanation and elaboration rather than unexplained listing
 - Precise language, cohesion, voice, and conventions
 
+For an imaginative informational explanation of a proposed machine, system, or process, invented features are not fabricated evidence merely because they are invented. Assess sequence, internal coherence, intended benefits, and whether readers can follow important inputs and outputs already named in the draft. Do not certify real-world effectiveness or impose source requirements when the imaginative task does not call for verification. Ask about a missing process step without supplying possible destinations, mechanisms, or solutions.
+
 **Narrative writing**
 
 - Clear situation, purpose, and sequence
@@ -263,7 +265,9 @@ Unless problems seriously obscure meaning, feedback normally prioritizes:
 3. Organization and connections
 4. High-impact academic language and conventions
 
-The system must not manufacture issues to fill a quota. A strong draft may receive affirmation and an optional refinement rather than forced criticism.
+The system must not manufacture issues to fill a quota. A strong draft may receive affirmation and an optional refinement rather than forced criticism. Do not manufacture transition goals from missing guide words or conclusion goals from length alone; identify an actual unclear relationship or remaining reader need, and recognize an ending that already serves a reasonable purpose.
+
+Every issue has an `accuracy`, `reasoning`, or `development` severity. Human review overrides normal feedback. On initial and revision assessments, the Coordinator orders the complete issue list with accuracy findings first, a draft-supported student concern next, and remaining issues by severity and pedagogical priority with stable within-tier order. A supported development concern may therefore precede an unrelated reasoning issue. Python performs only a stable accuracy partition; it preserves the Coordinator's relative order for all non-accuracy issues and does not infer concern support or re-sort those issues by severity. Unsupported concerns neither create issues nor change ordering. Support preserves the resulting candidate order.
 
 ### 7.4 Multilingual-Learner Support
 
@@ -303,21 +307,23 @@ The system must not manufacture issues to fill a quota. A strong draft may recei
 
 ### 8.2 Focus Selection
 
-- **RV-07:** When revision candidates exist, the student selects **at least one and no more than three** before starting a focused revision.
+- **RV-07:** When revision candidates exist, the student selects **at least one and no more than three** before starting a focused revision. When multiple candidates exist, the UI presents the highest-priority candidate as a recommended starting point, offers a single action that selects only that goal, and reveals alternatives only on request. It does not preselect a goal or hide the number of alternatives.
 - **RV-08:** If only one meaningful candidate exists, the student may select that one; the system must not add weaker issues to reach three.
-- **RV-09:** Selection changes the displayed guidance only and does not require another model call.
+- **RV-09:** Selection, showing alternatives, and reducing visible choices change the displayed guidance only and do not require another model call. Alternative choices distinguish idea/reasoning/organization goals from optional sentence polishing using the Coordinator's issue categories; the recommended goal remains governed by assessment priority rather than this presentation grouping.
 - **RV-10:** Selected goals remain visible beside or above the editing area.
 - **RV-11:** The student may stop instead of revising. If no revision has been submitted, the system must not invent a before-and-after improvement summary.
 
 ### 8.3 Student Editing and Scaffolds
 
-**Scaffolds** are all optional revision supports. **Hints** are the primary passage-specific, two-to-four-step thinking guidance described in RV-14; practice, vocabulary considerations, and sentence starters are supplementary scaffolds. “Support” may also describe human or instructional help generally and is capitalized only when referring to the Support Agent role.
+**Scaffolds** are all optional revision supports. **Hints** are the primary passage-specific thinking guidance described in RV-14, with stuck steps as the smaller immediate-action support. V3 does not generate vocabulary lists, sentence starters, or optional practice exercises in round feedback. “Support” may also describe human or instructional help generally and is capitalized only when referring to the Support Agent role.
 
 - **RV-12:** The student edits the complete current draft in an editable writing area.
 - **RV-13:** The application must not provide one-click AI insertion, replacement, or automatic polishing of student prose.
-- **RV-14:** Optional hints must be specific to the selected goal and referenced passage rather than relying on a generic question alone. Each hint gives a short sequence of two to four linked thinking steps or guiding questions, directs attention to relevant student words or details, explains what to examine and how to attempt the revision, and includes a self-check when useful. Vocabulary considerations or incomplete sentence starters may supplement this guidance when appropriate.
+- **RV-14:** Optional hints must be specific to the selected goal and referenced passage rather than relying on a generic question alone. Each hint contains **3–5 total items: one concept restatement followed by 2–4 linked procedural steps or guiding questions**, directs attention to relevant student words or details, explains what to examine and how to attempt the revision, and includes a useful self-check. The first procedural action is concrete and low-stakes before later examination and reasoning.
 - **RV-15:** A scaffold must require the student to supply the target idea or language. Specific guidance must not become a completed target response or an assigned-topic reason, piece of evidence, explanation, or replacement wording that the student could use as that response.
-- **RV-16:** Optional practice uses abstract placeholders or a topic checked against the assignment and source material to ensure it is unrelated. It must not produce prose to paste into the essay; a fixed example topic is not automatically considered unrelated.
+- For a meaningful conventions pattern, Support may give a concise rule or meaning note and direct the student to locate and edit the relevant wording. The student performs the edit; Support must not rewrite the complete sentence or paragraph or turn spelling into a catalogue of typo answers. Reading aloud may support sentence-boundary revision.
+- Candidate rationales should name the actual reader effect or unanswered reader question rather than rely on generic statements such as “details make writing better.” Reader questions may use existing draft material but must not name the target answer.
+- **RV-16:** V3 round feedback does not generate optional practice exercises, vocabulary lists, or sentence starters. Pregenerated hints and stuck steps are the available scaffolds.
 - **RV-17:** Revealing a pregenerated scaffold does not make another model call.
 - **RV-18:** Editing and focus selection do not send text to the model. Model review occurs only after explicit submission or another deliberate AI action.
 
@@ -335,19 +341,23 @@ For the draft sentence **“This would help them become better citizens,”** an
 
 Permitted scaffolds include:
 
-- Abstract placeholders and structural sentence starters that leave the target idea entirely to the student
 - Linked self-questioning and revision processes tied to the student's passage
+- Concise concept restatements, procedural steps, useful self-checks, and smaller immediate stuck steps
 - Process demonstrations on a topic checked as unrelated, without introducing facts into the student's assignment
-- Context-compatible vocabulary options whose meanings the student must evaluate, not lists of supposedly interchangeable synonyms
 
 Prohibited scaffolds include:
 
 - Assigned-topic reasons, counterclaims, evidence, explanations, narrative details, or lists that effectively supply those target ideas
 - Completed explanations or replacement prose for the student's assignment
-- Fill-in frames containing the student's claim, reason, or required explanation; an abstract frame is acceptable only when the student must still generate the substance
+- Completion blanks or fill-in frames, including frames containing the student's claim, reason, or required explanation
+- Generated vocabulary lists and sentence starters, which were removed from the local V3 contract after their cognitive load was not justified by prior writing-improvement evidence
 - Examples on the same or a substantively equivalent topic presented as though they were unrelated
 
-Use two checks: **(1)** Could the student paste the scaffold into the essay and obtain a coherent on-topic response? **(2)** Does the scaffold name a reason, piece of evidence, explanation, or elaboration that the student was asked to produce? A yes answer to either check prohibits the scaffold. Merely containing a blank does not make a scaffold acceptable, and merely being unrelated in wording does not make an example substantively unrelated.
+Use two checks: **(1)** Could the student paste the scaffold into the essay and obtain a coherent on-topic response? **(2)** Does the scaffold name a reason, piece of evidence, explanation, or elaboration that the student was asked to produce? A yes answer to either check prohibits the scaffold. Merely being unrelated in wording does not make an example substantively unrelated.
+
+The implementation also applies deterministic structural guardrails: completion blanks and completion ellipses are not permitted in instructional fields, but an ellipsis inside an exact quoted draft excerpt used only for locating is not a completion task. The v3.8.0 output schema rejects the removed `vocabulary_options`, `sentence_starter`, and Coordinator `reasoning_operation` fields. Versioned v3.7.x evaluation controls retain their historical contracts separately. These checks are not semantic proof: candidate actions, hints, self-checks, and stuck steps still require output review for target-content leakage, usefulness, and grade appropriateness.
+
+The local runtime uses prompt `v3.8.3` with schema `v3.8.0`, without vocabulary lists or sentence starters, following the owner's explicit promotion decision. It includes meaningful-issue/classroom-context guidance, the internal Support delivery review, and Final credit/regression plus contextual purpose-loss guidance. The historical `v3.7.2-consolidated` candidate remains evaluation-only through `support_consolidated`. The preserved `v3.8.1-baseline-readable` and evaluation-only `v3.8.2-baseline-readable` candidates remain available through their respective arms. `regression_readable` preserves the original `v3.8.3-regression-readable` evaluation control, while `structural_current` supplies the preserved v3.8.0 wording control. Promotion is a local product decision, not a Gate B pass or deployment. Versioned v3.7.x prompts and validators are preserved only as evaluation controls, and the student runtime does not switch prompt arms or thinking modes automatically.
 
 ### 8.4 Submitting a Revision
 
@@ -390,7 +400,11 @@ The final comparison must not:
 - rewrite the final essay;
 - predict teacher judgment, CAASPP/SBAC results, ELPAC results, or reclassification.
 
-A deterministic text comparison supplies the actual changes. The model interprets those changes and must not claim that a change occurred when no corresponding text exists.
+A deterministic text comparison supplies the actual changes. The model interprets those changes and must not claim that a change occurred when no corresponding text exists. Final findings use only supplied source material, make no source-accuracy claim without a source, invent no framework requirement, and preserve genuine uncertainty. Exact-reference membership, unchanged-draft, and changed-text-overlap validation remain in force; Final quotations are not automatically normalized or replaced.
+
+At Finish, the service builds a declared `revision_history` from persisted snapshots and the latest successful Coordinator review matching each snapshot. Each revision entry carries its snapshot and review IDs, a SHA-256 draft identity, and every selected goal's exact reference, location, authoritative Coordinator `status`, `observation`, `evidence_reference`, and `carry_forward`. Older rounds without an authoritative observation remain readable with an empty status and null carry-forward rather than an invented verdict. The Final Coordinator payload includes this history and the final draft's SHA-256 identity; Support display paraphrases never replace the Coordinator observations.
+
+When the latest reviewed draft hash matches the Final draft, deterministic validation rejects a Final improvement only for an unambiguous contradiction: matching goal ID, exactly the same goal reference, and a latest `improvement_not_yet_evident` or `uncertain` verdict. A goal ID alone, partial wording, or an empty Final goal ID does not trigger inference or rejection. Genuine improvements elsewhere and prior `specific_improvement` verdicts remain eligible. A deletion-worded regression is rejected when its exact original reference remains verbatim in the Final draft; semantic weakening still requires full-draft model and human review.
 
 ### 8.7 Process-Based Progress
 
@@ -408,7 +422,7 @@ These milestones describe completed actions, not writing quality or mastery. The
 
 ### 9.1 Clarification
 
-Clarification is used when essential intent, genre, assignment context, or task expectations are too ambiguous for responsible feedback. It must ask one main question at a time and must not provide premature writing feedback.
+Clarification is used when essential intent, genre, assignment context, or task expectations are too ambiguous for responsible feedback. It must ask one main question at a time and must not provide premature writing feedback. `strengths`, `issues`, `framework_coverage`, `source_limitations`, and `selected_goal_observations` are empty. `working_genre` and `genre_confidence` may be empty only when essential genre clarification prevents a responsible working choice; unrelated clarification need not empty the genre fields.
 
 The clarification limit is **two unclear answers**:
 
@@ -416,7 +430,7 @@ The clarification limit is **two unclear answers**:
 2. If answer 1 remains unclear, the system asks one differently phrased or more specific clarification question 2.
 3. If answer 2 remains unclear, the system stops normal feedback and routes to non-safety simulated teacher review with category `clarification_limit` and the clarification history.
 
-An unresponsive or nonsensical answer counts as an exchange; the second question should be simpler rather than an additional interrogation. The limit prevents endless guessing while giving the student two opportunities to supply the needed context.
+An unresponsive or nonsensical answer counts as an exchange; the second question should be simpler rather than an additional interrogation. The limit prevents endless guessing while giving the student two opportunities to supply the needed context. The Coordinator model may select only `none`, `concerning_content`, or `serious_discouragement` as its flag category. `clarification_limit` is an internal deterministic graph category: a model-selected value is neutralized rather than honored or relabeled as concerning content, and only the application can escalate after the two-answer boundary.
 
 ### 9.2 Direct Response
 
@@ -425,6 +439,7 @@ If the draft has no meaningful actionable issues under the selected genre and as
 ### 9.3 Simulated Teacher Review
 
 - Safety and human-review assessment precedes completeness and quality routing on every initial and revision submission.
+- Teacher review returns empty `strengths`, `issues`, `framework_coverage`, `source_limitations`, and `selected_goal_observations`, preserving the human-review reason, category, and evidence without partial writing assessment. `working_genre`, `genre_confidence`, and `genre_basis` may all be empty; genre inference is not required solely for this handoff.
 - Concerning content and explicit serious or repeated discouragement in the student's writing, concern text, or clarification history bypass normal writing feedback. Do not infer discouragement from support-button use, revision size, writing quality, or limited progress.
 - Student and evaluator/teacher messages remain separate.
 - Teacher handoff is simulated; no teacher is notified.
@@ -474,6 +489,7 @@ The top-level steps are **Draft**, **Choose**, **Revise**, and **Reflect**. Roun
 - Multiple selected goals may display multiple highlights simultaneously.
 - Highlights remain synchronized with editor scrolling and are recalculated as the student edits.
 - If the referenced passage can no longer be located reliably, the UI removes the stale highlight and does not highlight unrelated text. It may explain that the original reference changed.
+- If an issue's quoted reference is exact and occurs exactly once in the full draft but its supplied location is invalid, a deterministic service corrects the paragraph/occurrence metadata and records the normalization. The same recovery applies to a `framework_coverage` entry only when `status="present"`, the exact reference occurs once within one blank-line-separated block, and its supplied location is invalid. Framework corrections are recorded separately with framework, component, old location, and new location. Issue-status coverage, repeated, missing, or cross-paragraph references, Support fields, and Final references remain subject to their existing validation and bounded repair rather than arbitrary relocation or quotation replacement.
 - The system must not highlight invented or misquoted model references.
 - Highlights are presentation metadata, not changes to the saved essay, deterministic diff, or model-visible draft text.
 - Highlight meaning must also be available through text and accessible goal descriptions; color alone is insufficient.
@@ -587,7 +603,7 @@ Core persisted fields include:
 - Final comparison and process milestones
 - Timestamps, execution details, and error status
 
-The model receives a bounded context: the original, immediately previous, and current drafts as needed, selected goals, concise prior findings, and relevant assignment/source context. Support receives full source text only when a Coordinator issue is source-dependent or a source limitation is present; empty clarification history is omitted on revisions. Final Support generates improvement/regression observations and the conclusion while original strengths and future possibilities pass through validated Coordinator findings. The model does not receive an ever-growing transcript of every UI event or all prior model prose by default.
+The model receives a bounded context: the original, immediately previous, and current drafts as needed, selected goals, and relevant assignment/source context. Final Coordinator receives the declared snapshot-linked `revision_history` and authoritative selected-goal observations; the separate round `prior_findings` path remains evaluation-only. Support receives full source text only when a Coordinator issue is source-dependent or a source limitation is present; empty clarification history is omitted on revisions. Final Support generates improvement/regression observations and the conclusion while original strengths and future possibilities pass through validated Coordinator findings. The model does not receive an ever-growing transcript of every UI event or all prior model prose by default.
 
 ### 11.7 Model-Call Boundaries
 
@@ -600,7 +616,7 @@ The model receives a bounded context: the original, immediately previous, and cu
 
 ### 11.8 Model Configuration and Evaluation
 
-- **MC-01:** Following the representative `v3.1.0` comparison and the 2026-11-10 product decision, the V3 local student runtime uses the configured DeepSeek model with **non-thinking mode** (`DEEPSEEK_THINKING=false`) for Coordinator, Support, bounded-repair, and final-comparison calls. V3 never switches modes automatically.
+- **MC-01:** Following the Phase 1 baseline-versus-consolidated pedagogical review, the user explicitly selected the **Phase 1 baseline with thinking enabled** (`DEEPSEEK_THINKING=true`) as the repository default for Coordinator, Support, bounded-repair, and final-comparison calls. Thinking requests omit temperature and use the configured reasoning effort. Explicit non-thinking comparisons remain available with temperature 0. V3 never switches modes automatically or falls back to non-thinking after an error.
 - **MC-02:** Non-thinking requests use temperature 0. Controlled thinking-comparison requests omit the temperature parameter. Observability must describe the actual configuration and must not call thinking mode “temperature 0.”
 - **MC-03:** The V3 default configuration records the model name, actual thinking mode, configured reasoning effort when applicable, prompt version, schema version, and fixture version with each real evaluation run.
 - **MC-04:** The design hypothesis was that thinking might improve genre-sensitive assessment, source-grounded observations, selected-goal comparison, and student-facing feedback, **or add latency and token-use costs without corresponding quality gains**. The representative `v3.1.0` pair favored non-thinking on operational cost, repair count, RACES alignment, and whole-draft coverage, while thinking showed isolated diagnostic strengths. Two later matched pairs confirmed lower non-thinking latency/token use and showed repair/content variability in both modes. The non-thinking runtime decision remains limited synthetic evidence, not a general model-quality claim; educator review remains open.
@@ -684,7 +700,7 @@ Mocked model tests and temporary databases must cover:
 - Original-to-final comparison with no fabricated changes
 - No numerical scores or readiness claims
 - No complete target responses, assigned-topic replacement answers, or supposedly unrelated examples that match the assignment in scaffolds
-- Hint structure with a valid passage reference and two to four linked thinking steps or guiding questions
+- Hint structure with a valid passage reference, 3–5 total items comprising one concept restatement and 2–4 linked procedural steps, and a useful self-check
 - Constrained initial editor and 60/40 desktop workspace with independent pane scrolling
 - Clickable available steps, disabled unavailable steps, and essay preservation during navigation
 - Goal-highlight selection, deselection, multiple selections, repeated-passage disambiguation, and stale-highlight removal after edits
@@ -719,12 +735,12 @@ Existing V1/V2 frozen fixtures must not be edited to create V3 evidence. V3 rece
 13. A curated practice scenario loads a complete text-dependent task and requires confirmation before replacing an active draft.
 14. A substantively meaningful one-word revision and a minimal punctuation-only revision both receive neutral change handling without a “trivial” label or fabricated improvement.
 15. A student reports deferring two of three selected goals; feedback acknowledges the attempted goal and offers the others as carry-forward choices without failure framing.
-16. A scaffold response containing an assigned-topic replacement answer is rejected during evaluation, while abstract placeholders remain available.
+16. A scaffold response containing an assigned-topic replacement answer or completion frame is rejected during evaluation, while an exact quoted draft ellipsis used only for locating remains valid.
 17. Simulated backend storage loss during a composition produces a recovery view without an unhandled exception or a false restoration claim.
 18. Selecting multiple goals highlights the correct passages; identical, nested, and transitively overlapping references share a union highlight with goal membership and textual labels. Deselecting removes only that goal's membership, and editing a referenced sentence removes its stale highlight without altering the essay.
 19. After revision review, **Choose goals for another round** returns to **Choose**; clickable Draft, Choose, Revise, and Reflect steps preserve the essay and prevent unavailable-state navigation.
 20. Cancelling the finish dialog preserves the current feedback and step, while confirming from either the footer or **Reflect** step opens the final comparison.
-21. A responsibility-goal hint references the student's actual sentence, offers two to four linked thinking prompts and a self-check, and supplies no completed explanation; a generic “Why does this matter?” response alone fails the specificity review.
+21. A responsibility-goal hint references the student's actual sentence, offers one concept restatement, two to four linked procedural prompts, and a self-check (3–5 total items), and supplies no completed explanation; a generic “Why does this matter?” response alone fails the specificity review.
 22. A coherent three-to-four-sentence grade-5 argument with a clear claim and one underdeveloped reason receives proportional elaboration support without demands for a full five-paragraph structure.
 23. A 350-plus-word grade-7 informational essay with source material receives a small set of prioritized issues rather than an error catalogue, and highlights disambiguate references across multiple paragraphs.
 24. A grade-6 argument with insightful ideas, relevant evidence, and clear reasoning but non-obscuring article, tense, and preposition errors prioritizes thinking and organization over conventions; language support remains optional.
@@ -735,6 +751,8 @@ Existing V1/V2 frozen fixtures must not be edited to create V3 evidence. V3 rece
 29. A student selects **Show less feedback** or **I’m stuck** and receives fewer visible choices and one concrete next step without another model call, teacher escalation, or an inference about emotion or effort.
 30. Two unclear clarification answers produce the explicit `clarification_limit` route with the clarification history, while a clear second answer resumes normal assessment.
 31. The controlled density fixtures #31/#32 form a same-grade, same-genre, same-assignment informational pair at approximately 60 and 400 words with comparable writing quality and intentional issue categories and no prescribed candidate count. Repeated outputs and blinded educator review assess candidate count, total feedback length, relevance, prioritization, and manageability without claiming length-only causation.
+
+The separate targeted `live_el` fixture #16 covers a synthetic grade-5 imaginative system explanation. It checks informational purpose, invention versus fabricated evidence, a missing output path without answer menus, bounded technical claims, an existing closing sentence, and idea-first prioritization without mandatory transition or conclusion formulas.
 
 Final-comparison evidence also covers #7, #9, and #15 in addition to #1, #8, #11, and #20, including multi-goal partial progress, organizational regression, and deferred goals grounded in actual text changes.
 

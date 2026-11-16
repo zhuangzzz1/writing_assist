@@ -423,6 +423,7 @@ def _initialize_state() -> None:
         "loaded_fixture_version": "",
         "selected_goal_ids": [],
         "round_review_active": False,
+        "alternative_choices_visible": False,
         "less_feedback": False,
         "stuck_requested": False,
         "pending_scenario_id": None,
@@ -451,6 +452,7 @@ def _clear_active() -> None:
     st.session_state.current_step = "Draft"
     st.session_state.selected_goal_ids = []
     st.session_state.round_review_active = False
+    st.session_state.alternative_choices_visible = False
     st.session_state.less_feedback = False
     st.session_state.stuck_requested = False
     st.session_state.pending_revision_notice = None
@@ -616,6 +618,7 @@ def _start_review(service: WritingAssistantService, session_id: str) -> None:
     st.session_state.current_step = "Choose"
     st.session_state.selected_goal_ids = []
     st.session_state.round_review_active = False
+    st.session_state.alternative_choices_visible = False
     st.session_state.pending_revision_notice = None
     st.rerun()
 
@@ -713,6 +716,17 @@ def _toggle_goal(goal_id: str, round_id: str) -> None:
     st.session_state.selected_goal_ids = selected
 
 
+def _choose_single_goal(round_id: str, goal_id: str, goal_ids: list[str]) -> None:
+    for candidate_id in goal_ids:
+        st.session_state[f"select_goal_{round_id}_{candidate_id}"] = candidate_id == goal_id
+    st.session_state.selected_goal_ids = [goal_id]
+    st.session_state.selection_warning = ""
+
+
+def _set_alternative_choices_visible(visible: bool) -> None:
+    st.session_state.alternative_choices_visible = visible
+
+
 def _start_editing() -> None:
     if not st.session_state.get("selected_goal_ids"):
         st.session_state.selection_warning = "Select at least one goal before revising."
@@ -728,6 +742,7 @@ def _choose_next_round(state: dict[str, Any]) -> None:
     st.session_state.selected_goal_ids = []
     st.session_state.current_step = "Choose"
     st.session_state.round_review_active = False
+    st.session_state.alternative_choices_visible = False
     st.session_state.less_feedback = False
     st.session_state.stuck_requested = False
 
@@ -858,6 +873,7 @@ def _correct_genre(service: WritingAssistantService, session_id: str, genre: Gen
         return
     st.session_state.current_invocation = invocation
     st.session_state.selected_goal_ids = []
+    st.session_state.alternative_choices_visible = False
     st.session_state.round_review_active = composition.revision_number > 0
     st.session_state.current_step = "Revise" if composition.revision_number else "Choose"
     st.rerun()
@@ -878,13 +894,6 @@ def _finish(service: WritingAssistantService, session_id: str) -> None:
     original = snapshots[0]
     final = snapshots[-1]
     latest_state = latest_round.state
-    revision_history = [
-        {
-            "revision_number": snapshot.revision_number,
-            "selected_goals": snapshot.selected_goals,
-        }
-        for snapshot in snapshots[1:]
-    ]
     try:
         state = make_review_state(
             final.writing,
@@ -909,7 +918,6 @@ def _finish(service: WritingAssistantService, session_id: str) -> None:
             debug_enabled=st.session_state.get("capture_debug", False),
         )
         state["working_genre"] = latest_state.get("working_genre", "")
-        state["revision_history"] = revision_history
         st.session_state.current_step = "Reflect"
         invocation = _run_with_status(
             "Preparing the original/final comparison…",
@@ -923,6 +931,7 @@ def _finish(service: WritingAssistantService, session_id: str) -> None:
         )
     except Exception as exc:
         st.session_state.current_invocation = None
+        st.session_state.finish_dialog_open = False
         _action_failed(exc)
         return
     st.session_state.current_invocation = invocation
@@ -1005,9 +1014,12 @@ def _render_scenario_loader() -> None:
     if pending_id:
         st.warning("Replace the current inputs and active composition with this practice scenario? Saved history remains available.")
         replace, keep = st.columns(2)
-        if replace.button("Replace inputs", key="confirm_scenario_overwrite"):
-            _apply_scenario(get_scenario(pending_id))
-            st.rerun()
+        replace.button(
+            "Replace inputs",
+            key="confirm_scenario_overwrite",
+            on_click=_apply_scenario,
+            args=(get_scenario(pending_id),),
+        )
         if keep.button("Keep my current work", key="cancel_scenario_overwrite"):
             st.session_state.pending_scenario_id = None
             st.rerun()
@@ -1278,6 +1290,78 @@ def _render_candidate(
             st.info(f"One next step: {candidate['stuck_step']}")
 
 
+def _split_candidates_by_kind(
+    state: dict[str, Any], candidates: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    language_ids = {
+        issue["goal_id"]
+        for issue in state.get("issues", [])
+        if issue.get("category") == "language_conventions"
+    }
+    ideas = [candidate for candidate in candidates if candidate["goal_id"] not in language_ids]
+    polishing = [candidate for candidate in candidates if candidate["goal_id"] in language_ids]
+    return ideas, polishing
+
+
+def _render_choose_candidates(state: dict[str, Any]) -> None:
+    candidates = state.get("revision_candidates", [])
+    if not candidates:
+        return
+    round_id = state["round_id"]
+    goal_ids = [candidate["goal_id"] for candidate in candidates]
+    recommended, *alternatives = candidates
+    overlap_labels = _overlap_labels(candidates, st.session_state.editor_text)
+
+    st.markdown("**A good place to start**")
+    st.caption("One meaningful change is enough. Other goals are optional.")
+    _render_candidate(
+        recommended,
+        True,
+        round_id,
+        overlap_labels.get(recommended["goal_id"]),
+    )
+    st.button(
+        "Choose just this goal",
+        key=f"choose_only_{round_id}_{recommended['goal_id']}",
+        on_click=_choose_single_goal,
+        args=(round_id, recommended["goal_id"], goal_ids),
+        help="Select only the recommended first goal. You can still change your selection.",
+    )
+    if not alternatives:
+        return
+
+    if not st.session_state.alternative_choices_visible:
+        st.button(
+            f"See other choices ({len(alternatives)})",
+            key="show_other_choices",
+            on_click=_set_alternative_choices_visible,
+            args=(True,),
+        )
+        return
+
+    st.button(
+        "Show less feedback",
+        key="show_less_choice_feedback",
+        on_click=_set_alternative_choices_visible,
+        args=(False,),
+    )
+    ideas, polishing = _split_candidates_by_kind(state, alternatives)
+    for label, group in (
+        ("Other ideas, reasoning, and organization", ideas),
+        ("Optional sentence polishing", polishing),
+    ):
+        if not group:
+            continue
+        st.markdown(f"**{label}**")
+        for candidate in group:
+            _render_candidate(
+                candidate,
+                True,
+                round_id,
+                overlap_labels.get(candidate["goal_id"]),
+            )
+
+
 def _render_editor(state: dict[str, Any]) -> None:
     composition_id = st.session_state.active_composition_id
     reviewing_submitted_goals = (
@@ -1452,18 +1536,11 @@ def _render_workspace(service: WritingAssistantService, session_id: str) -> None
             if st.session_state.current_step == "Choose":
                 _render_genre(service, session_id, state)
                 st.markdown("### Choose 1–3 revision goals")
-                st.caption("You do not need to fix everything. Selection and hints do not make another AI call.")
-                candidates = state.get("revision_candidates", [])
-                if st.session_state.less_feedback:
-                    candidates = candidates[:1]
-                overlap_labels = _overlap_labels(candidates, st.session_state.editor_text)
-                for candidate in candidates:
-                    _render_candidate(
-                        candidate,
-                        True,
-                        state["round_id"],
-                        overlap_labels.get(candidate["goal_id"]),
-                    )
+                st.caption(
+                    "You do not need to fix everything. Selection, showing choices, "
+                    "and hints do not make another AI call."
+                )
+                _render_choose_candidates(state)
             elif not review_active:
                 st.markdown("### Your selected goals")
                 candidates = _selected_candidates(state)

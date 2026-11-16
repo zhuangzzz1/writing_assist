@@ -9,8 +9,8 @@ import requests
 from dotenv import load_dotenv
 
 
-PROMPT_VERSION = "v3.5.0"
-SCHEMA_VERSION = "v3.5.0"
+PROMPT_VERSION = "v3.8.3"
+SCHEMA_VERSION = "v3.8.0"
 MAX_DRAFT_CHARS = 16_000
 MAX_SOURCE_CHARS = 16_000
 MAX_ASSIGNMENT_CHARS = 4_000
@@ -128,7 +128,7 @@ class DeepSeekClient:
             raise ConfigurationError(
                 "DEEPSEEK_API_KEY is missing. Add it to .env before running a review."
             )
-        thinking_value = os.getenv("DEEPSEEK_THINKING", "false").strip().lower()
+        thinking_value = os.getenv("DEEPSEEK_THINKING", "true").strip().lower()
         if thinking_value not in ("true", "false"):
             raise ConfigurationError("DEEPSEEK_THINKING must be true or false.")
         thinking = thinking_value == "true"
@@ -249,6 +249,270 @@ class DeepSeekClient:
             },
         }
         return content
+
+
+SOTA_MODEL_PROTOCOLS = {
+    "claude-opus-5-5": "anthropic",
+    "gemini-4-argon": "gemini",
+}
+
+
+class SOTAClient:
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        model: str,
+        protocol: str,
+        timeout: float = 120,
+        thinking: bool = True,
+        reasoning_effort: str = "high",
+        session: requests.Session | None = None,
+    ):
+        if protocol not in ("anthropic", "gemini"):
+            raise ConfigurationError("SOTA protocol must be anthropic or gemini.")
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.protocol = protocol
+        self.timeout = timeout
+        self.thinking = thinking
+        self.reasoning_effort = reasoning_effort
+        self.session = session or requests.Session()
+        self._response_metadata: ContextVar[dict[str, Any]] = ContextVar(
+            "sota_response_metadata"
+        )
+
+    @property
+    def last_response_metadata(self) -> dict[str, Any]:
+        return self._response_metadata.get({})
+
+    @last_response_metadata.setter
+    def last_response_metadata(self, value: dict[str, Any]) -> None:
+        self._response_metadata.set(value)
+
+    @classmethod
+    def from_env(cls, model: str) -> "SOTAClient":
+        load_dotenv()
+        api_key = os.getenv("SOTA_API_KEY", "").strip()
+        base_url = os.getenv("SOTA_BASE_URL", "").strip()
+        if not api_key:
+            raise ConfigurationError(
+                "SOTA_API_KEY is missing. Add it to .env before this evaluation."
+            )
+        if not base_url:
+            raise ConfigurationError(
+                "SOTA_BASE_URL is missing. Add it to .env before this evaluation."
+            )
+        protocol = SOTA_MODEL_PROTOCOLS.get(model)
+        if protocol is None:
+            raise ConfigurationError(f"Unsupported SOTA evaluation model: {model}")
+        try:
+            timeout = float(os.getenv("SOTA_TIMEOUT_SECONDS", "120"))
+        except ValueError as exc:
+            raise ConfigurationError(
+                "SOTA_TIMEOUT_SECONDS must be a positive number."
+            ) from exc
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ConfigurationError("SOTA_TIMEOUT_SECONDS must be a positive number.")
+        return cls(
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+            protocol=protocol,
+            timeout=timeout,
+            thinking=True,
+            reasoning_effort="high",
+        )
+
+    def model_config(self) -> dict[str, Any]:
+        return {
+            "provider": "sota",
+            "api_protocol": self.protocol,
+            "model_name": self.model,
+            "thinking_enabled": self.thinking,
+            "reasoning_effort": self.reasoning_effort if self.thinking else "",
+            "prompt_version": PROMPT_VERSION,
+            "schema_version": SCHEMA_VERSION,
+        }
+
+    def _root_url(self) -> str:
+        if self.base_url.endswith("/v1"):
+            return self.base_url[:-3]
+        return self.base_url
+
+    def _post(self, url: str, payload: dict[str, Any], headers: dict[str, str]):
+        try:
+            response = self.session.post(
+                url,
+                headers={**headers, "Content-Type": "application/json"},
+                json=payload,
+                timeout=self.timeout,
+            )
+        except requests.exceptions.Timeout as exc:
+            raise APIError("The SOTA request timed out.") from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise APIError("Could not connect to the SOTA relay.") from exc
+        except requests.exceptions.RequestException as exc:
+            raise APIError("The SOTA request failed.") from exc
+        if response.status_code in (401, 403):
+            raise AuthError("SOTA authentication failed.", status_code=response.status_code)
+        if response.status_code == 429:
+            raise RateLimitError("SOTA rate limit reached.", status_code=429)
+        if response.status_code >= 400:
+            detail = ""
+            try:
+                error_body = response.json()
+                detail = str(error_body.get("error", {}).get("message", ""))[:500]
+            except (ValueError, AttributeError):
+                detail = ""
+            message = f"SOTA relay returned HTTP {response.status_code}."
+            if detail:
+                message += f" Thinking-mode request was not accepted: {detail}"
+            raise APIError(message, status_code=response.status_code)
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise APIError("SOTA returned an unexpected response format.") from exc
+
+    def _anthropic_completion(
+        self, messages: list[dict[str, str]], max_tokens: int
+    ) -> str:
+        budget_tokens = min(4096, max_tokens // 2)
+        if budget_tokens < 1024:
+            raise InputValidationError(
+                "Claude thinking evaluation requires max_tokens of at least 2048."
+            )
+        system = "\n\n".join(
+            message["content"] for message in messages if message["role"] == "system"
+        )
+        payload = {
+            "model": self.model,
+            "max_tokens": max_tokens,
+            "thinking": {"type": "enabled", "budget_tokens": budget_tokens},
+            "messages": [
+                {
+                    "role": "assistant" if message["role"] == "assistant" else "user",
+                    "content": message["content"],
+                }
+                for message in messages
+                if message["role"] != "system"
+            ],
+        }
+        if system:
+            payload["system"] = system
+        body = self._post(
+            f"{self._root_url()}/v1/messages",
+            payload,
+            {"x-api-key": self.api_key, "anthropic-version": "2023-06-01"},
+        )
+        try:
+            content = "\n".join(
+                block.get("text", "")
+                for block in body["content"]
+                if block.get("type") == "text"
+            ).strip()
+            usage = body.get("usage", {})
+        except (KeyError, IndexError, TypeError, AttributeError) as exc:
+            raise APIError("SOTA returned an unexpected response format.") from exc
+        if not content:
+            raise APIError("SOTA returned an empty response.")
+        prompt_tokens = usage.get("input_tokens")
+        completion_tokens = usage.get("output_tokens")
+        total_tokens = (
+            prompt_tokens + completion_tokens
+            if isinstance(prompt_tokens, int) and isinstance(completion_tokens, int)
+            else None
+        )
+        self.last_response_metadata = {
+            "provider_request_id": str(body.get("id", "")),
+            "provider_created": None,
+            "provider": "sota",
+            "api_protocol": self.protocol,
+            "model_name": str(body.get("model", self.model)),
+            "thinking_enabled": True,
+            "reasoning_effort": self.reasoning_effort,
+            "token_usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+                "reasoning_tokens": None,
+            },
+        }
+        return content
+
+    def _gemini_completion(self, messages: list[dict[str, str]], max_tokens: int) -> str:
+        system = "\n\n".join(
+            message["content"] for message in messages if message["role"] == "system"
+        )
+        generation_config = {
+            "maxOutputTokens": max_tokens,
+            "thinkingConfig": {
+                "thinkingLevel": self.reasoning_effort.upper(),
+                "includeThoughts": False,
+            },
+            "responseMimeType": "application/json",
+        }
+        payload = {
+            "contents": [
+                {
+                    "role": "model" if message["role"] == "assistant" else "user",
+                    "parts": [{"text": message["content"]}],
+                }
+                for message in messages
+                if message["role"] != "system"
+            ],
+            "generationConfig": generation_config,
+        }
+        if system:
+            payload["systemInstruction"] = {"parts": [{"text": system}]}
+        body = self._post(
+            f"{self._root_url()}/v1beta/models/{self.model}:generateContent",
+            payload,
+            {"x-goog-api-key": self.api_key},
+        )
+        try:
+            parts = body["candidates"][0]["content"]["parts"]
+            content = "\n".join(
+                part.get("text", "") for part in parts if not part.get("thought", False)
+            ).strip()
+            usage = body.get("usageMetadata", {})
+        except (KeyError, IndexError, TypeError, AttributeError) as exc:
+            raise APIError("SOTA returned an unexpected response format.") from exc
+        if not content:
+            raise APIError("SOTA returned an empty response.")
+        self.last_response_metadata = {
+            "provider_request_id": str(body.get("responseId", "")),
+            "provider_created": None,
+            "provider": "sota",
+            "api_protocol": self.protocol,
+            "model_name": str(body.get("modelVersion", self.model)),
+            "thinking_enabled": True,
+            "reasoning_effort": self.reasoning_effort,
+            "token_usage": {
+                "prompt_tokens": usage.get("promptTokenCount"),
+                "completion_tokens": usage.get("candidatesTokenCount"),
+                "total_tokens": usage.get("totalTokenCount"),
+                "reasoning_tokens": usage.get("thoughtsTokenCount"),
+            },
+        }
+        return content
+
+    def chat_completion(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        max_tokens: int = 8000,
+        json_mode: bool = False,
+        thinking: bool | None = None,
+    ) -> str:
+        use_thinking = self.thinking if thinking is None else thinking
+        if not use_thinking:
+            raise ConfigurationError("This SOTA evaluation requires explicit thinking mode.")
+        self.last_response_metadata = {}
+        if self.protocol == "anthropic":
+            return self._anthropic_completion(messages, max_tokens)
+        return self._gemini_completion(messages, max_tokens)
 
 
 def parse_json_object(content: str) -> dict[str, Any]:

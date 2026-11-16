@@ -1,0 +1,316 @@
+{
+  "fixture_version": "v3.8.2-final-regression.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "final_f1_source_bounded_interpretation_v3_8_2",
+      "name": "F1 credits bounded interpretation instead of boilerplate loss",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden.\n\nThe supplied survey included 50 students, and 31 said they would try garden vegetables. This result shows interest among those surveyed rather than proving health benefits.",
+      "assignment_prompt": "Argue whether our school should start a garden using the supplied survey.",
+      "teacher_directions": "Keep source observations bounded to the passage.",
+      "source_material": "A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest, not health outcomes.",
+      "student_concerns": "",
+      "acceptance_focus": "Credit specific source-bounded interpretation and do not regress merely because vague boilerplate was replaced",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Credit the exact Final bounded interpretation as a genuine improvement.",
+        "Do not classify replacement of 'This supports our plan.' as a regression by itself.",
+        "An incomplete explicit link to the garden claim may be a future area, not proof of regression.",
+        "Use only the supplied survey and avoid unqualified health claims."
+      ],
+      "lineage": {
+        "fixture_version": "v3.7.0-coordinator-targeted.2",
+        "scenario_number": 8,
+        "scenario_id": "coordinator_final_source_present"
+      },
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should start a garden.\n\nThe survey says 50 students want vegetables. This supports our plan.",
+        "working_genre": "argument",
+        "strengths": ["The revision states the actual survey counts and bounds the result to interest among respondents."],
+        "issues": [],
+        "revision_candidates": [],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Explain the survey result",
+            "draft_reference": "This supports our plan.",
+            "paragraph_number": 2,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "specific_improvement",
+            "observation": "The revision adds accurate counts and distinguishes interest from unmeasured health outcomes.",
+            "evidence_reference": "This result shows interest among those surveyed rather than proving health benefits.",
+            "carry_forward": false
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "specific_improvement",
+            "observation": "You explained what the survey shows and kept its limits clear.",
+            "carry_forward": false
+          }
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 2,
+      "scenario_id": "final_f2_student_interpretation_v3_8_2",
+      "name": "F2 credits added reasoning despite an incomplete next step",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start later.\n\nThe passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+      "assignment_prompt": "Argue whether school should start later using the assigned passage.",
+      "teacher_directions": "Do not assert source accuracy when the passage is unavailable.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Credit student-authored interpretation and distinguish an incomplete causal link from regression",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Credit the added class-participation interpretation as student-authored reasoning with an exact Final reference.",
+        "Do not report zero improvements merely because the later-start causal path remains incomplete.",
+        "Do not call the replacement of 'This supports our plan.' a regression without an actual loss of meaning, accuracy, reasoning, or structure.",
+        "Do not verify the unavailable passage."
+      ],
+      "lineage": {
+        "fixture_version": "v3.7.0-coordinator-targeted.2",
+        "scenario_number": 9,
+        "scenario_id": "coordinator_final_source_missing"
+      },
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should start later.\n\nThe passage says students concentrate better. This supports our plan.",
+        "working_genre": "argument",
+        "strengths": ["The revision labels the added classroom connection as the writer's interpretation."],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "description": "The added class-discussion interpretation does not yet explain how starting later would lead to better concentration.",
+            "draft_reference": "The passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "paragraph_number": 2,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_1",
+            "title": "Connect the later-start reason",
+            "draft_reference": "The passage says students concentrate better. I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "paragraph_number": 2,
+            "occurrence": 1
+          }
+        ],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Connect the later-start reason",
+            "draft_reference": "The passage says students concentrate better. This supports our plan.",
+            "paragraph_number": 2,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The revision adds a possible classroom benefit but still does not explain how starting later would lead to better concentration.",
+            "evidence_reference": "I think better concentration could help students participate in class discussions, which is my own interpretation of the evidence.",
+            "carry_forward": true
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "You added your own interpretation and can still connect the later start to concentration.",
+            "carry_forward": true
+          }
+        ],
+        "source_limitations": ["The assigned passage was not supplied, so its content cannot be checked."]
+      }
+    },
+    {
+      "number": 3,
+      "scenario_id": "final_e_same_unchanged_goal_v3_8_2",
+      "name": "E preserves same-unchanged-goal Final consistency",
+      "grade_level": "5th Grade",
+      "genre": "argument",
+      "draft": "Our class should have a reading corner. It would give students a quiet place to read.\n\nRight now, readers have to sit at their desks.",
+      "assignment_prompt": "Argue for one realistic reading improvement at school.",
+      "teacher_directions": "State a claim and explain how the change would help readers.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Preserve the exact unchanged-goal guard while allowing distinct genuine improvements",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Do not classify the exact unchanged goal reference as a Final improvement after improvement_not_yet_evident.",
+        "Do not infer a contradiction from goal ID alone or from a different genuine improvement."
+      ],
+      "lineage": {
+        "fixture_version": "v3.8.0-final-history.1",
+        "scenario_number": 1,
+        "scenario_id": "final_history_same_unchanged_goal"
+      },
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our class should have a reading corner. It would give students a place to read.\n\nRight now, readers have to sit at their desks.",
+        "working_genre": "argument",
+        "strengths": ["The draft names a specific reading improvement."],
+        "issues": [
+          {
+            "goal_id": "goal_1",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "description": "The quiet-place detail does not yet explain how the corner would help students focus on reading.",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_1",
+            "title": "Explain the reading benefit",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Explain the reading benefit",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The sentence adds quiet as a detail but still does not explain how the corner would help students focus on reading.",
+            "evidence_reference": "It would give students a quiet place to read.",
+            "carry_forward": true
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "You added a detail, and you can still explain the reading benefit.",
+            "carry_forward": true
+          }
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 4,
+      "scenario_id": "final_09_genuine_organization_regression_v3_8_2",
+      "name": "Organization regression remains visible after restraint changes",
+      "grade_level": "7th Grade",
+      "genre": "informational",
+      "draft": "Our cafeteria can reduce food waste by helping students understand what they throw away. Finally, students can choose smaller portions. First, a waste audit can show which foods are discarded most often, but the audit is not needed before making choices. Next, the cafeteria can track whether waste changes, although no one will know what caused the change.",
+      "assignment_prompt": "Explain one way the cafeteria could reduce food waste.",
+      "teacher_directions": "Keep the steps in a clear logical sequence.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Retain genuine order and reasoning regressions while crediting real gains elsewhere",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Identify the broken sequence and removed audit-to-choice rationale as meaningful regressions with exact references.",
+        "Do not hide these regressions merely because the Final also contains other genuine improvements.",
+        "Do not manufacture an improvement for the unchanged opening."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 9,
+        "scenario_id": "acceptance_09_organization_regression"
+      },
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our cafeteria can reduce food waste by helping students understand what they throw away. First, a waste audit can show which foods are discarded most often. Next, students can use that information to choose smaller portions. Finally, the cafeteria can track whether waste changes after those choices.",
+        "working_genre": "informational",
+        "strengths": ["The draft retains a clear cafeteria-waste topic."],
+        "issues": [
+          {
+            "goal_id": "goal_2",
+            "category": "organization",
+            "finding_severity": "reasoning",
+            "description": "The revised order places the final choice before the audit and rejects the audit-to-choice relationship, so the process no longer follows a clear causal sequence.",
+            "draft_reference": "Finally, students can choose smaller portions. First, a waste audit can show which foods are discarded most often, but the audit is not needed before making choices.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": true,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_2",
+            "title": "Restore the process order",
+            "draft_reference": "Finally, students can choose smaller portions. First, a waste audit can show which foods are discarded most often, but the audit is not needed before making choices.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "selected_goals": [
+          {
+            "goal_id": "goal_1",
+            "title": "Clarify the audit step",
+            "draft_reference": "First, a waste audit can show which foods are discarded most often.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_1": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The audit description remains, but the new wording rejects its role in informing choices.",
+            "evidence_reference": "but the audit is not needed before making choices",
+            "carry_forward": true
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_1",
+            "status": "improvement_not_yet_evident",
+            "observation": "The audit detail remains, and its connection to the next step still needs attention.",
+            "carry_forward": true
+          }
+        ],
+        "source_limitations": []
+      }
+    }
+  ]
+}

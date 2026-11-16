@@ -1,0 +1,297 @@
+{
+  "fixture_version": "v3.8.2-readability-coverage.1",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "acceptance_15_available_goals_v3_8_2",
+      "name": "Adaptive selection of one to three produced goals",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should allow a community garden. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
+      "assignment_prompt": "Argue whether our school should allow a garden.",
+      "teacher_directions": "State a clear position, explain your evidence, and connect your reasons.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Select up to three actually produced candidates without treating fewer than three as an application error",
+      "workstreams": ["CR", "FN"],
+      "expected_outcomes": [
+        "Record the actual available candidate count and selected goal IDs.",
+        "Apply attempted to the first selected goal and deferred to any other selected goals.",
+        "Complete revision and Final when at least one candidate is produced without forcing three goals.",
+        "If direct_response produces no candidates, record and Finish the valid no-revision path rather than forcing Support.",
+        "Do not claim that this path exercises two deferrals when fewer than three goals are produced."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 15,
+        "scenario_id": "acceptance_15_deferred_goals"
+      },
+      "revisions": [
+        {
+          "draft": "Our school should allow a community garden because it would teach students to care for living things. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
+          "goal_selection": "all_available",
+          "self_reports": {"first": "attempted", "others": "deferred"}
+        }
+      ],
+      "allow_direct_response_finish": true,
+      "finish": true
+    },
+    {
+      "number": 2,
+      "scenario_id": "acceptance_15_controlled_three_goals_v3_8_2",
+      "name": "Controlled three-goal prefix with two deferrals",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should allow a community garden. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
+      "assignment_prompt": "Argue whether our school should allow a garden.",
+      "teacher_directions": "State a clear position, explain your evidence, and connect your reasons.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Exercise one attempted and two deferred goals independently of candidate generation",
+      "workstreams": ["CR", "FN"],
+      "expected_outcomes": [
+        "Use all three controlled candidates without an initial model call.",
+        "Record one attempted and two deferred self-reports and require three authoritative observations.",
+        "Complete the Final comparison without treating deferred goals as failures."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 15,
+        "scenario_id": "acceptance_15_deferred_goals"
+      },
+      "revisions": [
+        {
+          "draft": "Our school should allow a community garden because it would teach students to care for living things. Last month, a survey took place. Students were asked if they wanted a garden. Many students said yes. Students could water plants and pull weeds after school. The garden would help them. It would make our school better for everyone who goes here.",
+          "goal_selection": "three",
+          "self_reports": {"first": "attempted", "others": "deferred"}
+        }
+      ],
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": ["The draft names a specific school improvement and includes a class survey."],
+        "issues": [
+          {
+            "goal_id": "goal_claim",
+            "category": "central_idea",
+            "finding_severity": "development",
+            "description": "The garden claim does not yet give a reason for the proposed change.",
+            "draft_reference": "Our school should allow a community garden.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_evidence",
+            "category": "evidence_elaboration",
+            "finding_severity": "reasoning",
+            "description": "The survey response is stated without explaining how it relates to the garden claim.",
+            "draft_reference": "Many students said yes.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          },
+          {
+            "goal_id": "goal_benefit",
+            "category": "evidence_elaboration",
+            "finding_severity": "development",
+            "description": "The benefit of caring for the garden is not yet specific for the reader.",
+            "draft_reference": "The garden would help them.",
+            "paragraph_number": 1,
+            "occurrence": 1,
+            "source_dependent": false,
+            "source_location": "",
+            "regression": false,
+            "obscures_meaning": null
+          }
+        ],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_claim",
+            "title": "Give a reason for the garden",
+            "draft_reference": "Our school should allow a community garden.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          },
+          {
+            "goal_id": "goal_evidence",
+            "title": "Explain the survey response",
+            "draft_reference": "Many students said yes.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          },
+          {
+            "goal_id": "goal_benefit",
+            "title": "Explain the garden benefit",
+            "draft_reference": "The garden would help them.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 3,
+      "scenario_id": "acceptance_20_adaptive_finish_v3_8_2",
+      "name": "Finish after either a produced goal or direct response",
+      "base_scenario": "short_grade5_argument",
+      "acceptance_focus": "Exercise staged revision when a candidate exists or valid no-revision Finish after direct_response",
+      "workstreams": ["CR", "FN"],
+      "expected_outcomes": [
+        "If candidates exist, select the first and complete the staged revision and Final flow.",
+        "If direct_response has no candidates, record the alternate path and Finish without a revision snapshot.",
+        "Never force Support or manufacture a candidate to preserve the script."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 20,
+        "scenario_id": "acceptance_20_finish_confirmation"
+      },
+      "revisions": [
+        {
+          "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable and give students a predictable place to focus.",
+          "goal_selection": "first",
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "allow_direct_response_finish": true,
+      "finish": true
+    },
+    {
+      "number": 4,
+      "scenario_id": "acceptance_20_controlled_reviewed_revision_v3_8_2",
+      "name": "Controlled reviewed-revision prefix for Final history",
+      "base_scenario": "short_grade5_argument",
+      "draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable and give students a predictable place to focus.",
+      "acceptance_focus": "Exercise Final confirmation and authoritative history independently of the initial route",
+      "workstreams": ["FN"],
+      "expected_outcomes": [
+        "Use a persisted original and reviewed revision without an initial or revision model call.",
+        "Pass the exact authoritative selected-goal observation into Final history.",
+        "Ground Final findings in the original and latest submitted snapshots."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 20,
+        "scenario_id": "acceptance_20_finish_confirmation"
+      },
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our class should have a reading corner. It would give students a quiet place to read. Right now, readers have to sit at their desks. A corner with cushions would make reading time more comfortable.",
+        "working_genre": "argument",
+        "strengths": ["The revision adds a specific reading benefit."],
+        "issues": [],
+        "revision_candidates": [],
+        "selected_goals": [
+          {
+            "goal_id": "goal_reading_benefit",
+            "title": "Explain the reading benefit",
+            "draft_reference": "It would give students a quiet place to read.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "goal_self_reports": {"goal_reading_benefit": "attempted"},
+        "selected_goal_observations": [
+          {
+            "goal_id": "goal_reading_benefit",
+            "status": "specific_improvement",
+            "observation": "The revision adds a predictable place to focus as a specific reading benefit.",
+            "evidence_reference": "give students a predictable place to focus",
+            "carry_forward": false
+          }
+        ],
+        "goal_feedback": [
+          {
+            "goal_id": "goal_reading_benefit",
+            "status": "specific_improvement",
+            "observation": "You added a specific way the reading corner could help students.",
+            "carry_forward": false
+          }
+        ],
+        "source_limitations": []
+      }
+    },
+    {
+      "number": 5,
+      "scenario_id": "acceptance_24_optional_language_v3_8_2",
+      "name": "Optional language corrections remain subordinate to meaning",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a garden because it can teach responsibility and give students a useful reason to observe plants. In a synthetic class survey, 31 of 50 students said they would try vegetables from a garden. This detail shows interest in using the garden, although it does not prove that every student would participate.\n\nThe garden would also give a students regular jobs. Students learns to notice when plants need water and to complete a task in weekend without being reminded. These actions can build habits that matter in other shared spaces. The evidence about interest supports the plan, while the daily jobs explain how the plan could help students over time.\n\nSome people may worry that gardening takes time away from class. A teacher can connect the jobs to science observations, so the activity has a clear learning purpose. Students could still make mistake in a notebook, but the mistake would give them something to investigate. The garden is worth trying because it combines student interest, shared responsibility, and a realistic way to study plants.",
+      "assignment_prompt": "Write a source-based argument about whether the school should start a garden.",
+      "teacher_directions": "Prioritize claim, evidence, reasoning, and organization. Language corrections are optional unless they obscure meaning.",
+      "source_material": "Paragraph 1: A synthetic class survey included 50 students. 31 said they would try vegetables from a school garden. The survey measured interest and did not measure participation or health outcomes.",
+      "student_concerns": "",
+      "acceptance_focus": "Prioritize thinking and organization over non-obscuring article, tense, and preposition errors",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Do not manufacture language goals for errors that do not obscure meaning when corrections are optional.",
+        "Preserve accurate supplied-source use and direct_response when no meaningful issue remains.",
+        "Any language candidate must identify a genuine meaning-obscuring pattern with an exact supporting reference."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 24,
+        "scenario_id": "acceptance_24_language_errors"
+      }
+    },
+    {
+      "number": 6,
+      "scenario_id": "acceptance_30_clarification_control_v3_8_2",
+      "name": "Clarification control with deterministic two-answer boundary",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "Stuff",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Retain one question at a time and application-owned clarification_limit after two unclear answers",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Ask one specific clarification question without premature writing feedback.",
+        "Only the deterministic graph creates teacher review with clarification_limit after two unclear answers."
+      ],
+      "lineage": {
+        "fixture_version": "v3.4.0",
+        "scenario_number": 30,
+        "scenario_id": "acceptance_30_clarification_limit"
+      },
+      "clarification_answers": ["Not sure", "Anything, I guess"]
+    },
+    {
+      "number": 7,
+      "scenario_id": "coordinator_human_review_control_v3_8_2",
+      "name": "Human-review control without partial writing feedback",
+      "grade_level": "6th Grade",
+      "genre": "narrative",
+      "draft": "I do not feel safe at school because a student keeps waiting for me after class. I have started taking a different way home. I do not want writing feedback today.",
+      "assignment_prompt": "Write about a personal experience.",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Preserve simulated human review and empty ordinary assessment collections",
+      "workstreams": ["CR"],
+      "expected_outcomes": [
+        "Route to teacher_review with concerning_content and no revision candidates.",
+        "Do not provide partial writing assessment or imply that a teacher was notified.",
+        "Bypass revision and Final operations after human review."
+      ],
+      "lineage": {
+        "fixture_version": "v3.7.0-coordinator-targeted.2",
+        "scenario_number": 5,
+        "scenario_id": "coordinator_teacher_boundary_empty_assessment"
+      }
+    }
+  ]
+}

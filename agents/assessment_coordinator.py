@@ -1,4 +1,6 @@
+import hashlib
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -14,15 +16,24 @@ from agents.utils import (
 from langgraph_core.assignment import language_corrections_optional
 from langgraph_core.revision import (
     build_text_diff,
+    locate_unique_reference,
     reference_is_valid,
     reference_overlaps_change,
 )
 from langgraph_core.state import (
+    CoordinatorTeacherFlagCategory,
     Genre,
     ObservationStatus,
     RoutingDecision,
-    TeacherFlagCategory,
     WritingAssistantState,
+)
+
+
+DELETION_CLAIM = re.compile(
+    r"\b(?:deleted|deletion|removed|removal|dropped|omitted|disappeared|"
+    r"missing from (?:the )?final|no longer (?:directly )?"
+    r"(?:stated|included|present|mentioned|expressed|appears))\b",
+    re.IGNORECASE,
 )
 
 
@@ -39,15 +50,6 @@ class IssueOutput(BaseModel):
         "source_use",
     ]
     finding_severity: Literal["accuracy", "reasoning", "development"]
-    reasoning_operation: Literal[
-        "causal",
-        "sequential",
-        "source_based",
-        "concessive",
-        "summary",
-        "conditional",
-        "none",
-    ] = "none"
     description: str = Field(min_length=1)
     draft_reference: str = Field(min_length=1)
     paragraph_number: int = Field(ge=1)
@@ -110,7 +112,7 @@ class AssessmentOutput(BaseModel):
     routing_decision: RoutingDecision
     flag_teacher: bool
     teacher_flag_reason: str
-    teacher_flag_category: TeacherFlagCategory
+    teacher_flag_category: CoordinatorTeacherFlagCategory
     teacher_evidence: list[str] = Field(max_length=5)
     coordinator_reasoning: str = Field(min_length=1)
     clarification_question: str = ""
@@ -133,6 +135,22 @@ class AssessmentOutput(BaseModel):
         if len(observation_ids) != len(set(observation_ids)):
             raise ValueError("Each selected goal can have only one observation.")
         return self
+
+
+class LegacyIssueOutput(IssueOutput):
+    reasoning_operation: Literal[
+        "causal",
+        "sequential",
+        "source_based",
+        "concessive",
+        "summary",
+        "conditional",
+        "none",
+    ] = "none"
+
+
+class LegacyAssessmentOutput(AssessmentOutput):
+    issues: list[LegacyIssueOutput] = Field(max_length=5)
 
 
 class ComparisonFindingOutput(BaseModel):
@@ -182,9 +200,117 @@ class AssessmentResult:
         return self.raw_responses[-1]
 
 
+def build_prior_findings(state: dict[str, Any]) -> list[dict[str, Any]]:
+    selected_ids = {goal["goal_id"] for goal in state.get("selected_goals", [])}
+    reports = state.get("goal_self_reports", {})
+    findings = []
+    for issue in state.get("issues", [])[:5]:
+        goal_id = issue["goal_id"]
+        status = "unselected"
+        if goal_id in selected_ids:
+            status = "deferred" if reports.get(goal_id) == "deferred" else "selected"
+        findings.append(
+            {
+                "goal_id": goal_id,
+                "category": issue["category"],
+                "severity": issue["finding_severity"],
+                "description": issue["description"],
+                "draft_reference": issue["draft_reference"],
+                "paragraph_number": issue["paragraph_number"],
+                "occurrence": issue["occurrence"],
+                "selection_status": status,
+            }
+        )
+    return findings
+
+
+def normalize_unique_issue_locations(
+    raw: dict[str, Any], writing: str
+) -> list[dict[str, Any]]:
+    normalizations = []
+    issues = raw.get("issues", [])
+    if not isinstance(issues, list):
+        return normalizations
+    for issue in issues:
+        if not isinstance(issue, dict):
+            continue
+        reference = issue.get("draft_reference")
+        paragraph = issue.get("paragraph_number")
+        occurrence = issue.get("occurrence")
+        if not isinstance(reference, str) or not isinstance(paragraph, int) or not isinstance(occurrence, int):
+            continue
+        if reference_is_valid(writing, reference, paragraph, occurrence):
+            continue
+        location = locate_unique_reference(writing, reference)
+        if location is None:
+            continue
+        normalizations.append(
+            {
+                "goal_id": issue.get("goal_id", ""),
+                "previous_paragraph_number": paragraph,
+                "previous_occurrence": occurrence,
+                "paragraph_number": location.paragraph_number,
+                "occurrence": location.occurrence,
+            }
+        )
+        issue["paragraph_number"] = location.paragraph_number
+        issue["occurrence"] = location.occurrence
+    return normalizations
+
+
+def normalize_unique_framework_locations(
+    raw: dict[str, Any], writing: str
+) -> list[dict[str, Any]]:
+    normalizations = []
+    coverage = raw.get("framework_coverage", [])
+    if not isinstance(coverage, list):
+        return normalizations
+    for item in coverage:
+        if not isinstance(item, dict) or item.get("status") != "present":
+            continue
+        reference = item.get("reference")
+        paragraph = item.get("paragraph_number")
+        occurrence = item.get("occurrence")
+        if (
+            not isinstance(reference, str)
+            or not isinstance(paragraph, int)
+            or not isinstance(occurrence, int)
+            or reference_is_valid(writing, reference, paragraph, occurrence)
+        ):
+            continue
+        location = locate_unique_reference(writing, reference)
+        if location is None:
+            continue
+        normalizations.append(
+            {
+                "framework": item.get("framework", ""),
+                "component": item.get("component", ""),
+                "previous_paragraph_number": paragraph,
+                "previous_occurrence": occurrence,
+                "paragraph_number": location.paragraph_number,
+                "occurrence": location.occurrence,
+            }
+        )
+        item["paragraph_number"] = location.paragraph_number
+        item["occurrence"] = location.occurrence
+    return normalizations
+
+
 class AssessmentCoordinator:
-    def __init__(self, client: DeepSeekClient):
+    def __init__(
+        self,
+        client: DeepSeekClient,
+        *,
+        round_prompt: str | None = None,
+        final_prompt: str | None = None,
+        include_prior_findings: bool = False,
+        legacy_contract: bool = False,
+    ):
         self.client = client
+        self.round_prompt = round_prompt or COORDINATOR_ROUND_PROMPT
+        self.final_prompt = final_prompt or COORDINATOR_FINAL_PROMPT
+        self.include_prior_findings = include_prior_findings
+        self.legacy_contract = legacy_contract
 
     def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
         payload: dict[str, Any] = {
@@ -211,8 +337,10 @@ class AssessmentCoordinator:
                     "goal_self_reports": state["goal_self_reports"],
                 }
             )
+            if self.include_prior_findings:
+                payload["prior_findings"] = state.get("prior_findings", [])
         return [
-            {"role": "system", "content": COORDINATOR_ROUND_PROMPT},
+            {"role": "system", "content": self.round_prompt},
             {
                 "role": "user",
                 "content": "Assess this submission and return the required JSON object:\n"
@@ -224,6 +352,9 @@ class AssessmentCoordinator:
         payload = {
             "original_draft": state["original_writing"],
             "final_submitted_draft": state["writing"],
+            "final_submitted_draft_sha256": hashlib.sha256(
+                state["writing"].encode("utf-8")
+            ).hexdigest(),
             "grade_level": state["grade_level"],
             "working_genre": state.get("working_genre", ""),
             "assignment_prompt": state["assignment_prompt"],
@@ -236,7 +367,7 @@ class AssessmentCoordinator:
             "revision_history": state.get("revision_history", []),
         }
         return [
-            {"role": "system", "content": COORDINATOR_FINAL_PROMPT},
+            {"role": "system", "content": self.final_prompt},
             {
                 "role": "user",
                 "content": "Compare these submitted drafts and return the required JSON:\n"
@@ -293,11 +424,7 @@ class AssessmentCoordinator:
     @staticmethod
     def _safety_fallback(raw: dict[str, Any]) -> dict[str, Any]:
         category = raw.get("teacher_flag_category")
-        if category not in (
-            "concerning_content",
-            "serious_discouragement",
-            "clarification_limit",
-        ):
+        if category not in ("concerning_content", "serious_discouragement"):
             category = "concerning_content"
         evidence = raw.get("teacher_evidence")
         if not isinstance(evidence, list) or not all(
@@ -332,11 +459,30 @@ class AssessmentCoordinator:
     @staticmethod
     def _validate_round(output: AssessmentOutput, state: WritingAssistantState) -> None:
         selected = state["genre_selection"]
-        if selected != "auto" and output.working_genre != selected:
+        teacher_review = output.flag_teacher or output.routing_decision == "teacher_review"
+        if (
+            selected != "auto"
+            and not teacher_review
+            and output.working_genre != selected
+        ):
             raise ValueError("The working genre must match the student's explicit selection.")
         if output.routing_decision in ("support_agent", "direct_response"):
             if not output.working_genre:
                 raise ValueError("Normal feedback requires a working genre.")
+        if output.routing_decision in ("ask_clarification", "teacher_review"):
+            ordinary_assessment = {
+                "strengths": output.strengths,
+                "issues": output.issues,
+                "framework_coverage": output.framework_coverage,
+                "source_limitations": output.source_limitations,
+                "selected_goal_observations": output.selected_goal_observations,
+            }
+            nonempty = [name for name, value in ordinary_assessment.items() if value]
+            if nonempty:
+                raise ValueError(
+                    "Boundary routes require empty ordinary assessment collections: "
+                    + ", ".join(nonempty)
+                )
         if language_corrections_optional(state["teacher_directions"]):
             for issue in output.issues:
                 if (
@@ -420,6 +566,44 @@ class AssessmentCoordinator:
         )
 
     @staticmethod
+    def _validate_final_consistency(
+        output: FinalAssessmentOutput, state: WritingAssistantState
+    ) -> None:
+        final = state["writing"]
+        history = state.get("revision_history", [])
+        if history:
+            latest = history[-1]
+            final_hash = hashlib.sha256(final.encode("utf-8")).hexdigest()
+            if latest.get("reviewed_draft_sha256") == final_hash:
+                prior_goals = {
+                    goal.get("goal_id"): goal
+                    for goal in latest.get("selected_goals", [])
+                }
+                for improvement in output.improvements:
+                    prior = prior_goals.get(improvement.goal_id)
+                    if (
+                        prior
+                        and prior.get("status")
+                        in ("improvement_not_yet_evident", "uncertain")
+                        and prior.get("draft_reference")
+                        and improvement.final_reference == prior["draft_reference"]
+                    ):
+                        raise ValueError(
+                            "An unchanged goal with a prior not-yet-evident or uncertain "
+                            "observation cannot become a Final improvement."
+                        )
+        for regression in output.regressions:
+            if (
+                regression.original_reference
+                and regression.original_reference in final
+                and DELETION_CLAIM.search(regression.summary)
+            ):
+                raise ValueError(
+                    "A deletion regression cannot quote original text that remains "
+                    "verbatim in the Final draft."
+                )
+
+    @staticmethod
     def _validate_final(output: FinalAssessmentOutput, state: WritingAssistantState) -> None:
         original = state["original_writing"]
         final = state["writing"]
@@ -447,6 +631,7 @@ class AssessmentCoordinator:
             )
             if not (original_changed or final_changed):
                 raise ValueError("A regression reference must overlap an actual text change.")
+        AssessmentCoordinator._validate_final_consistency(output, state)
         ensure_bounded_language(
             {
                 "original_strengths": output.original_strengths,
@@ -458,10 +643,11 @@ class AssessmentCoordinator:
         )
 
     @staticmethod
-    def _rank_by_severity(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Rank issues by severity tier, then preserve within-tier order."""
-        severity_order = {"accuracy": 0, "reasoning": 1, "development": 2}
-        return sorted(issues, key=lambda issue: severity_order[issue["finding_severity"]])
+    def _partition_accuracy(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [
+            *[issue for issue in issues if issue["finding_severity"] == "accuracy"],
+            *[issue for issue in issues if issue["finding_severity"] != "accuracy"],
+        ]
 
     @staticmethod
     def _normalize_round(values: dict[str, Any]) -> dict[str, Any]:
@@ -474,27 +660,65 @@ class AssessmentCoordinator:
                 values["teacher_flag_reason"] = (
                     "The Coordinator requested human review for this submission."
                 )
+            for field in (
+                "strengths",
+                "issues",
+                "framework_coverage",
+                "source_limitations",
+                "selected_goal_observations",
+            ):
+                values[field] = []
         else:
             values["flag_teacher"] = False
         values["coordinator_repair_count"] = values.get("coordinator_repair_count", 0)
         return values
 
+    @staticmethod
+    def _neutralize_model_clarification_limit(raw: dict[str, Any]) -> None:
+        category = raw.get("teacher_flag_category")
+        unowned_teacher_route = (
+            raw.get("routing_decision") == "teacher_review"
+            and category in ("none", "clarification_limit")
+        )
+        if category != "clarification_limit" and not unowned_teacher_route:
+            return
+        raw["flag_teacher"] = False
+        raw["teacher_flag_category"] = "none"
+        raw["teacher_flag_reason"] = ""
+        raw["teacher_evidence"] = []
+        if raw.get("routing_decision") == "teacher_review":
+            raw["routing_decision"] = "ask_clarification"
+        if raw.get("routing_decision") == "ask_clarification" and not raw.get(
+            "clarification_question"
+        ):
+            raw["clarification_question"] = (
+                "What would you like help with in this draft?"
+            )
+
     def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
         raw = parse_json_object(raw_response)
-        if state["genre_selection"] != "auto":
-            raw["working_genre"] = state["genre_selection"]
+        self._neutralize_model_clarification_limit(raw)
         safety_requested = raw.get("flag_teacher") is True or raw.get(
             "routing_decision"
         ) == "teacher_review"
+        if state["genre_selection"] != "auto" and not safety_requested:
+            raw["working_genre"] = state["genre_selection"]
+        normalizations = normalize_unique_issue_locations(raw, state["writing"])
+        framework_normalizations = normalize_unique_framework_locations(
+            raw, state["writing"]
+        )
         try:
-            output = AssessmentOutput.model_validate(raw)
+            output_type = LegacyAssessmentOutput if self.legacy_contract else AssessmentOutput
+            output = output_type.model_validate(raw)
             self._validate_round(output, state)
         except (ValidationError, ValueError):
             if safety_requested:
                 return self._safety_fallback(raw)
             raise
         values = self._normalize_round(output.model_dump())
-        values["issues"] = self._rank_by_severity(values["issues"])
+        values["issues"] = self._partition_accuracy(values["issues"])
+        values["coordinator_reference_normalizations"] = normalizations
+        values["coordinator_framework_normalizations"] = framework_normalizations
         return values
 
     def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:

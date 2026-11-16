@@ -22,8 +22,8 @@ class FakeClient:
             "model_name": self.model,
             "thinking_enabled": self.thinking,
             "reasoning_effort": self.reasoning_effort if self.thinking else "",
-            "prompt_version": "v3.4.0",
-            "schema_version": "v3.4.0",
+            "prompt_version": "v3.8.3",
+            "schema_version": "v3.8.0",
         }
 
     def chat_completion(self, messages, **kwargs):
@@ -60,7 +60,6 @@ def issue_for(
         "goal_id": goal_id,
         "category": "evidence_elaboration",
         "finding_severity": "reasoning",
-        "reasoning_operation": "none",
         "description": "The connection needs more explanation.",
         "draft_reference": reference,
         "paragraph_number": _paragraph_for(writing, reference),
@@ -90,6 +89,7 @@ def coordinator_payload(
     route="support_agent",
     issues=None,
     observations=None,
+    legacy=False,
     **overrides,
 ):
     if issues is None:
@@ -117,6 +117,23 @@ def coordinator_payload(
         ),
         "clarification_choices": [],
     }
+    if route in ("ask_clarification", "teacher_review"):
+        payload.update(
+            {
+                "strengths": [],
+                "issues": [],
+                "framework_coverage": [],
+                "source_limitations": [],
+                "selected_goal_observations": [],
+            }
+        )
+    if route == "teacher_review":
+        payload.update(
+            {"working_genre": "", "genre_confidence": "", "genre_basis": ""}
+        )
+    if legacy:
+        for issue in payload["issues"]:
+            issue.setdefault("reasoning_operation", "none")
     payload.update(overrides)
     return json.dumps(payload)
 
@@ -138,8 +155,6 @@ def candidate_for(issue, **overrides):
                 "Explain one missing link using your own idea.",
             ],
             "self_check": "Does your revision explain how one idea leads to the other?",
-            "vocabulary_options": [],
-            "sentence_starter": "",
         },
         "stuck_step": "Write one question about the missing connection, then answer it in your own words.",
     }
@@ -147,9 +162,13 @@ def candidate_for(issue, **overrides):
     return candidate
 
 
-def support_payload(state, candidates=None, **overrides):
+def support_payload(state, candidates=None, legacy=False, **overrides):
     if candidates is None:
         candidates = [candidate_for(issue) for issue in state.get("issues", [])]
+    if legacy:
+        for candidate in candidates:
+            candidate["hint"].setdefault("vocabulary_options", [])
+            candidate["hint"].setdefault("sentence_starter", "")
     payload = {
         "strengths": ["You state your position clearly."],
         "candidates": candidates,
