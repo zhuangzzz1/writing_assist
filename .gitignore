@@ -16,6 +16,7 @@ venv/
 
 # Local application data
 /data/
+/assignment/
 *.db
 *.sqlite
 *.sqlite3

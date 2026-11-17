@@ -1,7 +1,7 @@
 {
   "fixture_version": "v3.9.0-phase1-development.2",
   "fixture_role": "development only; not held-out transfer evidence",
-  "candidate_prompt_version": "v3.9.2-phase1",
+  "candidate_prompt_version": "v3.9.5-phase1",
   "candidate_schema_version": "v3.9.0",
   "historical_control": {
     "packet": "V3_8_3_COMPLETE_RUN_EXTERNAL_REVIEW.md",

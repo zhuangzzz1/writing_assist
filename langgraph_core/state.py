@@ -133,6 +133,7 @@ class WritingAssistantState(TypedDict):
     coordinator_repair_count: NotRequired[int]
     coordinator_reference_normalizations: NotRequired[list[dict[str, Any]]]
     coordinator_framework_normalizations: NotRequired[list[dict[str, Any]]]
+    coordinator_optional_polish_normalizations: NotRequired[list[dict[str, Any]]]
     clarification_question: NotRequired[str]
     clarification_choices: NotRequired[list[str]]
 

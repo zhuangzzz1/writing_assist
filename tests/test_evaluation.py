@@ -285,6 +285,7 @@ def test_summary_separates_model_graph_and_service_time_and_collects_diagnostics
     assert result["reference_normalization_counts"] == {
         "issue": 1,
         "framework_present": 1,
+        "optional_polish": 0,
     }
     assert result["repair_diagnostics"][0]["validation_error"] == "example"
     assert result["observations"][0]["scenario_id"] == "timing-test"

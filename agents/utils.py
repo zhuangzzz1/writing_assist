@@ -9,8 +9,8 @@ import requests
 from dotenv import load_dotenv
 
 
-PROMPT_VERSION = "v3.8.3"
-SCHEMA_VERSION = "v3.8.0"
+PROMPT_VERSION = "v3.10.1-phase2-lean"
+SCHEMA_VERSION = "v3.10.0"
 MAX_DRAFT_CHARS = 16_000
 MAX_SOURCE_CHARS = 16_000
 MAX_ASSIGNMENT_CHARS = 4_000
@@ -121,7 +121,9 @@ class DeepSeekClient:
         self._response_metadata.set(value)
 
     @classmethod
-    def from_env(cls, require_thinking: bool = False) -> "DeepSeekClient":
+    def from_env(
+        cls, require_thinking: bool = False, reasoning_effort: str | None = None
+    ) -> "DeepSeekClient":
         load_dotenv()
         api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
         if not api_key:
@@ -145,13 +147,20 @@ class DeepSeekClient:
             ) from exc
         if not math.isfinite(timeout) or timeout <= 0:
             raise ConfigurationError("DEEPSEEK_TIMEOUT_SECONDS must be a positive number.")
+        configured_effort = (
+            reasoning_effort
+            if reasoning_effort is not None
+            else os.getenv("DEEPSEEK_REASONING_EFFORT", "low")
+        ).strip()
+        if configured_effort not in {"low", "high", "max"}:
+            raise ConfigurationError("DeepSeek reasoning effort must be low, high, or max.")
         return cls(
             api_key=api_key,
             base_url=os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com"),
             model=os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
             timeout=timeout,
             thinking=thinking,
-            reasoning_effort=os.getenv("DEEPSEEK_REASONING_EFFORT", "high").strip(),
+            reasoning_effort=configured_effort,
         )
 
     def model_config(self) -> dict[str, Any]:

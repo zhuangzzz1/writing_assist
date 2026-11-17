@@ -167,6 +167,39 @@ class LegacyRoundSupportOutput(RoundSupportOutput):
     candidates: list[LegacyCandidateOutput] = Field(min_length=1, max_length=5)
 
 
+class LeanHintOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    steps: list[str] = Field(min_length=3, max_length=5)
+    self_check: str = Field(min_length=1)
+
+
+class LeanCandidateOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    goal_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    why_it_matters: str = Field(min_length=1)
+    revision_action: str = Field(min_length=1)
+    hint: LeanHintOutput
+    stuck_step: str = Field(min_length=1)
+
+
+class LeanGoalFeedbackOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    goal_id: str = Field(min_length=1)
+    observation: str = Field(min_length=1)
+
+
+class LeanRoundSupportOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    strengths: list[str] = Field(min_length=1, max_length=3)
+    candidates: list[LeanCandidateOutput] = Field(min_length=1, max_length=5)
+    goal_feedback: list[LeanGoalFeedbackOutput] = Field(max_length=3)
+
+
 def exact_ellipsis_locating_quotation(text: str, writing: str) -> bool:
     lowered = text.lower()
     locating = re.search(r"\b(?:find|read|reread|look|locate|underline)\b", lowered)
@@ -234,6 +267,21 @@ class FinalSupportOutput(BaseModel):
     conclusion: str = Field(min_length=1)
 
 
+class LeanFinalFindingOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    finding_id: str = Field(min_length=1)
+    observation: str = Field(min_length=1)
+
+
+class LeanFinalSupportOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    improvements: list[LeanFinalFindingOutput] = Field(max_length=5)
+    regressions: list[LeanFinalFindingOutput] = Field(max_length=3)
+    conclusion: str = Field(min_length=1)
+
+
 @dataclass
 class SupportResult:
     values: dict[str, Any]
@@ -252,12 +300,16 @@ class InstructionalSupportAgent:
         final_prompt: str | None = None,
         legacy_contract: bool = False,
         phase1_contract: bool = False,
+        lean_contract: bool = False,
     ):
+        if lean_contract and (legacy_contract or not phase1_contract):
+            raise ValueError("Lean Support requires the Phase 1 structural contract.")
         self.client = client
         self.round_prompt = round_prompt or SUPPORT_ROUND_PROMPT
         self.final_prompt = final_prompt or SUPPORT_FINAL_PROMPT
         self.legacy_contract = legacy_contract
         self.phase1_contract = phase1_contract
+        self.lean_contract = lean_contract
 
     def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
         payload: dict[str, Any] = {
@@ -395,14 +447,76 @@ class InstructionalSupportAgent:
                     raise ValueError("Final references must match the verified Coordinator references.")
         ensure_bounded_language(output.model_dump(), state["source_material_available"])
 
-    def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
-        if self.phase1_contract:
-            output_type = Phase1RoundSupportOutput
-        else:
-            output_type = LegacyRoundSupportOutput if self.legacy_contract else RoundSupportOutput
-        output = output_type.model_validate(parse_json_object(raw_response))
-        self._validate_round(output, state)
-        values = output.model_dump()
+    @staticmethod
+    def _merge_lean_round(
+        output: LeanRoundSupportOutput, state: WritingAssistantState
+    ) -> dict[str, Any]:
+        issues = state.get("issues", [])
+        issues_by_id = {issue["goal_id"]: issue for issue in issues}
+        candidates_by_id = {candidate.goal_id: candidate for candidate in output.candidates}
+        candidate_ids = [candidate.goal_id for candidate in output.candidates]
+        if len(candidates_by_id) != len(candidate_ids) or set(candidate_ids) != set(
+            issues_by_id
+        ):
+            raise ValueError("Support must return exactly one candidate per Coordinator issue.")
+        candidates = []
+        for issue in issues:
+            candidate = candidates_by_id[issue["goal_id"]]
+            candidates.append(
+                {
+                    "goal_id": issue["goal_id"],
+                    "title": candidate.title,
+                    "why_it_matters": candidate.why_it_matters,
+                    "draft_reference": issue["draft_reference"],
+                    "paragraph_number": issue["paragraph_number"],
+                    "occurrence": issue["occurrence"],
+                    "revision_action": candidate.revision_action,
+                    "hint": {
+                        "passage_reference": issue["draft_reference"],
+                        "steps": candidate.hint.steps,
+                        "self_check": candidate.hint.self_check,
+                    },
+                    "stuck_step": candidate.stuck_step,
+                }
+            )
+
+        expected_observations = state.get("selected_goal_observations", [])
+        expected_by_id = {item["goal_id"]: item for item in expected_observations}
+        feedback_by_id = {item.goal_id: item for item in output.goal_feedback}
+        feedback_ids = [item.goal_id for item in output.goal_feedback]
+        if len(feedback_by_id) != len(feedback_ids) or set(feedback_ids) != set(
+            expected_by_id
+        ):
+            raise ValueError("Support must return exactly one feedback item per selected goal.")
+        goal_feedback = []
+        for expected in expected_observations:
+            feedback = feedback_by_id[expected["goal_id"]]
+            goal_feedback.append(
+                {
+                    "goal_id": expected["goal_id"],
+                    "status": expected["status"],
+                    "observation": feedback.observation,
+                    "carry_forward": expected["carry_forward"],
+                    "evidence_reference": expected.get("evidence_reference", ""),
+                    "goal_outcome": expected["goal_outcome"],
+                    "narrowing": expected["narrowing"],
+                    "narrowing_evidence_reference": expected.get(
+                        "narrowing_evidence_reference", ""
+                    ),
+                    "requirement_source": expected.get("requirement_source", ""),
+                    "requirement_reference": expected.get("requirement_reference", ""),
+                }
+            )
+        return {
+            "strengths": output.strengths,
+            "candidates": candidates,
+            "goal_feedback": goal_feedback,
+            "source_limitations": list(state.get("source_limitations", [])),
+        }
+
+    def _round_state_values(
+        self, values: dict[str, Any], state: WritingAssistantState
+    ) -> dict[str, Any]:
         issue_order = {
             issue["goal_id"]: index for index, issue in enumerate(state.get("issues", []))
         }
@@ -421,9 +535,57 @@ class InstructionalSupportAgent:
             ),
         }
 
-    def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
-        output = FinalSupportOutput.model_validate(parse_json_object(raw_response))
-        self._validate_final(output, state)
+    def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
+        if self.lean_contract:
+            lean_output = LeanRoundSupportOutput.model_validate(
+                parse_json_object(raw_response)
+            )
+            output = Phase1RoundSupportOutput.model_validate(
+                self._merge_lean_round(lean_output, state)
+            )
+        else:
+            if self.phase1_contract:
+                output_type = Phase1RoundSupportOutput
+            else:
+                output_type = LegacyRoundSupportOutput if self.legacy_contract else RoundSupportOutput
+            output = output_type.model_validate(parse_json_object(raw_response))
+        self._validate_round(output, state)
+        return self._round_state_values(output.model_dump(), state)
+
+    @staticmethod
+    def _merge_lean_final(
+        output: LeanFinalSupportOutput, state: WritingAssistantState
+    ) -> dict[str, Any]:
+        merged: dict[str, Any] = {"conclusion": output.conclusion}
+        for kind, expected_key in (
+            ("improvements", "comparison_improvements"),
+            ("regressions", "comparison_regressions"),
+        ):
+            expected_items = state.get(expected_key, [])
+            expected_by_id = {item["finding_id"]: item for item in expected_items}
+            actual_items = getattr(output, kind)
+            actual_by_id = {item.finding_id: item for item in actual_items}
+            actual_ids = [item.finding_id for item in actual_items]
+            if len(actual_by_id) != len(actual_ids) or set(actual_ids) != set(
+                expected_by_id
+            ):
+                raise ValueError(f"Final {kind} must match every Coordinator finding.")
+            merged[kind] = []
+            for expected in expected_items:
+                actual = actual_by_id[expected["finding_id"]]
+                merged[kind].append(
+                    {
+                        "finding_id": expected["finding_id"],
+                        "observation": actual.observation,
+                        "final_reference": expected["final_reference"],
+                    }
+                )
+        return merged
+
+    @staticmethod
+    def _final_state_values(
+        output: FinalSupportOutput, state: WritingAssistantState
+    ) -> dict[str, Any]:
         reflection = {
             "original_strengths": state.get("original_strengths", []),
             **output.model_dump(),
@@ -434,10 +596,34 @@ class InstructionalSupportAgent:
             "student_output": reflection["conclusion"],
         }
 
-    @staticmethod
+    def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
+        if self.lean_contract:
+            lean_output = LeanFinalSupportOutput.model_validate(
+                parse_json_object(raw_response)
+            )
+            output = FinalSupportOutput.model_validate(
+                self._merge_lean_final(lean_output, state)
+            )
+        else:
+            output = FinalSupportOutput.model_validate(parse_json_object(raw_response))
+        self._validate_final(output, state)
+        return self._final_state_values(output, state)
+
     def _repair_messages(
-        messages: list[dict[str, str]], raw_response: str, error: Exception
+        self, messages: list[dict[str, str]], raw_response: str, error: Exception
     ) -> list[dict[str, str]]:
+        if self.lean_contract:
+            handoff_instruction = (
+                "Return only the required IDs and student-facing prose. Do not add "
+                "draft references, locations, source limitations, observation state, "
+                "outcome, narrowing, requirement, carry-forward, or final-reference fields; "
+                "Python supplies those fields deterministically."
+            )
+        else:
+            handoff_instruction = (
+                "Preserve the Coordinator handoff, exact references, selected-goal "
+                "observations, and source limitations."
+            )
         return [
             *messages,
             {"role": "assistant", "content": raw_response},
@@ -445,10 +631,10 @@ class InstructionalSupportAgent:
                 "role": "user",
                 "content": (
                     "The previous Support response failed deterministic validation. Return only "
-                    "a corrected complete JSON object with exactly the required fields. Preserve "
-                    "the Coordinator handoff, exact references, selected-goal observations, and "
-                    "source limitations. Keep valid content when possible and do not explain the "
-                    f"correction. Validation error: {str(error)[:2000]}"
+                    "a corrected complete JSON object with exactly the required fields. "
+                    + handoff_instruction
+                    + " Keep valid content when possible and do not explain the correction. "
+                    f"Validation error: {str(error)[:2000]}"
                 ),
             },
         ]

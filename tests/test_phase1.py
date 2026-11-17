@@ -12,11 +12,14 @@ from agents.prompts import (
     PHASE1_COORDINATOR_ROUND_PROMPT,
     PHASE1_PROMPT_VERSION,
     PHASE1_SCHEMA_VERSION,
+    PHASE1_SUPPORT_FINAL_PROMPT,
     PHASE1_SUPPORT_ROUND_PROMPT,
+    SUPPORT_FINAL_PROMPT,
 )
 from agents.support_agent import InstructionalSupportAgent
 from agents.utils import DeepSeekClient
 from langgraph_core.nodes import direct_response_node
+from langgraph_core.graph import create_writing_assistant_service
 from langgraph_core.revision import build_revision_history, build_text_diff
 from langgraph_core.state import make_review_state
 from scripts.evaluate_v3 import phase1_diagnostics, run_mode
@@ -25,6 +28,7 @@ from tests.helpers import (
     FakeClient,
     candidate_for,
     coordinator_payload,
+    final_support_payload,
     issue_for,
     support_payload,
 )
@@ -440,10 +444,36 @@ def test_phase1_valid_teacher_override_clears_optional_polish_during_normalizati
     assert values["issues"] == []
 
 
-@pytest.mark.parametrize("reference,paragraph", [("Missing text.", 2), (REFERENCE, 1)])
-def test_phase1_optional_polish_reference_must_be_exact_and_located(reference, paragraph):
+def test_phase1_optional_polish_reference_must_be_exact():
     state = phase1_state(revision=False)
-    raw = coordinator_raw(state, polish=[polish(reference, paragraph)])
+    raw = coordinator_raw(state, polish=[polish("Missing text.")])
+
+    with pytest.raises(ValueError, match="Optional polish needs"):
+        validate_coordinator(state, raw)
+
+
+def test_phase1_unique_optional_polish_location_is_normalized_and_recorded():
+    state = phase1_state(revision=False)
+    raw = coordinator_raw(state, polish=[polish(REFERENCE, paragraph=1)])
+
+    values = validate_coordinator(state, raw)
+
+    assert values["optional_polish"][0]["paragraph_number"] == 2
+    assert values["coordinator_optional_polish_normalizations"] == [
+        {
+            "optional_polish_index": 0,
+            "previous_paragraph_number": 1,
+            "previous_occurrence": 1,
+            "paragraph_number": 2,
+            "occurrence": 1,
+        }
+    ]
+
+
+def test_phase1_ambiguous_optional_polish_location_requires_repair():
+    state = phase1_state(revision=False)
+    state["writing"] = f"{REFERENCE}\n\n{REFERENCE}"
+    raw = coordinator_raw(state, polish=[polish(REFERENCE, paragraph=3)])
 
     with pytest.raises(ValueError, match="Optional polish needs"):
         validate_coordinator(state, raw)
@@ -725,6 +755,126 @@ def test_phase1_evaluator_selector_uses_candidate_versions_and_prompts(tmp_path,
     assert result["summary"]["errors"] == []
 
 
+def test_phase1_service_flow_uses_all_candidate_prompts_and_preserves_final_handoff(tmp_path):
+    initial = phase1_state(revision=False)
+    initial.update(
+        {
+            "composition_id": "phase1-composition",
+            "round_id": "initial-round",
+            "thread_id": "initial-thread",
+        }
+    )
+    initial_issue = issue_for(initial["writing"], "A claim.")
+    initial_handoff = {
+        **initial,
+        "issues": [initial_issue],
+        "selected_goal_observations": [],
+        "source_limitations": [],
+    }
+    selected = [candidate_for(initial_issue)]
+    revision = make_review_state(
+        CURRENT,
+        "6th Grade",
+        composition_id=initial["composition_id"],
+        round_id="revision-round",
+        thread_id="revision-thread",
+        original_writing=PREVIOUS,
+        previous_writing=PREVIOUS,
+        genre_selection="argument",
+        assignment_prompt=initial["assignment_prompt"],
+        teacher_directions=initial["teacher_directions"],
+        revision_number=1,
+        selected_goals=selected,
+        text_diff=build_text_diff(PREVIOUS, CURRENT),
+    )
+    final = make_review_state(
+        CURRENT,
+        "6th Grade",
+        composition_id=initial["composition_id"],
+        round_id="final-round",
+        thread_id="final-thread",
+        review_mode="final",
+        original_writing=PREVIOUS,
+        genre_selection="argument",
+        assignment_prompt=initial["assignment_prompt"],
+        teacher_directions=initial["teacher_directions"],
+        revision_number=1,
+        selected_goals=selected,
+        text_diff=build_text_diff(PREVIOUS, CURRENT),
+    )
+    final["working_genre"] = "argument"
+    improvement = {
+        "finding_id": "improvement_1",
+        "summary": "The revised claim is more specific.",
+        "original_reference": "A claim.",
+        "final_reference": "A clearer claim.",
+        "goal_id": "goal_1",
+    }
+    client = FakeClient(
+        [
+            coordinator_raw(initial, route="support_agent", issues=[initial_issue]),
+            support_payload(initial_handoff),
+            coordinator_raw(
+                revision,
+                route="direct_response",
+                observations=[observation()],
+            ),
+            json.dumps(
+                {
+                    "original_strengths": ["The original states a claim."],
+                    "improvements": [improvement],
+                    "regressions": [],
+                    "future_areas": [],
+                    "coordinator_reasoning": "The exact changed reference supports the finding.",
+                }
+            ),
+            final_support_payload(
+                {
+                    **final,
+                    "comparison_improvements": [improvement],
+                    "comparison_regressions": [],
+                }
+            ),
+        ]
+    )
+    service = create_writing_assistant_service(
+        client,
+        str(tmp_path / "phase1-flow.db"),
+        coordinator=AssessmentCoordinator(
+            client,
+            round_prompt=PHASE1_COORDINATOR_ROUND_PROMPT,
+            final_prompt=PHASE1_COORDINATOR_FINAL_PROMPT,
+            phase1_contract=True,
+        ),
+        support_agent=InstructionalSupportAgent(
+            client,
+            round_prompt=PHASE1_SUPPORT_ROUND_PROMPT,
+            final_prompt=PHASE1_SUPPORT_FINAL_PROMPT,
+            phase1_contract=True,
+        ),
+    )
+
+    first = service.start_composition("session", initial, "snapshot-0")
+    revised = service.submit_revision("session", revision, "snapshot-1")
+    reflection = service.finish_composition(
+        "session", final, "snapshot-0", "snapshot-1"
+    )
+
+    assert first.state["revision_candidates"][0]["goal_id"] == "goal_1"
+    assert revised.state["goal_feedback"][0]["goal_outcome"] == "fully_addressed"
+    assert reflection.state["final_reflection"]["improvements"][0]["finding_id"] == (
+        "improvement_1"
+    )
+    assert client.responses == []
+    assert [call[0][0]["content"] for call in client.calls] == [
+        PHASE1_COORDINATOR_ROUND_PROMPT,
+        PHASE1_SUPPORT_ROUND_PROMPT,
+        PHASE1_COORDINATOR_ROUND_PROMPT,
+        PHASE1_COORDINATOR_FINAL_PROMPT,
+        PHASE1_SUPPORT_FINAL_PROMPT,
+    ]
+
+
 def test_phase1_diagnostics_describe_outcomes_without_quality_scores():
     records = [
         {
@@ -777,9 +927,11 @@ def test_phase1_evaluator_can_explicitly_skip_final_for_round_regression(tmp_pat
         classmethod(lambda cls, require_thinking=False: client),
     )
     captured = []
+    captured_final_prompts = []
 
     def fake_run(service, session_id, scenario):
         captured.append(scenario.finish)
+        captured_final_prompts.append(service.support_agent.final_prompt)
         return {
             "scenario_id": scenario.scenario_id,
             "fixture_version": scenario.fixture_version,
@@ -799,21 +951,72 @@ def test_phase1_evaluator_can_explicitly_skip_final_for_round_regression(tmp_pat
     )
 
     assert captured == [False]
+    assert captured_final_prompts == [PHASE1_SUPPORT_FINAL_PROMPT]
     assert result["summary"]["errors"] == []
 
 
-def test_phase1_candidate_does_not_change_final_prompt_or_default_versions():
-    assert PHASE1_COORDINATOR_FINAL_PROMPT == COORDINATOR_FINAL_PROMPT
-    assert PHASE1_PROMPT_VERSION == "v3.9.2-phase1"
+def test_phase1_candidate_is_consolidated_without_changing_default_final_prompts():
+    assert PHASE1_COORDINATOR_FINAL_PROMPT != COORDINATOR_FINAL_PROMPT
+    assert PHASE1_SUPPORT_FINAL_PROMPT != SUPPORT_FINAL_PROMPT
+    assert PHASE1_PROMPT_VERSION == "v3.9.5-phase1"
     assert PHASE1_SCHEMA_VERSION == "v3.9.0"
-    assert "scope_narrowed" not in PHASE1_COORDINATOR_ROUND_PROMPT.split("Never use scope_narrowed", 1)[-1]
+    for prompt in (PHASE1_COORDINATOR_ROUND_PROMPT, PHASE1_SUPPORT_ROUND_PROMPT):
+        assert prompt.count("Return only one valid JSON object") == 1
+        assert "replaces any conflicting" not in prompt
+        assert "| empty" not in prompt
+    assert "scope_narrowed" not in PHASE1_COORDINATOR_ROUND_PROMPT.split(
+        "never use scope_narrowed", 1
+    )[-1]
     assert "five-issue maximum" in PHASE1_COORDINATOR_ROUND_PROMPT
     assert "Selected-goal completion" in PHASE1_COORDINATOR_ROUND_PROMPT
-    assert "REQUIRED-DELETION AUDIT" in PHASE1_COORDINATOR_ROUND_PROMPT
-    assert "SOURCE-BOUND STUDENT REASONING" in PHASE1_COORDINATOR_ROUND_PROMPT
-    assert "TRIAGE CAPACITY AND REASONING COVERAGE" in PHASE1_COORDINATOR_ROUND_PROMPT
-    assert "while issues has unused capacity" in PHASE1_COORDINATOR_ROUND_PROMPT
-    assert "auto-select" in PHASE1_SUPPORT_ROUND_PROMPT or "auto-select" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "Required-deletion audit" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "normal student-facing target is one to three issues" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "UNATTRIBUTED CLAIMS AND OPENING HOOKS" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "Absence from the source is not proof" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "REVISION STUDENT-CONCERN RECHECK" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "A different selected goal does not satisfy" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "fourth or fifth issue is permitted only" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "stuck_step must not supply a sentence opening" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "partially_addressed always requires" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "using goal_outcome=not_addressed or uncertain" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "coordinator_rationale only as background context" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "Permitted ELD connector support" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "minor, non-obscuring spelling" in PHASE1_COORDINATOR_FINAL_PROMPT
+    assert "never mention, praise, or criticize edits from text_diff" in PHASE1_SUPPORT_FINAL_PROMPT
+    assert "Independently complete the clarity/reasoning" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "stopping with fewer than five issues" not in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "mandatory multi-paragraph checklist" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "regular and irregular third-person forms may share" in PHASE1_COORDINATOR_ROUND_PROMPT
+    assert "never exceed five items" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "same writing move and passage scope" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "same passage scope as revision_action and self_check" in PHASE1_SUPPORT_ROUND_PROMPT
+    assert "regular suffix patterns from irregular forms" in PHASE1_SUPPORT_ROUND_PROMPT
+    for prompt in (PHASE1_COORDINATOR_ROUND_PROMPT, PHASE1_SUPPORT_ROUND_PROMPT):
+        assert "equips" not in prompt
+
+    schema = PHASE1_COORDINATOR_ROUND_PROMPT.split("7. OUTPUT SCHEMA", 1)[1]
+    assert schema.index('"flag_teacher"') < schema.index('"routing_decision"')
+    assert schema.index('"routing_decision"') < schema.index('"selected_goal_observations"')
+    assert schema.index('"selected_goal_observations"') < schema.index('"issues"')
+
+
+@pytest.mark.parametrize(
+    ("name", "prompt"),
+    [
+        ("coordinator_round", PHASE1_COORDINATOR_ROUND_PROMPT),
+        ("support_round", PHASE1_SUPPORT_ROUND_PROMPT),
+        ("coordinator_final", PHASE1_COORDINATOR_FINAL_PROMPT),
+        ("support_final", PHASE1_SUPPORT_FINAL_PROMPT),
+    ],
+)
+def test_phase1_prompt_output_example_is_valid_json(name, prompt):
+    start = prompt.rindex("\n{\n") + 1
+    end = prompt.rindex("\n}") + 2
+
+    value = json.loads(prompt[start:end])
+
+    assert isinstance(value, dict), name
+    assert value, name
 
 
 def test_phase1_fixture_sets_are_versioned_complete_and_reserved():

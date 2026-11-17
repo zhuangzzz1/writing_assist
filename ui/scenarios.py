@@ -16,6 +16,7 @@ FINAL_REGRESSION_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3
 READABILITY_COVERAGE_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "readability_coverage.json"
 PHASE1_DEVELOPMENT_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "phase1_development.json"
 PHASE1_TRANSFER_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "phase1_transfer.json"
+PHASE2_BRANCH_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "phase2_branches.json"
 
 
 @dataclass(frozen=True)
@@ -219,6 +220,10 @@ def load_phase1_development_scenarios() -> list[AcceptanceScenario]:
 
 def load_phase1_transfer_scenarios() -> list[AcceptanceScenario]:
     return _load_review_scenarios(PHASE1_TRANSFER_PATH)
+
+
+def load_phase2_branch_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(PHASE2_BRANCH_PATH)
 
 
 def get_acceptance_scenario(number: int) -> AcceptanceScenario:

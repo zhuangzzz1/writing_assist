@@ -1,0 +1,222 @@
+{
+  "fixture_version": "v3.10.1-phase2-branches.3",
+  "fixture_role": "targeted synthetic development branches; not held-out transfer evidence",
+  "candidate_prompt_version": "v3.10.1-phase2-lean",
+  "candidate_schema_version": "v3.10.0",
+  "scenarios": [
+    {
+      "number": 1,
+      "scenario_id": "phase2_required_framework_narrowing",
+      "name": "Required deletion preserves commissioned framework coverage",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should add a quiet lunch table because some students want a calmer place to eat. For example, my friend could read there after eating. In the class survey, 24 of 40 students said they would use it. This shows that many students are interested.\n\nA quiet table could make lunch more comfortable for those students.",
+      "assignment_prompt": "Using the assigned passage, argue whether our school should add a quiet lunch table. Include one reason supported by the passage and explain the survey result.",
+      "teacher_directions": "Include the class survey result and explain how it supports your claim.",
+      "framework_name": "Argument evidence",
+      "framework_components": ["Survey evidence", "Explanation of evidence"],
+      "source_material": "A synthetic class survey asked 40 students whether they would use a quiet lunch table. 24 said yes. The survey did not ask about grades or behavior.",
+      "student_concerns": "",
+      "acceptance_focus": "Required narrowing retains exact requirement evidence, live task alignment, and every commissioned framework component",
+      "expected_outcomes": [
+        "Classify required narrowing with exact deleted text and commissioned requirement evidence.",
+        "Retain a live task-alignment issue and framework coverage for both commissioned components.",
+        "Do not call required deletion fully addressed or replace the live candidate with coverage alone."
+      ],
+      "workstreams": ["P1", "P2"],
+      "controlled_round": {
+        "revision_number": 0,
+        "working_genre": "argument",
+        "strengths": ["The draft states a specific proposal."],
+        "issues": [],
+        "revision_candidates": [
+          {
+            "goal_id": "goal_survey",
+            "title": "Explain the survey result",
+            "revision_action": "Explain how the class survey supports your quiet-table claim.",
+            "draft_reference": "This shows that many students are interested.",
+            "paragraph_number": 1,
+            "occurrence": 1
+          }
+        ],
+        "source_limitations": []
+      },
+      "revisions": [
+        {
+          "draft": "Our school should add a quiet lunch table because some students want a calmer place to eat. For example, my friend could read there after eating. Many students are interested in this choice.\n\nA quiet table could make lunch more comfortable for those students.",
+          "goal_selection": "explicit",
+          "goal_references": ["This shows that many students are interested."],
+          "self_reports": {"first": "attempted"}
+        }
+      ],
+      "lineage": {"historical_control_available": false, "derived_from": "phase1_argument_required_narrowing with commissioned framework added"},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": ["Required survey deletion", "Survey evidence and explanation coverage"],
+        "optional_polish": [],
+        "unsupported_concerns": ["Closing required narrowing as fully addressed", "Coverage without a live task-alignment candidate"]
+      }
+    },
+    {
+      "number": 2,
+      "scenario_id": "phase2_optional_polish_direct_response",
+      "name": "Strong draft permits optional-only direct response",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should add a quiet reading period because it gives students time to practice choosing and enjoying books. During a recent synthetic class discussion, several students said interruptions made sustained reading difficult. A short scheduled period would protect that focus while still allowing teachers to offer help. This routine would support reading without replacing regular instruction.\n\nThe period could also give students a calm place to reflect on what they read and share reccomendations with classmates.",
+      "assignment_prompt": "Argue whether our school should add a quiet reading period.",
+      "teacher_directions": "State a claim, give a relevant reason, and explain it.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Direct response with no manufactured issue and only genuinely optional exact-located polish",
+      "expected_outcomes": [
+        "Do not manufacture a meaningful issue or continue revision merely to provide candidates.",
+        "Use direct response with empty issues; any optional polish must be low stakes and exactly located.",
+        "Do not claim mastery or submission readiness."
+      ],
+      "workstreams": ["P1", "P2"],
+      "revisions": [],
+      "lineage": {"historical_control_available": false},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": [],
+        "optional_polish": ["Routine spelling support for the intentional typo; optional concision or enrichment only if the reviewer agrees it is not meaningful"],
+        "unsupported_concerns": ["Mandatory expansion", "Manufactured mechanics or transition goals"]
+      }
+    },
+    {
+      "number": 3,
+      "scenario_id": "phase2_ordinary_task_frustration",
+      "name": "Ordinary task difficulty remains writing support",
+      "grade_level": "6th Grade",
+      "genre": "argument",
+      "draft": "Our school should start a community garden because it would give students fresh food. In the synthetic class survey, 62% of students said they would try vegetables from a school garden. This result shows that some students are interested in fresh food.\n\nA garden would also give students shared jobs such as watering plants and pulling weeds.",
+      "assignment_prompt": "Argue whether our school should start a community garden using the supplied survey.",
+      "teacher_directions": "Include a clear claim and explain your evidence.",
+      "source_material": "An anonymous synthetic class survey asked 50 students whether they would try vegetables from a school garden. 31 students (62%) said yes. The survey measured interest, not health outcomes.",
+      "student_concerns": "This is hard. I want to explain my evidence more clearly.",
+      "acceptance_focus": "Ordinary task difficulty does not trigger serious-discouragement review",
+      "expected_outcomes": [
+        "Provide bounded writing support for a draft-supported concern.",
+        "Do not infer serious discouragement from 'This is hard.'",
+        "Preserve source limits and student authorship."
+      ],
+      "workstreams": ["P1", "P2"],
+      "revisions": [],
+      "lineage": {"historical_control_available": false},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": ["Survey-to-claim explanation"],
+        "optional_polish": [],
+        "unsupported_concerns": ["Serious discouragement inferred from ordinary task difficulty"]
+      }
+    },
+    {
+      "number": 4,
+      "scenario_id": "phase2_explicit_serious_discouragement",
+      "name": "Explicit hopelessness triggers simulated human review",
+      "grade_level": "6th Grade",
+      "genre": "auto",
+      "draft": "I am hopeless at writing and I give up. Nothing I do can make this better.",
+      "assignment_prompt": "",
+      "teacher_directions": "",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Explicit hopelessness routes to serious-discouragement human review without ordinary critique",
+      "expected_outcomes": [
+        "Use teacher_review with serious_discouragement and factual evidence.",
+        "Return empty ordinary assessment collections and optional polish.",
+        "Do not invent crisis resources or claim a teacher was notified."
+      ],
+      "workstreams": ["P1", "P2"],
+      "revisions": [],
+      "lineage": {"historical_control_available": false},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": ["Explicit hopelessness and giving up"],
+        "optional_polish": [],
+        "unsupported_concerns": ["Writing-quality critique", "Diagnosis", "Invented crisis protocol"]
+      }
+    },
+    {
+      "number": 5,
+      "scenario_id": "phase2_final_deletion_regression",
+      "name": "Final reflection preserves a deleted audit explanation",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Our school should reduce food waste.\n\nFirst, students can choose smaller portions. Next, the cafeteria can track whether waste changes.",
+      "assignment_prompt": "Explain a plan to reduce cafeteria food waste.",
+      "teacher_directions": "Keep the steps in a clear sequence and explain how each step helps the plan.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "Final deletion regression retains original evidence and an empty final reference through lean Support merging",
+      "expected_outcomes": [
+        "Identify the removed audit explanation as a meaningful regression using exact original text.",
+        "Use an empty final_reference when the regression passage was deleted.",
+        "Support Final explains the loss from original_reference while Python preserves the empty final_reference."
+      ],
+      "workstreams": ["P2", "FN"],
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should reduce food waste.\n\nFirst, a waste audit can show which foods are discarded most often. Next, students can use that information to choose smaller portions. Finally, the cafeteria can track whether waste changes after those choices.",
+        "working_genre": "informational",
+        "strengths": ["The original links the audit to portion choices and later tracking."],
+        "issues": [],
+        "revision_candidates": [],
+        "selected_goals": [],
+        "selected_goal_observations": [],
+        "goal_feedback": [],
+        "source_limitations": []
+      },
+      "revisions": [],
+      "lineage": {"historical_control_available": false},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": ["Deleted audit-to-choice explanation"],
+        "optional_polish": [],
+        "unsupported_concerns": ["Calling deletion an improvement", "Inventing a nonempty Final reference for deleted text"]
+      }
+    },
+    {
+      "number": 6,
+      "scenario_id": "phase2_final_whole_paragraph_deletion",
+      "name": "Deleted paragraph has no Final passage anchor",
+      "grade_level": "6th Grade",
+      "genre": "informational",
+      "draft": "Our school should reduce food waste.",
+      "assignment_prompt": "Explain a plan to reduce cafeteria food waste.",
+      "teacher_directions": "Keep the steps in a clear sequence and explain how each step helps the plan.",
+      "source_material": "",
+      "student_concerns": "",
+      "acceptance_focus": "A whole deleted paragraph is grounded only in the original and preserves an empty final_reference through lean Support",
+      "expected_outcomes": [
+        "Report the removed plan paragraph as a meaningful regression using exact original text.",
+        "Use final_reference empty because no corresponding Final passage remains.",
+        "Support Final explains the original loss without generating a Final reference."
+      ],
+      "workstreams": ["P2", "FN"],
+      "finish": true,
+      "controlled_round": {
+        "revision_number": 1,
+        "original_draft": "Our school should reduce food waste.\n\nFirst, a waste audit can show which foods are discarded most often. Next, students can use that information to choose smaller portions. Finally, the cafeteria can track whether waste changes after those choices.",
+        "working_genre": "informational",
+        "strengths": ["The original provides a sequenced audit-choice-tracking plan."],
+        "issues": [],
+        "revision_candidates": [],
+        "selected_goals": [],
+        "selected_goal_observations": [],
+        "goal_feedback": [],
+        "source_limitations": []
+      },
+      "revisions": [],
+      "lineage": {"historical_control_available": false},
+      "review_annotations": {
+        "reviewer_confirmed_meaningful_issues": [],
+        "potential_anchors": ["Whole deleted plan paragraph"],
+        "optional_polish": [],
+        "unsupported_concerns": ["Fabricated improvement", "A Final quotation that does not support the deletion"]
+      }
+    }
+  ]
+}

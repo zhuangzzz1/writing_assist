@@ -63,11 +63,24 @@ def install_responses(monkeypatch, responses):
 
 
 def review_pair(state, route="support_agent", **overrides):
-    coordinator = coordinator_payload(state, route=route, **overrides)
+    coordinator_values = json.loads(coordinator_payload(state, route=route, **overrides))
+    coordinator_values.setdefault("optional_polish", [])
+    coordinator = json.dumps(coordinator_values)
     if route != "support_agent":
         return [coordinator]
-    handoff = {**state, **json.loads(coordinator)}
-    return [coordinator, support_payload(handoff)]
+    handoff = {**state, **coordinator_values}
+    support_values = json.loads(support_payload(handoff))
+    support_values.pop("source_limitations", None)
+    for candidate in support_values["candidates"]:
+        candidate.pop("draft_reference", None)
+        candidate.pop("paragraph_number", None)
+        candidate.pop("occurrence", None)
+        candidate["hint"].pop("passage_reference", None)
+    support_values["goal_feedback"] = [
+        {"goal_id": item["goal_id"], "observation": item["observation"]}
+        for item in support_values["goal_feedback"]
+    ]
+    return [coordinator, json.dumps(support_values)]
 
 
 def revision_pair(original, revised, status="specific_improvement"):
@@ -89,8 +102,17 @@ def revision_pair(original, revised, status="specific_improvement"):
             else "The submitted text does not yet show a change to this selected goal."
         ),
         carry_forward=status != "specific_improvement",
+        goal_outcome=(
+            "fully_addressed" if status == "specific_improvement" else "not_addressed"
+        ),
+        narrowing="none",
     )
-    return review_pair(state, observations=[observation])
+    issues = (
+        [issue_for(revised, goal_id="goal_new")]
+        if status == "specific_improvement"
+        else None
+    )
+    return review_pair(state, observations=[observation], issues=issues)
 
 
 def final_pair(original, revised):
@@ -111,7 +133,11 @@ def final_pair(original, revised):
         "comparison_regressions": values["regressions"],
         "future_areas": values["future_areas"],
     }
-    return [coordinator, final_support_payload(handoff)]
+    support_values = json.loads(final_support_payload(handoff))
+    for kind in ("improvements", "regressions"):
+        for finding in support_values[kind]:
+            finding.pop("final_reference", None)
+    return [coordinator, json.dumps(support_values)]
 
 
 def start_support(app):
@@ -347,7 +373,7 @@ def test_complete_revision_next_round_and_final_reflection_loop(tmp_path, monkey
     app.button(key="choose_next_round").click().run()
     assert app.session_state.current_step == "Choose"
     assert app.session_state.selected_goal_ids == []
-    app.checkbox(key=goal_key(app)).set_value(True).run()
+    app.checkbox(key=goal_key(app, goal_id="goal_new")).set_value(True).run()
     app.button(key="start_revising").click().run()
     assert app.button(key="submit_revision").label == "Submit revision"
     app.button(key="finish_revise").click().run()
@@ -487,7 +513,7 @@ def test_direct_response_and_stop_without_revision_do_not_invent_comparison(tmp_
 def test_clarification_has_no_premature_feedback_and_resumes_same_thread(tmp_path, monkeypatch):
     state = make_review_state(INITIAL_DRAFT, "6th Grade")
     responses = [
-        coordinator_payload(state, route="ask_clarification"),
+        *review_pair(state, route="ask_clarification"),
         *review_pair(state),
     ]
     calls = install_responses(monkeypatch, responses)
@@ -869,3 +895,36 @@ def test_corrected_framework_location_reaches_ui_review_state(tmp_path, monkeypa
         item["component"]
         for item in rendered_state["coordinator_framework_normalizations"]
     } == {"Claim", "Evidence", "Reasoning"}
+
+
+
+def test_student_runtime_uses_latest_lean_prompts_and_low_effort(tmp_path, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setenv("DEEPSEEK_THINKING", "true")
+    monkeypatch.delenv("DEEPSEEK_SUPPORT_REASONING_EFFORT", raising=False)
+    monkeypatch.delenv("DEEPSEEK_REASONING_EFFORT", raising=False)
+    from agents.prompts import (
+        PHASE1_COORDINATOR_FINAL_PROMPT,
+        PHASE1_COORDINATOR_ROUND_PROMPT,
+        PHASE2_LEAN_SUPPORT_FINAL_PROMPT,
+        PHASE2_LEAN_SUPPORT_ROUND_PROMPT,
+    )
+    from app import get_runtime
+    from scripts.evaluate_v3 import finalize_database
+
+    client, service = get_runtime(str(tmp_path / "runtime-default.db"))
+    try:
+        assert client.model_config()["reasoning_effort"] == "low"
+        assert client.model_config()["prompt_version"] == "v3.10.1-phase2-lean"
+        assert client.model_config()["schema_version"] == "v3.10.0"
+        support = service.support_agent
+        assert support.client is not client
+        assert support.client.model_config()["reasoning_effort"] == "low"
+        assert support.client.model_config()["thinking_enabled"] is True
+        assert support.lean_contract is True
+        assert support.phase1_contract is True
+        assert support.round_prompt == PHASE2_LEAN_SUPPORT_ROUND_PROMPT
+        assert support.final_prompt == PHASE2_LEAN_SUPPORT_FINAL_PROMPT
+        assert service.client is client
+    finally:
+        finalize_database(service)

@@ -1,6 +1,6 @@
 # V3 Phased Improvement Plan
 
-**Status:** Phase 0 is complete by owner decision using the preserved historical thinking-mode run. Phase 1 now has an evaluation-only `phase1` implementation (`v3.9.2-phase1`/`v3.9.0`) under the user's separate implementation authorization; its real-model and named semantic-review gates remain open, and it is not promoted or deployed. Phases 2–4 remain proposed for implementation review. This revision incorporates independent-review clarifications while preserving student-controlled stopping, meaningful-issue limits, semantic review, and honest limits on historical comparisons.
+**Status:** Phase 0 is complete by owner decision using the preserved historical thinking-mode run. Phase 1 now has an evaluation-only `phase1` implementation (`v3.9.5-phase1`/`v3.9.0`) under the user's separate implementation authorization; its Coordinator contract is incorporated into the current lean default; full acceptance and named semantic-review gates remain open, and no deployment has occurred. The owner explicitly selected the latest `v3.10.1-phase2-lean`/`v3.10.0` contract with low effort for both agents. V3.9.4 applies the validated follow-up review while rejecting count-based finding pressure, fixture-specific prompt vocabulary, mandatory output anchors, and redundant location-recovery changes. V3.9.5 adds bounded unattributed-claim accuracy guidance, revision student-concern rechecks, and a one-to-three normal density target with accuracy/requirement exceptions. The owner-supplied v3.9.3 review refactor consolidates the round prompts and adds candidate-only Final calibration/plain-language prompts without changing deterministic Final validation or the student default. The Section 2.0 lean Support structural upgrade is implemented as evaluation-only `phase2_lean`; the remaining Phase 2 batching/history work and Phases 3–4 remain proposed for implementation review. This revision incorporates independent-review clarifications while preserving student-controlled stopping, meaningful-issue limits, semantic review, and honest limits on historical comparisons.
 
 ## Guiding priority
 
@@ -106,9 +106,10 @@ It should distinguish:
 Preserve the existing accuracy-first, supported-concern-next, and teacher-requirement coverage rules. For the remaining pedagogical choices, use this default triage:
 
 1. Meaning-blocking clarity and missing reasoning/process links.
-2. Organization and genuine reader-connection needs.
-3. Recognizable cross-draft language patterns.
-4. Optional polish.
+2. Explicit task requirements not already prioritized through accuracy or a supported student concern.
+3. Organization and genuine reader-connection needs.
+4. Recognizable cross-draft language patterns.
+5. Optional polish.
 
 The Coordinator continues to own supported-concern identification and non-accuracy ordering. Python performs only the existing stable accuracy partition; do not replace semantic triage with keyword-only deterministic classification.
 
@@ -236,6 +237,12 @@ The complete mocked suite passes. On both development and held-out transfer prob
 ### Objective
 
 Once assessment and goal interpretation are reliable, eliminate repetitive single-location review cycles.
+
+### 2.0 Promoted lean Support handoff — current structural default
+
+The `phase2_lean` evaluator arm (`v3.10.1-phase2-lean`/`v3.10.0`) implements only a deterministic Support-output boundary. Support Round and Final generate IDs and student-facing prose; strict schemas reject copied reference/state fields. Python reconstructs the existing full handoff from Coordinator state and reruns all existing validators before storage/UI use. This makes cross-agent copy drift structurally impossible without changing the persisted/UI contract.
+
+This is not completion of Phase 2. The multi-location storage, conservative batching, per-location outcomes, bounded history, and highlighting work below remain separate. Token/repair outcomes require matched real-model evaluation and must not be inferred from the smaller schema alone.
 
 ### 2.1 Add reusable multi-location storage with constrained batching
 

@@ -372,6 +372,43 @@ def normalize_unique_framework_locations(
     return normalizations
 
 
+def normalize_unique_optional_polish_locations(
+    raw: dict[str, Any], writing: str
+) -> list[dict[str, Any]]:
+    normalizations = []
+    optional_polish = raw.get("optional_polish", [])
+    if not isinstance(optional_polish, list):
+        return normalizations
+    for index, item in enumerate(optional_polish):
+        if not isinstance(item, dict):
+            continue
+        reference = item.get("draft_reference")
+        paragraph = item.get("paragraph_number")
+        occurrence = item.get("occurrence")
+        if (
+            not isinstance(reference, str)
+            or not isinstance(paragraph, int)
+            or not isinstance(occurrence, int)
+            or reference_is_valid(writing, reference, paragraph, occurrence)
+        ):
+            continue
+        location = locate_unique_reference(writing, reference)
+        if location is None:
+            continue
+        normalizations.append(
+            {
+                "optional_polish_index": index,
+                "previous_paragraph_number": paragraph,
+                "previous_occurrence": occurrence,
+                "paragraph_number": location.paragraph_number,
+                "occurrence": location.occurrence,
+            }
+        )
+        item["paragraph_number"] = location.paragraph_number
+        item["occurrence"] = location.occurrence
+    return normalizations
+
+
 class AssessmentCoordinator:
     def __init__(
         self,
@@ -861,6 +898,11 @@ class AssessmentCoordinator:
         framework_normalizations = normalize_unique_framework_locations(
             raw, state["writing"]
         )
+        optional_polish_normalizations = (
+            normalize_unique_optional_polish_locations(raw, state["writing"])
+            if self.phase1_contract
+            else []
+        )
         try:
             if self.phase1_contract:
                 output_type = Phase1AssessmentOutput
@@ -879,6 +921,10 @@ class AssessmentCoordinator:
         values["issues"] = self._partition_accuracy(values["issues"])
         values["coordinator_reference_normalizations"] = normalizations
         values["coordinator_framework_normalizations"] = framework_normalizations
+        if self.phase1_contract:
+            values["coordinator_optional_polish_normalizations"] = (
+                optional_polish_normalizations
+            )
         return values
 
     def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:

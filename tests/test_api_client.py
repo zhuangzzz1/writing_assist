@@ -215,6 +215,32 @@ def test_runtime_environment_uses_thinking_by_default(monkeypatch):
     assert client.thinking is True
 
 
+def test_environment_reasoning_effort_defaults_low_and_supports_explicit_override(monkeypatch):
+    monkeypatch.setattr("agents.utils.load_dotenv", lambda: None)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test")
+    monkeypatch.delenv("DEEPSEEK_REASONING_EFFORT", raising=False)
+
+    assert DeepSeekClient.from_env().reasoning_effort == "low"
+    monkeypatch.setenv("DEEPSEEK_REASONING_EFFORT", "high")
+    assert DeepSeekClient.from_env().reasoning_effort == "high"
+
+
+def test_reasoning_effort_override_is_applied_and_validated(monkeypatch):
+    monkeypatch.setattr("agents.utils.load_dotenv", lambda: None)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test")
+    monkeypatch.setenv("DEEPSEEK_THINKING", "true")
+    client = DeepSeekClient.from_env(reasoning_effort="low")
+    session = FakeSession()
+    client.session = session
+
+    client.chat_completion([{"role": "user", "content": "test"}])
+
+    assert session.calls[0][1]["json"]["reasoning_effort"] == "low"
+    assert client.last_response_metadata["reasoning_effort"] == "low"
+    with pytest.raises(ConfigurationError, match="low, high, or max"):
+        DeepSeekClient.from_env(reasoning_effort="medium")
+
+
 def test_thinking_requirement_is_explicit_not_a_runtime_fallback(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test")
     monkeypatch.setenv("DEEPSEEK_THINKING", "false")

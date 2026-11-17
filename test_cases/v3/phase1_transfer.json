@@ -1,7 +1,7 @@
 {
   "fixture_version": "v3.9.0-phase1-transfer.1",
   "fixture_role": "reserved held-out synthetic transfer set; evaluate only after Phase 1 candidate freeze",
-  "candidate_prompt_version": "v3.9.2-phase1",
+  "candidate_prompt_version": "v3.9.5-phase1",
   "candidate_schema_version": "v3.9.0",
   "historical_control": {"available": false, "reason": "These drafts and contexts do not occur in the preserved garbage-system workflow."},
   "review_contract": {

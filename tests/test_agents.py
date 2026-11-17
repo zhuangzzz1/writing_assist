@@ -2044,7 +2044,7 @@ def test_v3_8_2_support_uses_internal_delivery_review_without_schema_changes():
     assert "INTERNAL DELIVERY REVIEW" not in STRUCTURAL_SUPPORT_ROUND_PROMPT
 
 
-def test_v3_8_3_runtime_promotes_regression_contract_and_preserves_structural_control():
+def test_v3_8_3_agent_controls_preserved_after_current_version_change():
     coordinator = AssessmentCoordinator(FakeClient([]))
     support = InstructionalSupportAgent(FakeClient([]))
     expected_round = REGRESSION_READABLE_COORDINATOR_ROUND_PROMPT.replace(
@@ -2057,7 +2057,7 @@ def test_v3_8_3_runtime_promotes_regression_contract_and_preserves_structural_co
         "EVALUATION CANDIDATE —", "LOCAL RUNTIME CONTRACT —"
     )
 
-    assert PROMPT_VERSION == "v3.8.3"
+    assert PROMPT_VERSION == "v3.10.1-phase2-lean"
     assert coordinator.round_prompt == expected_round == COORDINATOR_ROUND_PROMPT
     assert coordinator.final_prompt == expected_final == COORDINATOR_FINAL_PROMPT
     assert support.round_prompt == expected_support == SUPPORT_ROUND_PROMPT

@@ -26,7 +26,14 @@ from agents.prompts import (
     PHASE1_COORDINATOR_ROUND_PROMPT,
     PHASE1_PROMPT_VERSION,
     PHASE1_SCHEMA_VERSION,
+    PHASE1_SUPPORT_FINAL_PROMPT,
     PHASE1_SUPPORT_ROUND_PROMPT,
+    PHASE2_LEAN_COORDINATOR_FINAL_PROMPT,
+    PHASE2_LEAN_COORDINATOR_ROUND_PROMPT,
+    PHASE2_LEAN_PROMPT_VERSION,
+    PHASE2_LEAN_SCHEMA_VERSION,
+    PHASE2_LEAN_SUPPORT_FINAL_PROMPT,
+    PHASE2_LEAN_SUPPORT_ROUND_PROMPT,
     REGRESSION_READABLE_COORDINATOR_FINAL_PROMPT,
     REGRESSION_READABLE_COORDINATOR_ROUND_PROMPT,
     REGRESSION_READABLE_PROMPT_VERSION,
@@ -65,6 +72,7 @@ from ui.scenarios import (
     load_final_regression_scenarios,
     load_phase1_development_scenarios,
     load_phase1_transfer_scenarios,
+    load_phase2_branch_scenarios,
     load_readability_coverage_scenarios,
     load_support_comparison_scenarios,
 )
@@ -84,6 +92,7 @@ EXPERIMENT_ARMS = (
     "regression_readable",
     "structural_current",
     "phase1",
+    "phase2_lean",
     "coordinator_early_limit",
     "coordinator_clarification_probe",
 )
@@ -206,6 +215,79 @@ class BudgetedClient:
         usage = metadata.get("token_usage", {})
         self.total_tokens += usage.get("total_tokens") or 0
         return response
+
+
+class SupportReasoningClient:
+    def __init__(self, client: BudgetedClient, reasoning_effort: str):
+        self.client = client
+        self.reasoning_effort = reasoning_effort
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.client, name)
+
+    @property
+    def last_response_metadata(self) -> dict[str, Any]:
+        return self.client.last_response_metadata
+
+    def model_config(self) -> dict[str, Any]:
+        return {**self.client.model_config(), "reasoning_effort": self.reasoning_effort}
+
+    def chat_completion(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        raw_client = self.client.client
+        previous_effort = raw_client.reasoning_effort
+        raw_client.reasoning_effort = self.reasoning_effort
+        try:
+            return self.client.chat_completion(messages, **kwargs)
+        finally:
+            raw_client.reasoning_effort = previous_effort
+
+
+def estimate_base_model_calls(
+    scenario: AcceptanceScenario, skip_final: bool = False
+) -> int:
+    if scenario.support_only:
+        return 1
+    estimate = 0 if scenario.controlled_round else 2
+    estimate += 2 * len(scenario.clarification_answers)
+    if scenario.genre_correction:
+        estimate += 2
+    estimate += 2 * len(scenario.revisions)
+    controlled_revision = bool(
+        scenario.controlled_round
+        and scenario.controlled_round.get("revision_number", 0) > 0
+    )
+    if (
+        scenario.finish
+        and not skip_final
+        and (scenario.revisions or controlled_revision)
+    ):
+        estimate += 2
+    return estimate
+
+
+def resolve_model_call_budget(
+    scenarios: list[AcceptanceScenario],
+    max_model_calls: int | None,
+    repair_headroom: int,
+    skip_final: bool = False,
+) -> dict[str, Any]:
+    if repair_headroom < 0:
+        raise ValueError("Repair headroom must be nonnegative.")
+    base_estimate = sum(
+        estimate_base_model_calls(scenario, skip_final) for scenario in scenarios
+    )
+    automatic = max_model_calls is None
+    effective_max = (
+        base_estimate + repair_headroom if automatic else max_model_calls
+    )
+    if effective_max is None or effective_max < 1:
+        raise ValueError("The effective model-call budget must be positive.")
+    return {
+        "max_model_calls": effective_max,
+        "base_model_call_estimate": base_estimate,
+        "repair_headroom": repair_headroom if automatic else 0,
+        "mode": "base_plus_repairs" if automatic else "explicit",
+    }
 
 
 def identifiers() -> dict[str, str]:
@@ -1101,6 +1183,14 @@ def summarize(
                 len(log.get("state_changes", {}).get("coordinator_framework_normalizations", []))
                 for log in logs
             ),
+            "optional_polish": sum(
+                len(
+                    log.get("state_changes", {}).get(
+                        "coordinator_optional_polish_normalizations", []
+                    )
+                )
+                for log in logs
+            ),
         },
         "coordinator_repairs": sum(
             call.get("schema_repair", False)
@@ -1173,6 +1263,8 @@ def scenarios_for_set(scenario_set: str) -> list[AcceptanceScenario]:
         return load_phase1_development_scenarios()
     if scenario_set == "phase1_transfer":
         return load_phase1_transfer_scenarios()
+    if scenario_set == "phase2_branches":
+        return load_phase2_branch_scenarios()
     acceptance = load_acceptance_scenarios()
     if scenario_set == "core":
         return [scenario for scenario in acceptance if scenario.number in CORE_NUMBERS]
@@ -1186,13 +1278,30 @@ def run_mode(
     scenario_set: str,
     scenario_number: int | None = None,
     experiment_arm: str = "current",
-    max_model_calls: int = 100,
+    max_model_calls: int | None = 100,
     max_total_tokens: int | None = None,
     scenario_numbers: list[int] | None = None,
     provider: str = "deepseek",
     model: str | None = None,
     skip_final: bool = False,
+    repair_headroom: int = 2,
+    support_reasoning_effort: str | None = None,
 ) -> tuple[dict[str, Any], str]:
+    if support_reasoning_effort:
+        if support_reasoning_effort not in {"low", "high", "max"}:
+            raise ValueError("Support reasoning effort must be low, high, or max.")
+        if experiment_arm != "phase2_lean" or provider != "deepseek" or mode != "thinking":
+            raise ValueError(
+                "Support reasoning-effort experiments require phase2_lean DeepSeek thinking runs."
+            )
+    scenarios = scenarios_for_set(scenario_set)
+    if scenario_numbers is not None:
+        scenarios = [scenario for scenario in scenarios if scenario.number in scenario_numbers]
+    elif scenario_number is not None:
+        scenarios = [scenario for scenario in scenarios if scenario.number == scenario_number]
+    budget = resolve_model_call_budget(
+        scenarios, max_model_calls, repair_headroom, skip_final
+    )
     if provider == "sota":
         if model not in SOTA_MODEL_PROTOCOLS or mode != "thinking":
             raise ValueError("SOTA evaluations require a supported model and thinking mode.")
@@ -1200,14 +1309,34 @@ def run_mode(
     else:
         raw_client = DeepSeekClient.from_env(require_thinking=False)
     raw_client.thinking = mode == "thinking"
-    client = BudgetedClient(raw_client, max_model_calls, max_total_tokens)
+    if support_reasoning_effort:
+        raw_client.reasoning_effort = "high"
+    client = BudgetedClient(
+        raw_client, budget["max_model_calls"], max_total_tokens
+    )
+    client.config_overrides.update(
+        {
+            "model_call_budget_mode": budget["mode"],
+            "base_model_call_estimate": budget["base_model_call_estimate"],
+            "repair_headroom": budget["repair_headroom"],
+        }
+    )
+    if support_reasoning_effort:
+        client.config_overrides["support_reasoning_effort"] = support_reasoning_effort
+    support_client = (
+        SupportReasoningClient(client, support_reasoning_effort)
+        if support_reasoning_effort
+        else client
+    )
     legacy_contract = experiment_arm not in {
         "baseline_readable",
         "baseline_readable_v2",
         "regression_readable",
         "structural_current",
         "phase1",
+        "phase2_lean",
     }
+    support_final_prompt = None
     if legacy_contract:
         coordinator_prompt = V3_7_1_COORDINATOR_ROUND_PROMPT
         coordinator_final_prompt = V3_7_1_COORDINATOR_FINAL_PROMPT
@@ -1217,10 +1346,22 @@ def run_mode(
         )
     else:
         client.config_overrides["schema_version"] = "v3.8.0"
-        if experiment_arm == "phase1":
+        if experiment_arm == "phase2_lean":
+            coordinator_prompt = PHASE2_LEAN_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = PHASE2_LEAN_COORDINATOR_FINAL_PROMPT
+            support_prompt = PHASE2_LEAN_SUPPORT_ROUND_PROMPT
+            support_final_prompt = PHASE2_LEAN_SUPPORT_FINAL_PROMPT
+            client.config_overrides.update(
+                {
+                    "prompt_version": PHASE2_LEAN_PROMPT_VERSION,
+                    "schema_version": PHASE2_LEAN_SCHEMA_VERSION,
+                }
+            )
+        elif experiment_arm == "phase1":
             coordinator_prompt = PHASE1_COORDINATOR_ROUND_PROMPT
             coordinator_final_prompt = PHASE1_COORDINATOR_FINAL_PROMPT
             support_prompt = PHASE1_SUPPORT_ROUND_PROMPT
+            support_final_prompt = PHASE1_SUPPORT_FINAL_PROMPT
             client.config_overrides.update(
                 {
                     "prompt_version": PHASE1_PROMPT_VERSION,
@@ -1272,6 +1413,9 @@ def run_mode(
         client.config_overrides["prompt_version"] = "v3.7.1-clarification-probe"
     arm_label = "" if experiment_arm == "current" else f"{experiment_arm}_"
     provider_label = f"sota_{model}_" if provider == "sota" else ""
+    support_label = (
+        f"support_{support_reasoning_effort}_" if support_reasoning_effort else ""
+    )
     if scenario_numbers:
         scenario_label = "scenarios_" + "_".join(
             f"{number:02d}" for number in scenario_numbers
@@ -1279,7 +1423,7 @@ def run_mode(
     else:
         scenario_label = f"scenario_{scenario_number:02d}_" if scenario_number else ""
     database = output_root / (
-        f"v3_{scenario_set}_{provider_label}{arm_label}{scenario_label}{mode}_evaluation_{timestamp}.db"
+        f"v3_{scenario_set}_{provider_label}{arm_label}{support_label}{scenario_label}{mode}_evaluation_{timestamp}.db"
     )
     service = create_writing_assistant_service(
         client,
@@ -1291,13 +1435,15 @@ def run_mode(
             final_prompt=coordinator_final_prompt,
             include_prior_findings=include_prior_findings,
             legacy_contract=legacy_contract,
-            phase1_contract=experiment_arm == "phase1",
+            phase1_contract=experiment_arm in {"phase1", "phase2_lean"},
         ),
         support_agent=InstructionalSupportAgent(
-            client,
+            support_client,
             round_prompt=support_prompt,
+            final_prompt=support_final_prompt,
             legacy_contract=legacy_contract,
-            phase1_contract=experiment_arm == "phase1",
+            phase1_contract=experiment_arm in {"phase1", "phase2_lean"},
+            lean_contract=experiment_arm == "phase2_lean",
         ),
     )
     service.experiment_arm = experiment_arm
@@ -1375,6 +1521,7 @@ def main() -> int:
             "readability_coverage",
             "phase1_development",
             "phase1_transfer",
+            "phase2_branches",
         ],
         default="core",
     )
@@ -1386,7 +1533,15 @@ def main() -> int:
     parser.add_argument("--experiment-arm", choices=EXPERIMENT_ARMS, default="current")
     parser.add_argument("--authorization-id", required=True)
     parser.add_argument("--approver", required=True)
-    parser.add_argument("--max-model-calls", type=int, required=True)
+    parser.add_argument(
+        "--max-model-calls",
+        type=int,
+        help="Explicit hard cap per mode. Omit to use estimated base calls plus repair headroom.",
+    )
+    parser.add_argument("--repair-headroom", type=int, default=2)
+    parser.add_argument(
+        "--support-reasoning-effort", choices=["low", "high", "max"]
+    )
     parser.add_argument("--max-total-tokens", type=int)
     parser.add_argument("--reruns-covered", action="store_true")
     parser.add_argument("--candidate-frozen", action="store_true")
@@ -1402,18 +1557,37 @@ def main() -> int:
             parser.error("SOTA evaluation currently requires --modes thinking.")
     elif args.model:
         parser.error("--model is only valid with --provider sota.")
-    if args.max_model_calls < 1 or (
+    if (
+        args.max_model_calls is not None
+        and args.max_model_calls < 1
+    ) or args.repair_headroom < 0 or (
         args.max_total_tokens is not None and args.max_total_tokens < 1
     ):
-        parser.error("Authorization limits must be positive when supplied.")
+        parser.error("Authorization limits and repair headroom must be positive or zero as applicable.")
+    if args.support_reasoning_effort and (
+        args.experiment_arm != "phase2_lean"
+        or args.provider != "deepseek"
+        or args.modes != ["thinking"]
+    ):
+        parser.error(
+            "--support-reasoning-effort requires phase2_lean DeepSeek thinking-only evaluation."
+        )
     if args.scenario_numbers and len(set(args.scenario_numbers)) != len(
         args.scenario_numbers
     ):
         parser.error("Scenario numbers cannot contain duplicates.")
-    if args.scenario_set.startswith("phase1_") and args.experiment_arm != "phase1":
-        parser.error("Phase 1 fixture sets require --experiment-arm phase1.")
-    if args.skip_final and args.experiment_arm != "phase1":
-        parser.error("--skip-final is reserved for the Phase 1 round-only regression scope.")
+    if args.scenario_set.startswith("phase1_") and args.experiment_arm not in {
+        "phase1",
+        "phase2_lean",
+    }:
+        parser.error("Phase 1 fixture sets require --experiment-arm phase1 or phase2_lean.")
+    if args.scenario_set == "phase2_branches" and args.experiment_arm not in {
+        "phase1",
+        "phase2_lean",
+    }:
+        parser.error("Phase 2 branch probes require phase1 or phase2_lean.")
+    if args.skip_final and args.experiment_arm not in {"phase1", "phase2_lean"}:
+        parser.error("--skip-final is reserved for Phase 1-family round-only regression scopes.")
     if args.scenario_set == "phase1_transfer" and not args.candidate_frozen:
         parser.error(
             "The reserved transfer set requires --candidate-frozen after prompt, "
@@ -1443,9 +1617,20 @@ def main() -> int:
         ]
         if len(selected_scenarios) != len(requested_numbers):
             parser.error("A scenario number does not exist in the selected fixture set.")
+    budget = resolve_model_call_budget(
+        selected_scenarios,
+        args.max_model_calls,
+        args.repair_headroom,
+        args.skip_final,
+    )
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     arm_label = "" if args.experiment_arm == "current" else f"{args.experiment_arm}_"
     provider_label = f"sota_{args.model}_" if args.provider == "sota" else ""
+    support_label = (
+        f"support_{args.support_reasoning_effort}_"
+        if args.support_reasoning_effort
+        else ""
+    )
     if args.scenario_numbers:
         scenario_label = "scenarios_" + "_".join(
             f"{number:02d}" for number in args.scenario_numbers
@@ -1457,7 +1642,7 @@ def main() -> int:
     evidence_path = (
         args.output_root
         / "evidence"
-        / f"v3_{args.scenario_set}_{provider_label}{arm_label}{scenario_label}evaluation_{timestamp}.json"
+        / f"v3_{args.scenario_set}_{provider_label}{arm_label}{support_label}{scenario_label}evaluation_{timestamp}.json"
     )
     output = {
         "timestamp_utc": timestamp,
@@ -1476,7 +1661,11 @@ def main() -> int:
             "scenario_ids": [scenario.scenario_id for scenario in selected_scenarios],
             "modes": args.modes,
             "maximum_scenario_count": len(selected_scenarios),
-            "maximum_model_calls_per_mode": args.max_model_calls,
+            "maximum_model_calls_per_mode": budget["max_model_calls"],
+            "model_call_budget_mode": budget["mode"],
+            "base_model_call_estimate": budget["base_model_call_estimate"],
+            "repair_headroom": budget["repair_headroom"],
+            "support_reasoning_effort": args.support_reasoning_effort,
             "total_token_stop_cap_per_mode": args.max_total_tokens,
             "output_evidence_location": str(evidence_path),
             "targeted_reruns_covered": args.reruns_covered,
@@ -1505,6 +1694,8 @@ def main() -> int:
             provider=args.provider,
             model=args.model,
             skip_final=args.skip_final,
+            repair_headroom=args.repair_headroom,
+            support_reasoning_effort=args.support_reasoning_effort,
         )
         output["modes"][mode] = result
         output["databases"][mode] = database
