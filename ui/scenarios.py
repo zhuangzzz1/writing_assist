@@ -14,6 +14,8 @@ COORDINATOR_TARGETED_PATH = Path(__file__).resolve().parents[1] / "test_cases" /
 FINAL_HISTORY_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "final_history_contrasts.json"
 FINAL_REGRESSION_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "final_regression_contrasts.json"
 READABILITY_COVERAGE_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "readability_coverage.json"
+PHASE1_DEVELOPMENT_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "phase1_development.json"
+PHASE1_TRANSFER_PATH = Path(__file__).resolve().parents[1] / "test_cases" / "v3" / "phase1_transfer.json"
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,7 @@ class AcceptanceScenario(PracticeScenario):
     support_only: bool = False
     allow_direct_response_finish: bool = False
     lineage: dict[str, Any] = field(default_factory=dict)
+    review_annotations: dict[str, Any] = field(default_factory=dict)
 
 
 def load_scenarios() -> list[PracticeScenario]:
@@ -90,16 +93,34 @@ def get_scenario(scenario_id: str) -> PracticeScenario:
 
 def _load_review_scenarios(path: Path) -> list[AcceptanceScenario]:
     data = json.loads(path.read_text(encoding="utf-8"))
+    snapshots = data.get("snapshots", {})
     bases = {scenario.scenario_id: scenario for scenario in load_scenarios()}
     controlled_rounds = {
         item["number"]: item.get("controlled_round") for item in data["scenarios"]
     }
+
+    def resolve_draft(item: dict[str, Any], default: str = "") -> str:
+        snapshot_id = item.get("draft_snapshot", "")
+        if snapshot_id:
+            return snapshots[snapshot_id]
+        return item.get("draft", default)
+
     scenarios = []
     for item in data["scenarios"]:
         base = bases.get(item.get("base_scenario", ""))
 
         def value(key: str) -> Any:
             return item.get(key, getattr(base, key, "") if base else "")
+
+        controlled_round = (
+            item.get("controlled_round")
+            or controlled_rounds.get(item.get("controlled_round_from"))
+        )
+        if controlled_round:
+            controlled_round = dict(controlled_round)
+            original_snapshot = controlled_round.get("original_draft_snapshot", "")
+            if original_snapshot:
+                controlled_round["original_draft"] = snapshots[original_snapshot]
 
         scenarios.append(
             AcceptanceScenario(
@@ -108,7 +129,7 @@ def _load_review_scenarios(path: Path) -> list[AcceptanceScenario]:
                 name=item["name"],
                 grade_level=cast(GradeLevel, value("grade_level")),
                 genre=cast(GenreSelection, value("genre")),
-                draft=value("draft"),
+                draft=resolve_draft(item, value("draft")),
                 assignment_prompt=value("assignment_prompt"),
                 teacher_directions=value("teacher_directions"),
                 framework_name=value("framework_name"),
@@ -119,7 +140,7 @@ def _load_review_scenarios(path: Path) -> list[AcceptanceScenario]:
                 acceptance_focus=item["acceptance_focus"],
                 revisions=tuple(
                     RevisionFixture(
-                        draft=revision["draft"],
+                        draft=resolve_draft(revision),
                         goal_selection=revision.get("goal_selection", "first"),
                         self_reports=revision.get("self_reports", {}),
                         goal_indices=tuple(revision.get("goal_indices", [])),
@@ -132,15 +153,13 @@ def _load_review_scenarios(path: Path) -> list[AcceptanceScenario]:
                 clarification_answers=tuple(item.get("clarification_answers", [])),
                 expected_outcomes=tuple(item.get("expected_outcomes", [])),
                 workstreams=tuple(item.get("workstreams", [])),
-                controlled_round=(
-                    item.get("controlled_round")
-                    or controlled_rounds.get(item.get("controlled_round_from"))
-                ),
+                controlled_round=controlled_round,
                 support_only=item.get("support_only", False),
                 allow_direct_response_finish=item.get(
                     "allow_direct_response_finish", False
                 ),
                 lineage=item.get("lineage", {}),
+                review_annotations=item.get("review_annotations", {}),
             )
         )
     return scenarios
@@ -192,6 +211,14 @@ def load_final_regression_scenarios() -> list[AcceptanceScenario]:
 
 def load_readability_coverage_scenarios() -> list[AcceptanceScenario]:
     return _load_review_scenarios(READABILITY_COVERAGE_PATH)
+
+
+def load_phase1_development_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(PHASE1_DEVELOPMENT_PATH)
+
+
+def load_phase1_transfer_scenarios() -> list[AcceptanceScenario]:
+    return _load_review_scenarios(PHASE1_TRANSFER_PATH)
 
 
 def get_acceptance_scenario(number: int) -> AcceptanceScenario:

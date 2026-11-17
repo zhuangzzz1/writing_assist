@@ -167,7 +167,7 @@ class DeepSeekClient:
         self,
         messages: list[dict[str, str]],
         temperature: float = 0.0,
-        max_tokens: int = 8000,
+        max_tokens: int | None = None,
         json_mode: bool = False,
         thinking: bool | None = None,
     ) -> str:
@@ -175,9 +175,10 @@ class DeepSeekClient:
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": max_tokens,
             "thinking": {"type": "enabled" if use_thinking else "disabled"},
         }
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
         if use_thinking:
             payload["reasoning_effort"] = self.reasoning_effort
         else:

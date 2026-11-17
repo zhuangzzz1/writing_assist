@@ -36,6 +36,14 @@ ObservationStatus = Literal[
     "improvement_not_yet_evident",
     "uncertain",
 ]
+GoalOutcome = Literal[
+    "fully_addressed",
+    "partially_addressed",
+    "not_addressed",
+    "uncertain",
+]
+Narrowing = Literal["none", "discretionary", "required"]
+RequirementSource = Literal["", "assignment_prompt", "teacher_directions", "framework"]
 ReviewMode = Literal["round", "final"]
 
 GRADE_LEVELS = ("5th Grade", "6th Grade", "7th Grade")
@@ -57,6 +65,11 @@ class RevisionGoalHistory(TypedDict):
     observation: str
     evidence_reference: str
     carry_forward: bool | None
+    goal_outcome: NotRequired[GoalOutcome | Literal[""]]
+    narrowing: NotRequired[Narrowing | Literal[""]]
+    narrowing_evidence_reference: NotRequired[str]
+    requirement_source: NotRequired[RequirementSource]
+    requirement_reference: NotRequired[str]
 
 
 class RevisionHistoryEntry(TypedDict):
@@ -115,6 +128,7 @@ class WritingAssistantState(TypedDict):
     teacher_flag_category: NotRequired[TeacherFlagCategory]
     teacher_evidence: NotRequired[list[str]]
     selected_goal_observations: NotRequired[list[dict[str, Any]]]
+    optional_polish: NotRequired[list[dict[str, Any]]]
     coordinator_reasoning: NotRequired[str]
     coordinator_repair_count: NotRequired[int]
     coordinator_reference_normalizations: NotRequired[list[dict[str, Any]]]

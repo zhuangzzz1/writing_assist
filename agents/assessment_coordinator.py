@@ -23,7 +23,10 @@ from langgraph_core.revision import (
 from langgraph_core.state import (
     CoordinatorTeacherFlagCategory,
     Genre,
+    GoalOutcome,
+    Narrowing,
     ObservationStatus,
+    RequirementSource,
     RoutingDecision,
     WritingAssistantState,
 )
@@ -68,6 +71,74 @@ class GoalObservationOutput(BaseModel):
     observation: str = Field(min_length=1)
     evidence_reference: str = ""
     carry_forward: bool
+
+
+class Phase1GoalObservationOutput(GoalObservationOutput):
+    goal_outcome: GoalOutcome
+    narrowing: Narrowing
+    narrowing_evidence_reference: str = ""
+    requirement_source: RequirementSource = ""
+    requirement_reference: str = ""
+
+    @model_validator(mode="after")
+    def check_outcome_matrix(self):
+        if self.goal_outcome == "fully_addressed":
+            if self.status != "specific_improvement":
+                raise ValueError("Fully addressed goals require a specific text improvement.")
+            if self.narrowing != "none" or self.carry_forward:
+                raise ValueError(
+                    "Fully addressed goals require no narrowing and no carry-forward."
+                )
+        elif self.goal_outcome == "partially_addressed":
+            if self.status != "specific_improvement" or not self.carry_forward:
+                raise ValueError(
+                    "Partially addressed goals require specific improvement and carry-forward."
+                )
+        elif self.goal_outcome == "not_addressed":
+            if self.status == "uncertain":
+                raise ValueError("Not-addressed goals cannot use uncertain text status.")
+            if self.narrowing == "none":
+                if self.status != "improvement_not_yet_evident" or not self.carry_forward:
+                    raise ValueError(
+                        "Open not-addressed goals require not-yet-evident status and carry-forward."
+                    )
+            elif self.status not in (
+                "specific_improvement",
+                "improvement_not_yet_evident",
+            ):
+                raise ValueError("Narrowing requires a supported text observation.")
+        elif self.status != "uncertain":
+            raise ValueError("An uncertain goal outcome requires uncertain text status.")
+        if self.goal_outcome in ("not_addressed", "uncertain") and self.narrowing == "none":
+            if not self.carry_forward:
+                raise ValueError("An open selected concern without narrowing must carry forward.")
+        if self.narrowing == "none":
+            if (
+                self.narrowing_evidence_reference
+                or self.requirement_source
+                or self.requirement_reference
+            ):
+                raise ValueError("No narrowing requires empty narrowing and requirement evidence.")
+        elif not self.narrowing_evidence_reference:
+            raise ValueError("Narrowing requires exact deleted-text evidence.")
+        if self.narrowing == "discretionary" and (
+            self.requirement_source or self.requirement_reference
+        ):
+            raise ValueError("Discretionary narrowing cannot include requirement evidence.")
+        if self.narrowing == "required" and (
+            not self.requirement_source or not self.requirement_reference
+        ):
+            raise ValueError("Required narrowing needs both requirement source and reference.")
+        return self
+
+
+class OptionalPolishOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    description: str = Field(min_length=1)
+    draft_reference: str = Field(min_length=1)
+    paragraph_number: int = Field(ge=1)
+    occurrence: int = Field(ge=1)
 
 
 class FrameworkCoverageOutput(BaseModel):
@@ -135,6 +206,11 @@ class AssessmentOutput(BaseModel):
         if len(observation_ids) != len(set(observation_ids)):
             raise ValueError("Each selected goal can have only one observation.")
         return self
+
+
+class Phase1AssessmentOutput(AssessmentOutput):
+    selected_goal_observations: list[Phase1GoalObservationOutput] = Field(max_length=3)
+    optional_polish: list[OptionalPolishOutput] = Field(max_length=3)
 
 
 class LegacyIssueOutput(IssueOutput):
@@ -305,12 +381,14 @@ class AssessmentCoordinator:
         final_prompt: str | None = None,
         include_prior_findings: bool = False,
         legacy_contract: bool = False,
+        phase1_contract: bool = False,
     ):
         self.client = client
         self.round_prompt = round_prompt or COORDINATOR_ROUND_PROMPT
         self.final_prompt = final_prompt or COORDINATOR_FINAL_PROMPT
         self.include_prior_findings = include_prior_findings
         self.legacy_contract = legacy_contract
+        self.phase1_contract = phase1_contract
 
     def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
         payload: dict[str, Any] = {
@@ -551,6 +629,8 @@ class AssessmentCoordinator:
                     raise ValueError("Goal observation evidence must quote a submitted draft.")
         elif output.selected_goal_observations:
             raise ValueError("Initial and boundary routes cannot contain revision observations.")
+        if isinstance(output, Phase1AssessmentOutput):
+            AssessmentCoordinator._validate_phase1_round(output, state)
         ensure_bounded_language(
             {
                 "strengths": output.strengths,
@@ -559,11 +639,84 @@ class AssessmentCoordinator:
                 "selected_goal_observations": [
                     item.model_dump() for item in output.selected_goal_observations
                 ],
+                "optional_polish": (
+                    [item.model_dump() for item in output.optional_polish]
+                    if isinstance(output, Phase1AssessmentOutput)
+                    else []
+                ),
                 "clarification_question": output.clarification_question,
                 "clarification_choices": output.clarification_choices,
             },
             state["source_material_available"],
         )
+
+    @staticmethod
+    def _validate_phase1_round(
+        output: Phase1AssessmentOutput, state: WritingAssistantState
+    ) -> None:
+        route = output.routing_decision
+        if route != "direct_response" and output.optional_polish:
+            raise ValueError("Optional polish is allowed only on direct_response routes.")
+        if route in ("ask_clarification", "teacher_review") and output.optional_polish:
+            raise ValueError("Boundary routes cannot contain optional polish.")
+        for polish in output.optional_polish:
+            if not reference_is_valid(
+                state["writing"],
+                polish.draft_reference,
+                polish.paragraph_number,
+                polish.occurrence,
+            ):
+                raise ValueError("Optional polish needs an exact, correctly located reference.")
+
+        issues = {issue.goal_id: issue for issue in output.issues}
+        task_alignment_ids = {
+            issue.goal_id
+            for issue in output.issues
+            if issue.category == "task_alignment"
+        }
+        for item in output.selected_goal_observations:
+            if item.carry_forward and item.goal_id not in issues:
+                raise ValueError("Carry-forward requires a current issue with the same goal ID.")
+            if item.goal_outcome == "fully_addressed" and item.goal_id in issues:
+                raise ValueError("A fully addressed goal cannot remain a live issue.")
+            if item.goal_outcome == "partially_addressed" and item.goal_id not in issues:
+                raise ValueError("A partial goal remainder needs a same-ID live issue.")
+            if route == "direct_response" and item.carry_forward:
+                raise ValueError("Direct response cannot contain unresolved carry-forward goals.")
+            if route == "direct_response" and item.narrowing == "required":
+                raise ValueError("Direct response cannot contain required narrowing.")
+            if item.narrowing != "none":
+                deleted = item.narrowing_evidence_reference
+                if deleted not in state["previous_writing"] or deleted in state["writing"]:
+                    raise ValueError(
+                        "Narrowing evidence must quote previous-draft text absent from the current draft."
+                    )
+            if item.narrowing != "required":
+                continue
+            if not task_alignment_ids:
+                raise ValueError("Required narrowing needs a live task-alignment issue.")
+            if item.goal_id in issues and item.goal_id not in task_alignment_ids:
+                raise ValueError(
+                    "A same-ID required-narrowing issue must be task aligned."
+                )
+            if item.requirement_source == "framework":
+                if item.requirement_reference not in state.get("framework_components", []):
+                    raise ValueError("Framework requirement evidence must be commissioned.")
+                linked = any(
+                    coverage.framework == state.get("framework_name", "")
+                    and coverage.component == item.requirement_reference
+                    and coverage.status == "issue"
+                    and coverage.goal_id in task_alignment_ids
+                    for coverage in output.framework_coverage
+                )
+                if not linked:
+                    raise ValueError(
+                        "Required framework narrowing must link coverage to a live task-alignment issue."
+                    )
+            else:
+                requirement_text = state[item.requirement_source]
+                if item.requirement_reference not in requirement_text:
+                    raise ValueError("Requirement evidence must exactly quote the identified source.")
 
     @staticmethod
     def _validate_final_consistency(
@@ -668,11 +821,12 @@ class AssessmentCoordinator:
                 "selected_goal_observations",
             ):
                 values[field] = []
+            if "optional_polish" in values:
+                values["optional_polish"] = []
         else:
             values["flag_teacher"] = False
         values["coordinator_repair_count"] = values.get("coordinator_repair_count", 0)
         return values
-
     @staticmethod
     def _neutralize_model_clarification_limit(raw: dict[str, Any]) -> None:
         category = raw.get("teacher_flag_category")
@@ -708,12 +862,18 @@ class AssessmentCoordinator:
             raw, state["writing"]
         )
         try:
-            output_type = LegacyAssessmentOutput if self.legacy_contract else AssessmentOutput
+            if self.phase1_contract:
+                output_type = Phase1AssessmentOutput
+            else:
+                output_type = LegacyAssessmentOutput if self.legacy_contract else AssessmentOutput
             output = output_type.model_validate(raw)
             self._validate_round(output, state)
         except (ValidationError, ValueError):
             if safety_requested:
-                return self._safety_fallback(raw)
+                values = self._safety_fallback(raw)
+                if self.phase1_contract:
+                    values["optional_polish"] = []
+                return values
             raise
         values = self._normalize_round(output.model_dump())
         values["issues"] = self._partition_accuracy(values["issues"])
@@ -792,5 +952,7 @@ class AssessmentCoordinator:
                     "The assessment and its single correction could not be validated, "
                     "so the system is asking for essential context instead of guessing."
                 )
+        if self.phase1_contract:
+            values.setdefault("optional_polish", [])
         values["coordinator_repair_count"] = repair_count
         return AssessmentResult(values, raw_responses, messages, model_calls)

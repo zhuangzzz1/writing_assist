@@ -15,7 +15,13 @@ from agents.utils import (
     ensure_bounded_language,
     parse_json_object,
 )
-from langgraph_core.state import ObservationStatus, WritingAssistantState
+from langgraph_core.state import (
+    GoalOutcome,
+    Narrowing,
+    ObservationStatus,
+    RequirementSource,
+    WritingAssistantState,
+)
 
 
 ALLOWED_SENTENCE_STARTERS = {
@@ -135,6 +141,15 @@ class GoalFeedbackOutput(BaseModel):
     carry_forward: bool
 
 
+class Phase1GoalFeedbackOutput(GoalFeedbackOutput):
+    evidence_reference: str = ""
+    goal_outcome: GoalOutcome
+    narrowing: Narrowing
+    narrowing_evidence_reference: str = ""
+    requirement_source: RequirementSource = ""
+    requirement_reference: str = ""
+
+
 class RoundSupportOutput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -142,6 +157,10 @@ class RoundSupportOutput(BaseModel):
     candidates: list[CandidateOutput] = Field(min_length=1, max_length=5)
     goal_feedback: list[GoalFeedbackOutput] = Field(max_length=3)
     source_limitations: list[str] = Field(max_length=3)
+
+
+class Phase1RoundSupportOutput(RoundSupportOutput):
+    goal_feedback: list[Phase1GoalFeedbackOutput] = Field(max_length=3)
 
 
 class LegacyRoundSupportOutput(RoundSupportOutput):
@@ -232,11 +251,13 @@ class InstructionalSupportAgent:
         round_prompt: str | None = None,
         final_prompt: str | None = None,
         legacy_contract: bool = False,
+        phase1_contract: bool = False,
     ):
         self.client = client
         self.round_prompt = round_prompt or SUPPORT_ROUND_PROMPT
         self.final_prompt = final_prompt or SUPPORT_FINAL_PROMPT
         self.legacy_contract = legacy_contract
+        self.phase1_contract = phase1_contract
 
     def _round_messages(self, state: WritingAssistantState) -> list[dict[str, str]]:
         payload: dict[str, Any] = {
@@ -306,8 +327,7 @@ class InstructionalSupportAgent:
         config = self.client.model_config() if hasattr(self.client, "model_config") else {}
         return {**config, "token_usage": {}}
 
-    @staticmethod
-    def _validate_round(output: RoundSupportOutput, state: WritingAssistantState) -> None:
+    def _validate_round(self, output: RoundSupportOutput, state: WritingAssistantState) -> None:
         issues = {issue["goal_id"]: issue for issue in state.get("issues", [])}
         candidate_ids = [candidate.goal_id for candidate in output.candidates]
         if len(candidate_ids) != len(set(candidate_ids)) or set(candidate_ids) != set(issues):
@@ -335,11 +355,26 @@ class InstructionalSupportAgent:
             raise ValueError("Support must return exactly one feedback item per selected goal.")
         for goal_id, feedback in actual_observations.items():
             expected = expected_observations[goal_id]
-            if (
-                feedback.status != expected["status"]
-                or feedback.carry_forward != expected["carry_forward"]
+            preserved_fields = ["status", "carry_forward"]
+            if self.phase1_contract:
+                preserved_fields.extend(
+                    [
+                        "evidence_reference",
+                        "goal_outcome",
+                        "narrowing",
+                        "narrowing_evidence_reference",
+                        "requirement_source",
+                        "requirement_reference",
+                    ]
+                )
+            if any(
+                getattr(feedback, field) != expected.get(field, "")
+                for field in preserved_fields
             ):
-                raise ValueError("Support cannot change selected-goal status or carry-forward decisions.")
+                raise ValueError(
+                    "Support cannot change selected-goal status, outcome, narrowing, "
+                    "evidence, requirement basis, or carry-forward decisions."
+                )
         ensure_bounded_language(
             output.model_dump(), state["source_material_available"]
         )
@@ -361,7 +396,10 @@ class InstructionalSupportAgent:
         ensure_bounded_language(output.model_dump(), state["source_material_available"])
 
     def _round_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:
-        output_type = LegacyRoundSupportOutput if self.legacy_contract else RoundSupportOutput
+        if self.phase1_contract:
+            output_type = Phase1RoundSupportOutput
+        else:
+            output_type = LegacyRoundSupportOutput if self.legacy_contract else RoundSupportOutput
         output = output_type.model_validate(parse_json_object(raw_response))
         self._validate_round(output, state)
         values = output.model_dump()
@@ -374,7 +412,13 @@ class InstructionalSupportAgent:
             "revision_candidates": values["candidates"],
             "goal_feedback": values["goal_feedback"],
             "source_limitations": values["source_limitations"],
-            "student_output": "Specific feedback and revision choices are available.",
+            "student_output": (
+                "Specific feedback and revision choices are available. You can choose "
+                "Finish and reflect even if you leave some choices for later; the remaining "
+                "work is still listed here."
+                if self.phase1_contract
+                else "Specific feedback and revision choices are available."
+            ),
         }
 
     def _final_values(self, raw_response: str, state: WritingAssistantState) -> dict[str, Any]:

@@ -14,6 +14,22 @@ OBSERVATION_LABELS = {
     "improvement_not_yet_evident": "Improvement not yet evident in this revision",
     "uncertain": "Uncertain from the available text",
 }
+GOAL_OUTCOME_LABELS = {
+    "fully_addressed": "Fully addressed for this selected goal in this draft",
+    "partially_addressed": "Partially addressed; some of this selected goal remains",
+    "not_addressed": "Not addressed for this selected goal in this draft",
+    "uncertain": "Uncertain for this selected goal from the available text",
+}
+NARROWING_LABELS = {
+    "none": "No scope narrowing identified",
+    "discretionary": "Discretionary narrowing: material not required by the task was removed",
+    "required": "Required narrowing: material needed for the task was removed",
+}
+REQUIREMENT_SOURCE_LABELS = {
+    "assignment_prompt": "Assignment",
+    "teacher_directions": "Teacher directions",
+    "framework": "Requested writing structure",
+}
 
 
 def format_hint(hint: dict) -> str:
@@ -36,6 +52,42 @@ def render_goal_feedback(
             st.markdown(f"**Goal: {titles[item['goal_id']]}**")
         st.markdown(f"**{OBSERVATION_LABELS[status]}**")
         st.markdown(item["observation"])
+        outcome = item.get("goal_outcome", "")
+        narrowing = item.get("narrowing", "")
+        if outcome:
+            st.markdown(f"**Selected-goal outcome:** {GOAL_OUTCOME_LABELS[outcome]}")
+        if outcome == "fully_addressed":
+            st.caption(
+                "This describes only this selected goal in this draft. "
+                "It is not a claim of overall mastery."
+            )
+        if narrowing:
+            st.markdown(f"**Scope change:** {NARROWING_LABELS[narrowing]}")
+        if narrowing == "discretionary":
+            st.caption(
+                "Removing this material is not the same as solving the original goal. "
+                + (
+                    "The original target no longer applies, but any separate remaining work "
+                    "stays listed."
+                    if not item.get("carry_forward")
+                    else "The remaining part of the goal stays available below."
+                )
+            )
+        elif narrowing == "required":
+            st.caption(
+                "The deleted requirement still needs attention. Its live revision choice "
+                "remains listed; another improvement does not erase it."
+            )
+        if item.get("narrowing_evidence_reference"):
+            st.caption(
+                f"Deleted from the previous draft: \"{item['narrowing_evidence_reference']}\""
+            )
+        requirement_source = item.get("requirement_source", "")
+        if requirement_source:
+            st.caption(
+                f"{REQUIREMENT_SOURCE_LABELS[requirement_source]} requirement: "
+                f"\"{item['requirement_reference']}\""
+            )
         if item.get("carry_forward"):
             st.caption("You may carry this goal forward. That is a choice, not a failure.")
 

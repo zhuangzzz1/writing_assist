@@ -254,20 +254,59 @@ def build_revision_history(
             carry_forward = observation.get("carry_forward")
             if not isinstance(carry_forward, bool):
                 carry_forward = None
-            selected_goals.append(
-                {
-                    "goal_id": goal_id,
-                    "draft_reference": str(goal.get("draft_reference", "")),
-                    "paragraph_number": goal.get("paragraph_number", 1),
-                    "occurrence": goal.get("occurrence", 1),
-                    "status": status,
-                    "observation": str(observation.get("observation", "")),
-                    "evidence_reference": str(
-                        observation.get("evidence_reference", "")
-                    ),
-                    "carry_forward": carry_forward,
-                }
+            goal_history = {
+                "goal_id": goal_id,
+                "draft_reference": str(goal.get("draft_reference", "")),
+                "paragraph_number": goal.get("paragraph_number", 1),
+                "occurrence": goal.get("occurrence", 1),
+                "status": status,
+                "observation": str(observation.get("observation", "")),
+                "evidence_reference": str(
+                    observation.get("evidence_reference", "")
+                ),
+                "carry_forward": carry_forward,
+            }
+            phase1_fields = (
+                "goal_outcome",
+                "narrowing",
+                "narrowing_evidence_reference",
+                "requirement_source",
+                "requirement_reference",
             )
+            if any(field in observation for field in phase1_fields):
+                goal_outcome = observation.get("goal_outcome", "")
+                if goal_outcome not in (
+                    "fully_addressed",
+                    "partially_addressed",
+                    "not_addressed",
+                    "uncertain",
+                ):
+                    goal_outcome = ""
+                narrowing = observation.get("narrowing", "")
+                if narrowing not in ("none", "discretionary", "required"):
+                    narrowing = ""
+                requirement_source = observation.get("requirement_source", "")
+                if requirement_source not in (
+                    "",
+                    "assignment_prompt",
+                    "teacher_directions",
+                    "framework",
+                ):
+                    requirement_source = ""
+                goal_history.update(
+                    {
+                        "goal_outcome": goal_outcome,
+                        "narrowing": narrowing,
+                        "narrowing_evidence_reference": str(
+                            observation.get("narrowing_evidence_reference", "")
+                        ),
+                        "requirement_source": requirement_source,
+                        "requirement_reference": str(
+                            observation.get("requirement_reference", "")
+                        ),
+                    }
+                )
+            selected_goals.append(goal_history)
         history.append(
             {
                 "revision_number": snapshot.revision_number,

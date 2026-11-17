@@ -236,10 +236,23 @@ def direct_response_node(
     wall_started = time.time()
     timer_started = time.perf_counter()
     strengths = state.get("strengths", [])
-    lines = [
-        "I do not see a meaningful revision issue that you need to act on right now. "
-        "You can stop rather than changing your writing just to make a change."
-    ]
+    optional_polish = state.get("optional_polish", [])
+    if optional_polish:
+        lines = [
+            "I do not see a meaningful revision issue that needs coaching right now. "
+            "I noticed only optional future polish. You can leave these ideas for another "
+            "time rather than treating them as required revisions.",
+            "Optional future polish:",
+        ]
+        lines.extend(
+            f"- {item['description']} Look at: \"{item['draft_reference']}\""
+            for item in optional_polish
+        )
+    else:
+        lines = [
+            "I do not see a meaningful revision issue that you need to act on right now. "
+            "You can stop rather than changing your writing just to make a change."
+        ]
     if strengths:
         lines.append("What stood out:")
         lines.extend(f"- {strength}" for strength in strengths)
@@ -249,6 +262,7 @@ def direct_response_node(
         "feedback_strengths": strengths,
         "revision_candidates": [],
         "goal_feedback": state.get("selected_goal_observations", []),
+        "optional_polish": optional_polish,
         "student_output": content,
         "review_stage": "complete",
     }

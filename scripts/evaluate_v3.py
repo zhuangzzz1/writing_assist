@@ -3,6 +3,7 @@ import hashlib
 import json
 import sys
 import uuid
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,11 @@ from agents.prompts import (
     BASELINE_READABLE_V2_PROMPT_VERSION,
     BASELINE_READABLE_V2_SUPPORT_PROMPT,
     CONSOLIDATED_SUPPORT_PROMPT_VERSION,
+    PHASE1_COORDINATOR_FINAL_PROMPT,
+    PHASE1_COORDINATOR_ROUND_PROMPT,
+    PHASE1_PROMPT_VERSION,
+    PHASE1_SCHEMA_VERSION,
+    PHASE1_SUPPORT_ROUND_PROMPT,
     REGRESSION_READABLE_COORDINATOR_FINAL_PROMPT,
     REGRESSION_READABLE_COORDINATOR_ROUND_PROMPT,
     REGRESSION_READABLE_PROMPT_VERSION,
@@ -57,6 +63,8 @@ from ui.scenarios import (
     load_experiment_scenarios,
     load_final_history_scenarios,
     load_final_regression_scenarios,
+    load_phase1_development_scenarios,
+    load_phase1_transfer_scenarios,
     load_readability_coverage_scenarios,
     load_support_comparison_scenarios,
 )
@@ -75,6 +83,7 @@ EXPERIMENT_ARMS = (
     "baseline_readable_v2",
     "regression_readable",
     "structural_current",
+    "phase1",
     "coordinator_early_limit",
     "coordinator_clarification_probe",
 )
@@ -673,6 +682,7 @@ def run_support_scenario(
         "support_only": True,
         "fixture_version": scenario.fixture_version,
         "source_lineage": scenario.lineage,
+        "review_annotations": scenario.review_annotations,
         "started_at": datetime.now(timezone.utc).isoformat(),
         "initial_state": state,
         "initial_review": review_metadata(
@@ -715,6 +725,7 @@ def run_scenario(
         "controlled_prefix": bool(scenario.controlled_round),
         "fixture_version": scenario.fixture_version,
         "source_lineage": scenario.lineage,
+        "review_annotations": scenario.review_annotations,
         "started_at": datetime.now(timezone.utc).isoformat(),
         "initial_state": initial.state,
         "initial_review": review_metadata(
@@ -908,10 +919,30 @@ def observations(record: dict[str, Any]) -> dict[str, Any]:
             {
                 "goal_id": feedback.get("goal_id"),
                 "status": feedback.get("status"),
+                "goal_outcome": feedback.get("goal_outcome", ""),
+                "narrowing": feedback.get("narrowing", ""),
+                "narrowing_evidence_reference": feedback.get(
+                    "narrowing_evidence_reference", ""
+                ),
+                "requirement_source": feedback.get("requirement_source", ""),
+                "requirement_reference": feedback.get("requirement_reference", ""),
                 "carry_forward": feedback.get("carry_forward"),
             }
             for revision_state in record.get("revision_states", [])
             for feedback in revision_state.get("goal_feedback", [])
+        ],
+        "optional_polish": [
+            {
+                "description": item.get("description", ""),
+                "draft_reference": item.get("draft_reference", ""),
+                "paragraph_number": item.get("paragraph_number"),
+                "occurrence": item.get("occurrence"),
+            }
+            for current_state in [
+                record.get("initial_state", {}),
+                *record.get("revision_states", []),
+            ]
+            for item in current_state.get("optional_polish", [])
         ],
         "final_improvement_count": len(final.get("improvements", [])),
         "final_regression_count": len(final.get("regressions", [])),
@@ -939,6 +970,64 @@ def service_durations(record: dict[str, Any]) -> list[int]:
             if review.get("service_duration_ms") is not None:
                 durations.append(review["service_duration_ms"])
     return durations
+
+
+def phase1_diagnostics(records: list[dict[str, Any]]) -> dict[str, Any]:
+    feedback = [
+        item
+        for record in records
+        for revision_state in record.get("revision_states", [])
+        for item in revision_state.get("goal_feedback", [])
+    ]
+    normal_states = [
+        state
+        for record in records
+        for state in [
+            record.get("initial_state", {}),
+            *record.get("revision_states", []),
+        ]
+        if state.get("routing_decision") in ("support_agent", "direct_response")
+        and any(
+            log.get("node") == "assessment_coordinator"
+            for log in state.get("execution_logs", [])
+        )
+    ]
+
+    def counts(field: str) -> dict[str, int]:
+        values = [item.get(field, "") for item in feedback if item.get(field, "")]
+        return {value: values.count(value) for value in sorted(set(values))}
+
+    return {
+        "goal_outcome_counts": counts("goal_outcome"),
+        "narrowing_counts": counts("narrowing"),
+        "carry_forward_counts": {
+            "true": sum(item.get("carry_forward") is True for item in feedback),
+            "false": sum(item.get("carry_forward") is False for item in feedback),
+            "unknown": sum(
+                not isinstance(item.get("carry_forward"), bool) for item in feedback
+            ),
+        },
+        "stopping_or_support_route_counts": {
+            "no_meaningful_issue": sum(
+                state.get("routing_decision") == "direct_response"
+                and not state.get("optional_polish")
+                for state in normal_states
+            ),
+            "optional_only": sum(
+                state.get("routing_decision") == "direct_response"
+                and bool(state.get("optional_polish"))
+                for state in normal_states
+            ),
+            "work_remaining": sum(
+                state.get("routing_decision") == "support_agent"
+                for state in normal_states
+            ),
+        },
+        "optional_polish_entry_count": sum(
+            len(state.get("optional_polish", [])) for state in normal_states
+        ),
+        "note": "Descriptive diagnostics only; semantic review determines quality and gate outcomes.",
+    }
 
 
 def summarize(
@@ -1044,6 +1133,7 @@ def summarize(
         "total_service_ms": sum(service_times),
         "readability": arm_readability(records),
         "readability_metric_notes": READABILITY_METRIC_NOTES,
+        "phase1_diagnostics": phase1_diagnostics(records),
         "observations": [
             observations(record) for record in records if "initial_state" in record
         ],
@@ -1079,6 +1169,10 @@ def scenarios_for_set(scenario_set: str) -> list[AcceptanceScenario]:
         return load_final_regression_scenarios()
     if scenario_set == "readability_coverage":
         return load_readability_coverage_scenarios()
+    if scenario_set == "phase1_development":
+        return load_phase1_development_scenarios()
+    if scenario_set == "phase1_transfer":
+        return load_phase1_transfer_scenarios()
     acceptance = load_acceptance_scenarios()
     if scenario_set == "core":
         return [scenario for scenario in acceptance if scenario.number in CORE_NUMBERS]
@@ -1097,6 +1191,7 @@ def run_mode(
     scenario_numbers: list[int] | None = None,
     provider: str = "deepseek",
     model: str | None = None,
+    skip_final: bool = False,
 ) -> tuple[dict[str, Any], str]:
     if provider == "sota":
         if model not in SOTA_MODEL_PROTOCOLS or mode != "thinking":
@@ -1111,6 +1206,7 @@ def run_mode(
         "baseline_readable_v2",
         "regression_readable",
         "structural_current",
+        "phase1",
     }
     if legacy_contract:
         coordinator_prompt = V3_7_1_COORDINATOR_ROUND_PROMPT
@@ -1121,7 +1217,17 @@ def run_mode(
         )
     else:
         client.config_overrides["schema_version"] = "v3.8.0"
-        if experiment_arm == "structural_current":
+        if experiment_arm == "phase1":
+            coordinator_prompt = PHASE1_COORDINATOR_ROUND_PROMPT
+            coordinator_final_prompt = PHASE1_COORDINATOR_FINAL_PROMPT
+            support_prompt = PHASE1_SUPPORT_ROUND_PROMPT
+            client.config_overrides.update(
+                {
+                    "prompt_version": PHASE1_PROMPT_VERSION,
+                    "schema_version": PHASE1_SCHEMA_VERSION,
+                }
+            )
+        elif experiment_arm == "structural_current":
             coordinator_prompt = STRUCTURAL_COORDINATOR_ROUND_PROMPT
             coordinator_final_prompt = STRUCTURAL_COORDINATOR_FINAL_PROMPT
             support_prompt = STRUCTURAL_SUPPORT_ROUND_PROMPT
@@ -1185,9 +1291,13 @@ def run_mode(
             final_prompt=coordinator_final_prompt,
             include_prior_findings=include_prior_findings,
             legacy_contract=legacy_contract,
+            phase1_contract=experiment_arm == "phase1",
         ),
         support_agent=InstructionalSupportAgent(
-            client, round_prompt=support_prompt, legacy_contract=legacy_contract
+            client,
+            round_prompt=support_prompt,
+            legacy_contract=legacy_contract,
+            phase1_contract=experiment_arm == "phase1",
         ),
     )
     service.experiment_arm = experiment_arm
@@ -1197,6 +1307,8 @@ def run_mode(
         scenarios = [scenario for scenario in scenarios if scenario.number in scenario_numbers]
     elif scenario_number is not None:
         scenarios = [scenario for scenario in scenarios if scenario.number == scenario_number]
+    if skip_final:
+        scenarios = [replace(scenario, finish=False) for scenario in scenarios]
     records = []
     for scenario in scenarios:
         print(
@@ -1261,6 +1373,8 @@ def main() -> int:
             "final_history",
             "final_regression",
             "readability_coverage",
+            "phase1_development",
+            "phase1_transfer",
         ],
         default="core",
     )
@@ -1275,6 +1389,8 @@ def main() -> int:
     parser.add_argument("--max-model-calls", type=int, required=True)
     parser.add_argument("--max-total-tokens", type=int)
     parser.add_argument("--reruns-covered", action="store_true")
+    parser.add_argument("--candidate-frozen", action="store_true")
+    parser.add_argument("--skip-final", action="store_true")
     parser.add_argument("--output-root", type=Path, default=ROOT / "data")
     args = parser.parse_args()
     if any(mode not in ("thinking", "nonthinking") for mode in args.modes):
@@ -1294,6 +1410,15 @@ def main() -> int:
         args.scenario_numbers
     ):
         parser.error("Scenario numbers cannot contain duplicates.")
+    if args.scenario_set.startswith("phase1_") and args.experiment_arm != "phase1":
+        parser.error("Phase 1 fixture sets require --experiment-arm phase1.")
+    if args.skip_final and args.experiment_arm != "phase1":
+        parser.error("--skip-final is reserved for the Phase 1 round-only regression scope.")
+    if args.scenario_set == "phase1_transfer" and not args.candidate_frozen:
+        parser.error(
+            "The reserved transfer set requires --candidate-frozen after prompt, "
+            "schema, and deterministic logic are frozen for Phase 1 review."
+        )
     selected_scenarios = scenarios_for_set(args.scenario_set)
     requested_numbers = args.scenario_numbers or (
         [args.scenario_number] if args.scenario_number is not None else []
@@ -1355,6 +1480,11 @@ def main() -> int:
             "total_token_stop_cap_per_mode": args.max_total_tokens,
             "output_evidence_location": str(evidence_path),
             "targeted_reruns_covered": args.reruns_covered,
+            "candidate_frozen": args.candidate_frozen,
+            "final_explicitly_skipped": args.skip_final,
+            "transfer_reclassification_required_if_tuned": (
+                args.scenario_set == "phase1_transfer"
+            ),
         },
         "evaluation_type": "synthetic evaluation with final-response repair diagnostics; no educator or learner-outcome claims",
         "modes": {},
@@ -1374,6 +1504,7 @@ def main() -> int:
             scenario_numbers=args.scenario_numbers,
             provider=args.provider,
             model=args.model,
+            skip_final=args.skip_final,
         )
         output["modes"][mode] = result
         output["databases"][mode] = database

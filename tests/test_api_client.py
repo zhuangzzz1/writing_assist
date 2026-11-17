@@ -69,6 +69,7 @@ def test_thinking_json_request_omits_temperature_and_records_authorized_metadata
     assert request["reasoning_effort"] == "high"
     assert request["response_format"] == {"type": "json_object"}
     assert "temperature" not in request
+    assert "max_tokens" not in request
     assert client.last_response_metadata["token_usage"]["reasoning_tokens"] == 8
     assert "reasoning_content" not in json.dumps(client.last_response_metadata)
 
